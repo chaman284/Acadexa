@@ -1,0 +1,370 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   DESIGN TOKENS — CSS VARIABLES
+   ============================================ */
+:root {
+  /* Background */
+  --color-background: #f5f6fa;
+  --color-surface: #ffffff;
+
+  /* Primary — dark navy/charcoal */
+  --color-primary: #1e2a3b;
+  --color-primary-light: #2d3f56;
+  --color-primary-dark: #131d2b;
+
+  /* Accent — soft indigo/purple */
+  --color-accent: #6366f1;
+  --color-accent-light: #eef2ff;
+  --color-accent-dark: #4f46e5;
+
+  /* Status colors */
+  --color-success: #22c55e;
+  --color-success-light: #f0fdf4;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-danger: #ef4444;
+  --color-danger-light: #fef2f2;
+
+  /* Borders & muted */
+  --color-border: #e8eaf0;
+  --color-muted: #f0f1f6;
+
+  /* Text */
+  --color-text-primary: #1e2a3b;
+  --color-text-secondary: #4b5675;
+  --color-text-muted: #8892a4;
+
+  /* Sidebar */
+  --sidebar-width: 256px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 64px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+/* ============================================
+   SCROLLBAR CUSTOMIZATION
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.layout-sidebar {
+  width: var(--sidebar-width);
+  transition: width var(--transition-slow);
+}
+
+.layout-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.layout-main {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  transition: margin-left var(--transition-slow);
+}
+
+.layout-main.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ============================================
+   CARD STYLES
+   ============================================ */
+.card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.card-hover {
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   STAT CARD ACCENT BORDERS
+   ============================================ */
+.stat-card-accent {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+}
+
+.stat-card-accent.accent-indigo::before { background: var(--color-accent); }
+.stat-card-accent.accent-navy::before { background: var(--color-primary); }
+.stat-card-accent.accent-success::before { background: var(--color-success); }
+.stat-card-accent.accent-warning::before { background: var(--color-warning); }
+.stat-card-accent.accent-danger::before { background: var(--color-danger); }
+
+/* ============================================
+   SIDEBAR NAVIGATION
+   ============================================ */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.nav-item:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.nav-item.active {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.nav-item .nav-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================
+   PERFORMANCE CHART
+   ============================================ */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--color-border);
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  border-radius: 10px !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important;
+}
+
+/* ============================================
+   CHAT INTERFACE
+   ============================================ */
+.chat-bubble-user {
+  background: var(--color-accent);
+  color: white;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.chat-bubble-bot {
+  background: var(--color-muted);
+  color: var(--color-text-primary);
+  border-radius: 18px 18px 18px 4px;
+}
+
+/* ============================================
+   PROGRESS BAR
+   ============================================ */
+.progress-bar-track {
+  background: var(--color-muted);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+/* ============================================
+   BADGE
+   ============================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease forwards;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .layout-main {
+    margin-left: 0 !important;
+  }
+
+  .layout-sidebar {
+    position: fixed;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+  }
+
+  .layout-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   TABLE
+   ============================================ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--color-muted);
+}
+
+/* ============================================
+   HEATMAP CELL
+   ============================================ */
+.heatmap-cell {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.heatmap-high { background: #dcfce7; color: #15803d; }
+.heatmap-medium { background: #fef9c3; color: #92400e; }
+.heatmap-low { background: #fee2e2; color: #dc2626; }

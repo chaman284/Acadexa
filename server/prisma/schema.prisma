@@ -1,0 +1,182 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(STUDENT)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  student      Student?
+  faculty      Faculty?
+}
+
+enum Role {
+  STUDENT
+  FACULTY
+  ADMIN
+}
+
+model Department {
+  id       String    @id @default(cuid())
+  name     String    // e.g. "Computer Science"
+  code     String    @unique  // e.g. "CS"
+  sections Section[]
+  subjects Subject[]
+}
+
+model Section {
+  id           String          @id @default(cuid())
+  semester     Int             // 3, 5, 7
+  name         String          // "A", "B", "C"
+  departmentId String
+  department   Department      @relation(fields: [departmentId], references: [id])
+  students     Student[]
+  quizzes      Quiz[]
+  assignments  FacultySubject[]
+}
+
+model Subject {
+  id           String           @id @default(cuid())
+  name         String
+  code         String
+  departmentId String
+  department   Department       @relation(fields: [departmentId], references: [id])
+  assignments  FacultySubject[]
+  quizzes      Quiz[]
+  topics       Topic[]
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id])
+  rollNo       String        @unique
+  sectionId    String
+  section      Section       @relation(fields: [sectionId], references: [id])
+  quizAttempts QuizAttempt[]
+}
+
+model Faculty {
+  id          String          @id @default(cuid())
+  userId      String          @unique
+  user        User            @relation(fields: [userId], references: [id])
+  assignments FacultySubject[]
+}
+
+model FacultySubject {
+  id        String  @id @default(cuid())
+  facultyId String
+  faculty   Faculty @relation(fields: [facultyId], references: [id])
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [id])
+}
+
+model Topic {
+  id        String     @id @default(cuid())
+  name      String
+  subjectId String
+  subject   Subject    @relation(fields: [subjectId], references: [id])
+  questions Question[]
+}
+
+model Question {
+  id            String         @id @default(cuid())
+  text          String
+  type          QuestionType   @default(MCQ)
+  difficulty    Difficulty     @default(MEDIUM)
+  topicId       String
+  topic         Topic          @relation(fields: [topicId], references: [id])
+  options       Option[]
+  quizQuestions QuizQuestion[]
+  attemptAnswers AttemptAnswer[]
+}
+
+enum QuestionType {
+  MCQ
+  MULTI_SELECT
+  TRUE_FALSE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  text       String
+  isCorrect  Boolean  @default(false)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+model Quiz {
+  id          String         @id @default(cuid())
+  title       String
+  type        QuizType       @default(WEEKLY)
+  status      QuizStatus     @default(DRAFT)
+  duration    Int
+  scheduledAt DateTime?
+  createdAt   DateTime       @default(now())
+  subjectId   String
+  subject     Subject        @relation(fields: [subjectId], references: [id])
+  sectionId   String
+  section     Section        @relation(fields: [sectionId], references: [id])
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+}
+
+enum QuizType {
+  WEEKLY
+  REMEDIAL
+  PRACTICE
+}
+
+enum QuizStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+model QuizQuestion {
+  id         String   @id @default(cuid())
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id])
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  order      Int
+}
+
+model QuizAttempt {
+  id          String          @id @default(cuid())
+  studentId   String
+  student     Student         @relation(fields: [studentId], references: [id])
+  quizId      String
+  quiz        Quiz            @relation(fields: [quizId], references: [id])
+  score       Float
+  timeTaken   Int
+  submittedAt DateTime        @default(now())
+  answers     AttemptAnswer[]
+}
+
+model AttemptAnswer {
+  id         String      @id @default(cuid())
+  attemptId  String
+  attempt    QuizAttempt @relation(fields: [attemptId], references: [id])
+  questionId String
+  question   Question    @relation(fields: [questionId], references: [id])
+  optionId   String
+  isCorrect  Boolean
+}
