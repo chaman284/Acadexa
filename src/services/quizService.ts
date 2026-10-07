@@ -55,16 +55,21 @@ export const quizService = {
         answers: formattedAnswers,
       });
       if (res.data) {
+        const total = Object.keys(answers).length;
+        const correct = Math.round((res.data.score / 100) * total);
+        const incorrect = total - correct;
         return {
           id: res.data.id,
           quizId: res.data.quizId,
+          quizTitle: res.data.quizTitle ?? '',
           studentId: res.data.studentId,
           score: res.data.score,
-          totalQuestions: Object.keys(answers).length,
-          correctAnswers: Math.round((res.data.score / 100) * Object.keys(answers).length),
+          correctAnswers: correct,
+          incorrectAnswers: incorrect,
+          skipped: 0,
           timeTaken: res.data.timeTaken,
           submittedAt: res.data.submittedAt,
-          answers: answers,
+          topicBreakdown: res.data.topicBreakdown ?? [],
         } as QuizResult;
       }
     } catch (e) {

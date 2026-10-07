@@ -24,7 +24,7 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
       className="h-16 bg-white border-b border-[var(--color-border)] flex items-center justify-between px-4 md:px-6 gap-4 sticky top-0 z-30"
       style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
     >
-      {/* Left: hamburger + greeting */}
+      {/* Left: hamburger only on mobile */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onMenuToggle}
@@ -33,14 +33,6 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="min-w-0 hidden sm:block">
-          <p className="text-[var(--color-text-secondary)] text-sm truncate">
-            {getGreeting()},{' '}
-            <span className="font-semibold text-[var(--color-text-primary)]">
-              {user?.name?.split(' ')[0] || 'there'}
-            </span>
-          </p>
-        </div>
       </div>
 
       {/* Center: Search */}

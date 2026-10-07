@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { NavLink, useNavigate, useMatch } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
-  TrendingUp, Trophy, MessageSquare, Building2,
-  User, Settings, LogOut, ChevronLeft, ChevronRight,
-  GraduationCap, Users, BarChart3, FileText, Wrench, X,
+  MessageSquare, Building2, User, Settings, LogOut,
+  GraduationCap, BarChart3, X, TrendingUp,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 
@@ -13,33 +13,17 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ReactNode;
+  end?: boolean;
 }
 
 const studentNav: NavItem[] = [
-  { to: '/student', label: 'Overview', icon: <LayoutDashboard className="nav-icon" /> },
+  { to: '/student', label: 'Overview', icon: <LayoutDashboard className="nav-icon" />, end: true },
   { to: '/student/courses', label: 'My Courses', icon: <BookOpen className="nav-icon" /> },
   { to: '/student/quiz', label: 'Weekly Quiz', icon: <ClipboardList className="nav-icon" /> },
   { to: '/student/question-bank', label: 'Question Bank', icon: <Database className="nav-icon" /> },
   { to: '/student/learning-gaps', label: 'Learning Gaps', icon: <TrendingUp className="nav-icon" /> },
-  { to: '/student/leaderboard', label: 'Leaderboard', icon: <Trophy className="nav-icon" /> },
   { to: '/student/tutor', label: 'AI Tutor', icon: <MessageSquare className="nav-icon" /> },
-  { to: '/student/department', label: 'Department Info', icon: <Building2 className="nav-icon" /> },
-];
-
-const facultyNav: NavItem[] = [
-  { to: '/faculty', label: 'Overview', icon: <LayoutDashboard className="nav-icon" /> },
-  { to: '/faculty/analytics', label: 'Class Analytics', icon: <BarChart3 className="nav-icon" /> },
-  { to: '/faculty/students', label: 'Students', icon: <Users className="nav-icon" /> },
-  { to: '/faculty/question-bank', label: 'Question Bank', icon: <Database className="nav-icon" /> },
-  { to: '/faculty/quizzes', label: 'Quiz Management', icon: <ClipboardList className="nav-icon" /> },
-  { to: '/faculty/learning-gaps', label: 'Learning Gaps', icon: <TrendingUp className="nav-icon" /> },
-  { to: '/faculty/remedial-quizzes', label: 'Remedial Quizzes', icon: <Wrench className="nav-icon" /> },
-  { to: '/faculty/department', label: 'Department Info', icon: <Building2 className="nav-icon" /> },
-];
-
-const bottomNav = (role: 'student' | 'faculty') => [
-  { to: '/profile', label: 'Profile', icon: <User className="nav-icon" /> },
-  { to: '/settings', label: 'Settings', icon: <Settings className="nav-icon" /> },
+  { to: '/student/department', label: 'Department', icon: <Building2 className="nav-icon" /> },
 ];
 
 interface SidebarProps {
@@ -58,6 +42,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose,
 }) => {
   const navigate = useNavigate();
+
+  // Detect if inside a class — grab classId from URL
+  const classMatch = useMatch('/faculty/class/:classId/*');
+  const classId = classMatch?.params?.classId ?? null;
+
+  // Faculty nav: class-specific when inside a class
+  const facultyNav: NavItem[] = classId
+    ? [
+        { to: `/faculty/class/${classId}`, label: 'Overview', icon: <LayoutDashboard className="nav-icon" />, end: true },
+        { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="nav-icon" /> },
+      ]
+    : [
+        { to: '/faculty', label: 'Overview', icon: <LayoutDashboard className="nav-icon" />, end: true },
+        { to: '/faculty/analytics', label: 'Analytics', icon: <BarChart3 className="nav-icon" /> },
+      ];
+
   const navItems = role === 'student' ? studentNav : facultyNav;
 
   const handleLogout = () => {
@@ -69,113 +69,129 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile overlay */}
       {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden"
-          onClick={onMobileClose}
-        />
+        <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onMobileClose} />
       )}
 
       <aside
         className={clsx(
-          'fixed left-0 top-0 h-screen bg-[var(--color-primary)] z-50 flex flex-col transition-all duration-300 overflow-hidden',
-          isCollapsed ? 'w-[72px]' : 'w-[256px]',
+          'fixed left-0 top-0 h-screen z-50 flex flex-col',
+          'bg-[var(--color-primary)]',
+          'transition-all duration-300',
+          // Width
+          isCollapsed ? 'w-[72px]' : 'w-[240px]',
           // Mobile
-          'max-md:w-[256px]',
+          'max-md:w-[240px]',
           isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
         )}
       >
-        {/* Logo */}
-        <div className="flex items-center justify-between px-4 py-4 min-h-[64px] border-b border-white/10">
-          {!isCollapsed && (
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 bg-[var(--color-accent)] rounded-lg flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="w-4 h-4 text-white" />
-              </div>
-              <div className="overflow-hidden">
-                <span className="text-white font-bold text-base tracking-tight">Acadexa</span>
-                <p className="text-white/50 text-[10px] leading-none mt-0.5">
-                  {role === 'faculty' ? 'Faculty Portal' : 'Student Portal'}
-                </p>
-              </div>
-            </div>
-          )}
-          {isCollapsed && (
-            <div className="w-8 h-8 bg-[var(--color-accent)] rounded-lg flex items-center justify-center mx-auto">
+        {/* ── Logo / Brand ── */}
+        <div className={clsx(
+          'flex items-center min-h-[64px] border-b border-white/10 px-4 transition-all duration-300',
+          isCollapsed ? 'justify-center' : 'justify-between'
+        )}>
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-8 h-8 bg-[var(--color-accent)] rounded-lg flex items-center justify-center flex-shrink-0">
               <GraduationCap className="w-4 h-4 text-white" />
             </div>
-          )}
-          {/* Mobile close button */}
+            {!isCollapsed && (
+              <div className="overflow-hidden">
+                <span className="text-white font-bold text-sm tracking-tight leading-none block">Acadexa</span>
+                <span className="text-white/40 text-[10px] leading-none mt-0.5 block">
+                  {role === 'faculty' ? 'Faculty Portal' : 'Student Portal'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Collapse toggle */}
           <button
-            onClick={onMobileClose}
-            className="md:hidden text-white/60 hover:text-white ml-2"
+            onClick={onToggle}
+            className={clsx(
+              'hidden md:flex items-center justify-center',
+              'w-7 h-7 rounded-lg',
+              'text-white/40 hover:text-white hover:bg-white/10',
+              'transition-colors duration-150 flex-shrink-0',
+              isCollapsed && 'mx-auto mt-0'
+            )}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
+            {isCollapsed
+              ? <PanelLeftOpen className="w-4 h-4" />
+              : <PanelLeftClose className="w-4 h-4" />
+            }
+          </button>
+
+          {/* Mobile close */}
+          <button onClick={onMobileClose} className="md:hidden text-white/50 hover:text-white flex-shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5">
+        {/* ── Navigation ── */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 flex flex-col gap-0.5">
           {navItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/student' || item.to === '/faculty'}
+              end={item.end}
               className={({ isActive }) =>
                 clsx(
-                  'nav-item text-white/70 hover:text-white hover:bg-white/10',
-                  isActive && '!bg-white/15 !text-white !font-semibold',
+                  'nav-item group text-white/60 hover:text-white hover:bg-white/8',
+                  isActive && '!bg-[var(--color-accent)] !text-white shadow-sm',
                   isCollapsed && 'justify-center'
                 )
               }
               title={isCollapsed ? item.label : undefined}
               onClick={onMobileClose}
             >
-              {item.icon}
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
+              <span className="flex-shrink-0">{item.icon}</span>
+              {!isCollapsed && (
+                <span className="truncate text-[13px]">{item.label}</span>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        {/* Bottom actions */}
-        <div className="border-t border-white/10 px-3 py-3 flex flex-col gap-0.5">
-          {bottomNav(role).map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                clsx(
-                  'nav-item text-white/70 hover:text-white hover:bg-white/10',
-                  isActive && '!bg-white/15 !text-white',
-                  isCollapsed && 'justify-center'
-                )
-              }
-              title={isCollapsed ? item.label : undefined}
-            >
-              {item.icon}
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
-            </NavLink>
-          ))}
+        {/* ── Bottom: settings + user ── */}
+        <div className="border-t border-white/10 px-3 py-3 space-y-0.5">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              clsx('nav-item text-white/60 hover:text-white hover:bg-white/8',
+                isActive && '!bg-white/15 !text-white',
+                isCollapsed && 'justify-center')
+            }
+            title={isCollapsed ? 'Profile' : undefined}
+          >
+            <User className="nav-icon flex-shrink-0" />
+            {!isCollapsed && <span className="text-[13px] truncate">Profile</span>}
+          </NavLink>
+
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              clsx('nav-item text-white/60 hover:text-white hover:bg-white/8',
+                isActive && '!bg-white/15 !text-white',
+                isCollapsed && 'justify-center')
+            }
+            title={isCollapsed ? 'Settings' : undefined}
+          >
+            <Settings className="nav-icon flex-shrink-0" />
+            {!isCollapsed && <span className="text-[13px] truncate">Settings</span>}
+          </NavLink>
+
           <button
             onClick={handleLogout}
             className={clsx(
-              'nav-item text-white/70 hover:text-white hover:bg-red-500/20 hover:!text-red-300',
+              'nav-item w-full text-white/60 hover:text-red-300 hover:bg-red-500/15',
               isCollapsed && 'justify-center'
             )}
             title={isCollapsed ? 'Logout' : undefined}
           >
-            <LogOut className="nav-icon" />
-            {!isCollapsed && <span>Logout</span>}
+            <LogOut className="nav-icon flex-shrink-0" />
+            {!isCollapsed && <span className="text-[13px] truncate">Logout</span>}
           </button>
         </div>
-
-        {/* Collapse toggle (desktop only) */}
-        <button
-          onClick={onToggle}
-          className="hidden md:flex absolute -right-3 top-[72px] w-6 h-6 bg-white border border-[var(--color-border)] rounded-full items-center justify-center shadow-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors z-10"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-        </button>
       </aside>
     </>
   );

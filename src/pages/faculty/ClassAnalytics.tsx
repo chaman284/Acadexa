@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { ClassSelector, type AssignedClass } from '../../components/faculty/ClassSelector';
 import { classPerformanceMatrix, studentsNeedingAttention } from '../../data/analytics';
 import { FileDown, Search } from 'lucide-react';
 import type { StudentNeedingAttention } from '../../types/analytics';
 
-const facultyClasses: AssignedClass[] = [
+const facultyClasses = [
   { id: 'sec_5a_ds', semester: '5th Sem', section: '5A', subject: 'Data Structures', studentsCount: 72 },
   { id: 'sec_5b_ds', semester: '5th Sem', section: '5B', subject: 'Data Structures', studentsCount: 68 },
   { id: 'sec_7c_cc', semester: '7th Sem', section: '7C', subject: 'Cloud Computing', studentsCount: 70 },
@@ -17,7 +17,9 @@ const facultyClasses: AssignedClass[] = [
 ];
 
 export const ClassAnalytics: React.FC = () => {
-  const [selectedClassId, setSelectedClassId] = useState(facultyClasses[0].id);
+  const { classId: urlClassId } = useParams<{ classId: string }>();
+  const defaultClassId = urlClassId ?? facultyClasses[0].id;
+  const [selectedClassId, setSelectedClassId] = useState(defaultClassId);
   const selectedClass = facultyClasses.find(c => c.id === selectedClassId) || facultyClasses[0];
   
   // Dummy data variation based on selected class
@@ -52,20 +54,18 @@ export const ClassAnalytics: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <PageHeader
-        title="Class Analytics"
-        subtitle="Detailed performance analysis for your batches"
-        breadcrumbs={[{ label: 'Overview' }, { label: 'Class Analytics' }]}
+        title="Analytics"
+        subtitle={`Performance analysis — ${selectedClass.section}`}
+        breadcrumbs={[
+          { label: 'Overview' },
+          { label: selectedClass.section },
+          { label: 'Analytics' },
+        ]}
         action={
           <Button variant="outline" size="sm" leftIcon={<FileDown className="w-4 h-4" />}>
             Export Report
           </Button>
         }
-      />
-
-      <ClassSelector 
-        classes={facultyClasses} 
-        selectedClassId={selectedClassId} 
-        onChange={setSelectedClassId} 
       />
 
       <Card>

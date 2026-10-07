@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, GraduationCap, BookOpen, Users, TrendingUp, Award } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,8 +25,7 @@ export const Login: React.FC = () => {
     setError('');
     setIsLoading(true);
     try {
-      const user = await authService.login(email, password, role);
-      authService.setCurrentUser(user);
+      const user = await login(email, password, role);
       if (user.role === 'faculty') navigate('/faculty');
       else navigate('/student');
     } catch {
@@ -37,11 +37,16 @@ export const Login: React.FC = () => {
 
   const handleDemoLogin = async (demoRole: 'student' | 'faculty') => {
     setIsLoading(true);
-    const demoEmail = demoRole === 'student' ? 'chaman@cs.college.edu' : 'faculty@cs.college.edu';
-    const user = await authService.login(demoEmail, 'demo', demoRole);
-    authService.setCurrentUser(user);
-    if (demoRole === 'faculty') navigate('/faculty');
-    else navigate('/student');
+    try {
+      const demoEmail = demoRole === 'student' ? 'chaman@cs.college.edu' : 'faculty@cs.college.edu';
+      const user = await login(demoEmail, 'demo', demoRole);
+      if (demoRole === 'faculty') navigate('/faculty');
+      else navigate('/student');
+    } catch {
+      setError('Failed to login with demo account.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -8,6 +8,7 @@ import { StatCard } from '../../components/dashboard/StatCard';
 import { PerformanceChart } from '../../components/dashboard/PerformanceChart';
 import { CourseCard } from '../../components/dashboard/CourseCard';
 import { LeaderboardTable } from '../../components/leaderboard/LeaderboardTable';
+import { ControlledTabs } from '../../components/ui/Tabs';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Badge } from '../../components/ui/Badge';
@@ -21,17 +22,33 @@ import {
 } from '../../data/analytics';
 import { departmentEvents } from '../../data/collegeInfo';
 
+const mostImprovedData = [
+  { rank: 1, studentId: 'stu006', studentName: 'Divya Rao', score: 65, change: 'up' as const, changeValue: 3 },
+  { rank: 2, studentId: 'stu001', studentName: 'Chaman', score: 78, change: 'up' as const, changeValue: 2 },
+  { rank: 3, studentId: 'stu002', studentName: 'Priya Nair', score: 82, change: 'up' as const, changeValue: 1 },
+];
+
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [leaderboardTab, setLeaderboardTab] = React.useState('weekly');
   const student = mockCurrentStudent;
   const topTopics = mockTopicPerformance.slice(0, 5);
+
+  const leaderboardTabs = [
+    { id: 'weekly', label: 'Weekly' },
+    { id: 'monthly', label: 'Monthly' },
+    { id: 'overall', label: 'Overall' },
+    { id: 'improved', label: 'Most Improved' },
+  ];
+
+  const leaderboardData = leaderboardTab === 'improved' ? mostImprovedData : mockLeaderboard;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Greeting */}
       <div>
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          Here's your academic overview, {student.name.split(' ')[0]} 👋
+          Academic Overview
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -172,24 +189,16 @@ export const StudentDashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Leaderboard preview */}
+        {/* Full Leaderboard */}
         <div className="lg:col-span-3">
-          <Card>
-            <CardHeader
-              title="Class Leaderboard"
-              action={
-                <button
-                  onClick={() => navigate('/student/leaderboard')}
-                  className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1"
-                >
-                  Full leaderboard <ArrowRight className="w-3 h-3" />
-                </button>
-              }
-            />
+          <Card padding="none">
+            <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between flex-wrap gap-3">
+              <h3 className="font-semibold text-[var(--color-text-primary)]">Class Leaderboard</h3>
+              <ControlledTabs tabs={leaderboardTabs} activeTab={leaderboardTab} onChange={setLeaderboardTab} />
+            </div>
             <LeaderboardTable
-              entries={mockLeaderboard.slice(0, 5)}
+              entries={leaderboardData}
               currentStudentId={student.id}
-              compact
             />
           </Card>
         </div>

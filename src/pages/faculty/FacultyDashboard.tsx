@@ -1,143 +1,226 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, FileText, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
-import { StatCard } from '../../components/dashboard/StatCard';
-import { PerformanceChart } from '../../components/dashboard/PerformanceChart';
-import { Card, CardHeader } from '../../components/ui/Card';
-import { DataTable } from '../../components/ui/DataTable';
-import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
-import { ClassSelector, type AssignedClass } from '../../components/faculty/ClassSelector';
-import { classWeeklyPerformance, classTopicPerformance, recentActivities, difficultQuestions } from '../../data/analytics';
-import type { ClassTopicPerformance, DifficultQuestion } from '../../types/analytics';
+import {
+  Users, ArrowRight, GraduationCap, LogOut,
+  Sparkles, TrendingUp, TrendingDown, Minus,
+  ClipboardList, FileStack,
+} from 'lucide-react';
+import { facultyClasses } from '../../data/facultyClasses';
+import { useAuth } from '../../context/AuthContext';
 
-const facultyClasses: AssignedClass[] = [
-  { id: 'sec_5a_ds', semester: '5th Sem', section: '5A', subject: 'Data Structures', studentsCount: 72 },
-  { id: 'sec_5b_ds', semester: '5th Sem', section: '5B', subject: 'Data Structures', studentsCount: 68 },
-  { id: 'sec_7c_cc', semester: '7th Sem', section: '7C', subject: 'Cloud Computing', studentsCount: 70 },
-  { id: 'sec_3a_db', semester: '3rd Sem', section: '3A', subject: 'Database Systems', studentsCount: 75 },
-];
+// ─── Accent colours per class (light-friendly, no dark gradients) ─────────────
+const ACCENTS: Record<string, { color: string; bg: string; border: string }> = {
+  sec_5a_ds: { color: '#6366f1', bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.25)' },
+  sec_5b_ds: { color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)' },
+  sec_7c_cc: { color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)' },
+  sec_3a_db: { color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)' },
+};
+
+const getAccent = (id: string) =>
+  ACCENTS[id] ?? { color: '#6366f1', bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.25)' };
+
+const TrendIcon = ({ trend }: { trend: 'improving' | 'stable' | 'declining' }) => {
+  if (trend === 'improving') return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
+  if (trend === 'declining') return <TrendingDown className="w-3.5 h-3.5 text-rose-500" />;
+  return <Minus className="w-3.5 h-3.5 text-slate-400" />;
+};
+
+const TREND_TEXT: Record<string, string> = {
+  improving: 'text-emerald-600',
+  declining: 'text-rose-600',
+  stable: 'text-slate-500',
+};
 
 export const FacultyDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedClassId, setSelectedClassId] = useState(facultyClasses[0].id);
+  const { user, logout } = useAuth();
 
-  const selectedClass = facultyClasses.find(c => c.id === selectedClassId) || facultyClasses[0];
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  // Dummy dynamic data variation based on selected class
-  const classModifier = selectedClass.studentsCount % 5;
-  const avgPerformance = 74 + classModifier;
-  const pendingReviews = 12 - classModifier;
-
-  const difficultColumns = [
-    {
-      key: 'questionText', header: 'Question',
-      render: (q: DifficultQuestion) => (
-        <div className="max-w-md">
-          <p className="text-sm text-[var(--color-text-primary)] truncate" title={q.questionText}>{q.questionText}</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{selectedClass.subject} · {q.topicName}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'correctRate', header: 'Correct %',
-      render: (q: DifficultQuestion) => (
-        <Badge color={q.correctRate < 50 ? 'red' : 'amber'}>{q.correctRate + classModifier}%</Badge>
-      ),
-    },
-    { key: 'attempts', header: 'Attempts' },
-  ];
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div>
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          Good morning, Professor 👋
-        </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">
-          Here is your class overview for today.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col selection:bg-[var(--color-accent)] selection:text-white">
 
-      <ClassSelector 
-        classes={facultyClasses} 
-        selectedClassId={selectedClassId} 
-        onChange={setSelectedClassId} 
-      />
+      {/* ── Top Header Bar ── */}
+      <header className="w-full border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-base tracking-tight">Acadexa</span>
+          </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Students" value={selectedClass.studentsCount} icon={<Users className="w-5 h-5" />} accent="navy" />
-        <StatCard title="Average Performance" value={`${avgPerformance}%`} trend={classModifier > 2 ? -2 : 5} trendLabel="vs last month" icon={<TrendingUp className="w-5 h-5" />} accent="success" />
-        <StatCard title="Active Quizzes" value={classModifier > 3 ? 0 : 1} icon={<FileText className="w-5 h-5" />} accent="indigo" />
-        <StatCard title="Pending Reviews" value={pendingReviews} subtitle="Questions to approve" icon={<AlertTriangle className="w-5 h-5" />} accent="warning" />
-      </div>
+          {/* User + Logout */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)]/12 text-[var(--color-accent)] border border-[var(--color-accent)]/20 flex items-center justify-center font-bold text-sm">
+                {(user?.name || 'F').charAt(0)}
+              </div>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {user?.name || 'Professor'}
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--color-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <PerformanceChart
-            title={`Performance Overview — Section ${selectedClass.section}`}
-            weekData={classWeeklyPerformance.map(d => ({ ...d, score: Math.min(100, d.score + classModifier * 2) }))}
-            monthData={[]}
-            semesterData={[]}
-            showClassAverage={false}
-          />
-          
-          <Card>
-            <CardHeader title="Most Difficult Questions" subtitle={`Questions where Section ${selectedClass.section} struggles the most`} />
-            <DataTable columns={difficultColumns} data={difficultQuestions} keyField="questionId" />
-          </Card>
+      {/* ── Main Content ── */}
+      <main className="flex-1 max-w-5xl mx-auto px-6 py-8 w-full space-y-8">
+
+        {/* Greeting */}
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-xs font-medium mb-3">
+            <Sparkles className="w-3 h-3" />
+            Academic Session 2026–27
+          </div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+            Faculty Dashboard
+          </h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+            Select a class to view its dashboard.
+          </p>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader title="Learning Gap Overview" action={
-              <button onClick={() => navigate('/faculty/learning-gaps')} className="text-xs text-[var(--color-accent)] hover:underline">Full Report</button>
-            } />
-            <div className="space-y-3">
-              {classTopicPerformance.slice(0, 5).map(topic => {
-                const score = Math.min(100, topic.averageScore + classModifier);
-                return (
-                  <div key={topic.topicId} className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--color-muted)] transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">{topic.topicName}</p>
-                      <p className="text-xs text-[var(--color-text-muted)]">{selectedClass.subject}</p>
+        {/* ── Class Picker ── */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+              Your Classes
+            </h2>
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {facultyClasses.length} assigned
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {facultyClasses.map(cls => {
+              const acc = getAccent(cls.id);
+              return (
+                <button
+                  key={cls.id}
+                  onClick={() => navigate(`/faculty/class/${cls.id}`)}
+                  className="group relative flex items-center justify-between p-4 rounded-xl text-left transition-all duration-150 bg-[var(--color-surface)] border focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                  style={{
+                    borderColor: acc.border,
+                    borderLeftWidth: '3px',
+                    borderLeftColor: acc.color,
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = acc.bg;
+                    (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px rgba(0,0,0,0.08)`;
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '';
+                  }}
+                >
+                  {/* Left content */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Section badge */}
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0"
+                      style={{ background: acc.bg, color: acc.color }}
+                    >
+                      {cls.section}
                     </div>
-                    <Badge color={score < 60 ? 'red' : score < 75 ? 'amber' : 'green'}>
-                      {score}%
-                    </Badge>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
+                        {cls.subject}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-[var(--color-text-muted)]">{cls.subjectCode}</span>
+                        <span className="text-[var(--color-text-muted)] text-xs">·</span>
+                        <span className="text-xs text-[var(--color-text-muted)]">{cls.semester}</span>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </Card>
 
-          <Card>
-            <CardHeader title="Recent Activity" />
-            <div className="space-y-4">
-              {recentActivities.slice(0, 4).map(activity => (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                    activity.type === 'quiz_submitted' ? 'bg-[var(--color-success)]' :
-                    activity.type === 'quiz_created' ? 'bg-[var(--color-accent)]' :
-                    'bg-[var(--color-warning)]'
-                  }`} />
-                  <div>
-                    <p className="text-sm text-[var(--color-text-primary)]">
-                      {activity.type === 'quiz_submitted' 
-                        ? `A student from ${selectedClass.section} submitted a quiz.` 
-                        : activity.description}
-                    </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                      {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                  {/* Right: stats + arrow */}
+                  <div className="flex items-center gap-4 flex-shrink-0 ml-3">
+                    <div className="hidden sm:flex flex-col items-end gap-0.5">
+                      <div className="flex items-center gap-1">
+                        <TrendIcon trend={cls.trend} />
+                        <span className={`text-xs font-semibold ${TREND_TEXT[cls.trend]}`}>
+                          {cls.avgScore}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[var(--color-text-muted)]">
+                        <Users className="w-3 h-3" />
+                        <span className="text-xs">{cls.studentsCount}</span>
+                      </div>
+                    </div>
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 group-hover:translate-x-0.5"
+                      style={{ background: acc.bg, color: acc.color }}
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
                   </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Quick Tools ── */}
+        <section>
+          <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+            Tools
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                icon: <ClipboardList className="w-4 h-4" />,
+                label: 'Quiz Management',
+                description: 'Create and manage quizzes across all sections.',
+                path: '/faculty/quizzes',
+                color: '#06b6d4',
+              },
+              {
+                icon: <FileStack className="w-4 h-4" />,
+                label: 'Question Paper Bank',
+                description: 'Browse and upload previous year question papers.',
+                path: '/faculty/paper-bank',
+                color: '#8b5cf6',
+              },
+            ].map(tool => (
+              <button
+                key={tool.path}
+                onClick={() => navigate(tool.path)}
+                className="group flex items-center gap-3 p-4 rounded-xl text-left bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 hover:shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${tool.color}15`, color: tool.color }}
+                >
+                  {tool.icon}
                 </div>
-              ))}
-            </div>
-            <Button variant="outline" fullWidth className="mt-4">View All Activity</Button>
-          </Card>
-        </div>
-      </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{tool.label}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">{tool.description}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 };

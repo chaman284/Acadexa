@@ -24,8 +24,11 @@ import { DepartmentInfo } from '../pages/student/DepartmentInfo';
 import { FacultyDashboard } from '../pages/faculty/FacultyDashboard';
 import { ClassAnalytics } from '../pages/faculty/ClassAnalytics';
 import { QuestionBankManagement } from '../pages/faculty/QuestionBankManagement';
+import { QuestionPaperBank } from '../pages/faculty/QuestionPaperBank';
 import { QuizManagement } from '../pages/faculty/QuizManagement';
 import { LearningGapAnalytics } from '../pages/faculty/LearningGapAnalytics';
+import { ClassDashboard } from '../pages/faculty/ClassDashboard';
+import { QuizBuilder } from '../pages/faculty/QuizBuilder';
 
 // Guard wrapper — reads from AuthContext
 const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' }) => {
@@ -40,6 +43,18 @@ const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'st
   return <DashboardLayout role={role} user={user}>{children}</DashboardLayout>;
 };
 
+// Standalone guard wrapper — full window without sidebar/dashboard layout (like login & class picker)
+const StandaloneRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' }) => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== role) return <Navigate to={`/${user.role}`} replace />;
+  return <>{children}</>;
+};
 
 export const AppRoutes = () => {
   return (
@@ -51,8 +66,8 @@ export const AppRoutes = () => {
       <Route path="/student" element={<PrivateRoute role="student"><StudentDashboard /></PrivateRoute>} />
       <Route path="/student/courses" element={<PrivateRoute role="student"><Courses /></PrivateRoute>} />
       <Route path="/student/quiz" element={<PrivateRoute role="student"><Quiz /></PrivateRoute>} />
-      <Route path="/student/quiz/:id" element={<PrivateRoute role="student"><QuizScreen /></PrivateRoute>} />
-      <Route path="/student/quiz/:id/result" element={<PrivateRoute role="student"><QuizResult /></PrivateRoute>} />
+      <Route path="/student/quiz/:id" element={<StandaloneRoute role="student"><QuizScreen /></StandaloneRoute>} />
+      <Route path="/student/quiz/:id/result" element={<StandaloneRoute role="student"><QuizResult /></StandaloneRoute>} />
       <Route path="/student/question-bank" element={<PrivateRoute role="student"><QuestionBank /></PrivateRoute>} />
       <Route path="/student/learning-gaps" element={<PrivateRoute role="student"><LearningGaps /></PrivateRoute>} />
       <Route path="/student/leaderboard" element={<PrivateRoute role="student"><Leaderboard /></PrivateRoute>} />
@@ -60,11 +75,22 @@ export const AppRoutes = () => {
       <Route path="/student/department" element={<PrivateRoute role="student"><DepartmentInfo /></PrivateRoute>} />
 
       {/* Faculty Routes */}
-      <Route path="/faculty" element={<PrivateRoute role="faculty"><FacultyDashboard /></PrivateRoute>} />
+      {/* Stage 2: Standalone Full-Window Class Selector Page */}
+      <Route path="/faculty" element={<StandaloneRoute role="faculty"><FacultyDashboard /></StandaloneRoute>} />
+      {/* Stage 3: Actual Class Dashboard (with Sidebar and DashboardLayout) */}
+      <Route path="/faculty/class/:classId" element={<PrivateRoute role="faculty"><ClassDashboard /></PrivateRoute>} />
+      {/* Class-specific analytics — /faculty/class/:classId/analytics */}
+      <Route path="/faculty/class/:classId/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
+      <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilder /></StandaloneRoute>} />
+      {/* Legacy global analytics — kept for backward compat */}
       <Route path="/faculty/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/students" element={<PrivateRoute role="faculty"><div>Students Management (Placeholder)</div></PrivateRoute>} />
-      <Route path="/faculty/question-bank" element={<PrivateRoute role="faculty"><QuestionBankManagement /></PrivateRoute>} />
-      <Route path="/faculty/quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
+      {/* Question Paper Bank — standalone, no sidebar */}
+      <Route path="/faculty/paper-bank" element={<StandaloneRoute role="faculty"><QuestionPaperBank /></StandaloneRoute>} />
+      {/* Keep old route as redirect */}
+      <Route path="/faculty/question-bank" element={<Navigate to="/faculty/paper-bank" replace />} />
+      {/* Quiz Management — standalone, no sidebar */}
+      <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizManagement /></StandaloneRoute>} />
       <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
       <Route path="/faculty/remedial-quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
       <Route path="/faculty/department" element={<PrivateRoute role="faculty"><DepartmentInfo /></PrivateRoute>} />

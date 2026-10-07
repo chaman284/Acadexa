@@ -64,7 +64,17 @@ export const Quiz: React.FC = () => {
                 <div className="flex gap-3 relative z-10">
                   {activeQuiz && (
                     <Button
-                      onClick={() => navigate(`/student/quiz/${q.id}`)}
+                      onClick={() => {
+                        // Request fullscreen before navigating; QuizScreen will also
+                        // attempt fullscreen on mount as a fallback.
+                        const el = document.documentElement;
+                        if (el.requestFullscreen) {
+                          el.requestFullscreen().catch(() => {});
+                        } else if ((el as any).webkitRequestFullscreen) {
+                          (el as any).webkitRequestFullscreen();
+                        }
+                        navigate(`/student/quiz/${q.id}`);
+                      }}
                       className="!bg-[var(--color-accent)] !text-white hover:!opacity-90"
                       leftIcon={<Play className="w-4 h-4" />}
                     >
@@ -124,7 +134,12 @@ export const Quiz: React.FC = () => {
                 status={q.status}
                 scheduledDate={q.scheduledDate}
                 type={q.type}
-                onStart={() => navigate(`/student/quiz/${q.id}`)}
+              onStart={() => {
+                  const el = document.documentElement;
+                  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                  else if ((el as any).webkitRequestFullscreen) (el as any).webkitRequestFullscreen();
+                  navigate(`/student/quiz/${q.id}`);
+                }}
               />
             ))}
           </div>
@@ -145,7 +160,12 @@ export const Quiz: React.FC = () => {
               difficulty={q.difficulty}
               status={q.status}
               scheduledDate={q.scheduledDate}
-              onStart={() => navigate(`/student/quiz/${q.id}/result`)}
+              onStart={() => {
+                  const el = document.documentElement;
+                  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                  else if ((el as any).webkitRequestFullscreen) (el as any).webkitRequestFullscreen();
+                  navigate(`/student/quiz/${q.id}/result`);
+                }}
             />
           ))}
         </div>
