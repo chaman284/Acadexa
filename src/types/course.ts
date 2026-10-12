@@ -2,6 +2,25 @@
 // COURSE & SUBJECT TYPES
 // ============================================
 
+export interface Topic {
+  id: string;
+  unitId: string;
+  name: string;
+  description?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  isCompleted?: boolean;
+}
+
+export interface Unit {
+  id: string;
+  courseId: string;
+  unitNumber: number;
+  name: string;
+  topics: Topic[];
+  isCompleted: boolean;
+  unitProgress?: number; // percentage 0-100
+}
+
 export interface Course {
   id: string;
   name: string;
@@ -19,19 +38,8 @@ export interface Course {
   nextQuizTopic?: string;
 }
 
-export interface Unit {
-  id: string;
+export interface CourseProgressRecord {
   courseId: string;
-  unitNumber: number;
-  name: string;
-  topics: Topic[];
-  isCompleted: boolean;
-}
-
-export interface Topic {
-  id: string;
-  unitId: string;
-  name: string;
-  description?: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  completedUnitIds: string[];
+  completedTopicIds: string[];
 }

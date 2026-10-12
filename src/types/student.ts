@@ -10,10 +10,25 @@ export interface Student {
   semester: number;
   department: string;
   avatarUrl?: string;
+  phone?: string;
+  bio?: string;
+  academicYear?: string;
+  section?: string;
   enrolledCourses: string[];
   quizAverage: number;
   streak: number;
   learningProgress: number;
+}
+
+export interface StudentSettings {
+  emailNotifications: boolean;
+  quizReminders: boolean;
+  announcementAlerts: boolean;
+  performanceReports: boolean;
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  soundEffects: boolean;
+  autoSaveProgress: boolean;
 }
 
 export interface LeaderboardEntry {

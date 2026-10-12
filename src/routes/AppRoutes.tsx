@@ -19,6 +19,8 @@ import { LearningGaps } from '../pages/student/LearningGaps';
 import { Leaderboard } from '../pages/student/Leaderboard';
 import { AcademicChatbot } from '../pages/student/AcademicChatbot';
 import { DepartmentInfo } from '../pages/student/DepartmentInfo';
+import { StudentProfile } from '../pages/student/StudentProfile';
+import { StudentSettingsPage } from '../pages/student/StudentSettings';
 
 // Faculty Pages
 import { FacultyDashboard } from '../pages/faculty/FacultyDashboard';
@@ -43,7 +45,23 @@ const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'st
   return <DashboardLayout role={role} user={user}>{children}</DashboardLayout>;
 };
 
-// Standalone guard wrapper — full window without sidebar/dashboard layout (like login & class picker)
+// Common Authenticated Route
+const CommonAuthRoute = ({ studentChild, facultyChild }: { studentChild: React.ReactNode; facultyChild: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!user) return <Navigate to="/login" replace />;
+  return (
+    <DashboardLayout role={user.role} user={user}>
+      {user.role === 'student' ? studentChild : facultyChild}
+    </DashboardLayout>
+  );
+};
+
+// Standalone guard wrapper — full window without sidebar/dashboard layout
 const StandaloneRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' }) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return (
@@ -73,31 +91,32 @@ export const AppRoutes = () => {
       <Route path="/student/leaderboard" element={<PrivateRoute role="student"><Leaderboard /></PrivateRoute>} />
       <Route path="/student/tutor" element={<PrivateRoute role="student"><AcademicChatbot /></PrivateRoute>} />
       <Route path="/student/department" element={<PrivateRoute role="student"><DepartmentInfo /></PrivateRoute>} />
+      <Route path="/student/profile" element={<PrivateRoute role="student"><StudentProfile /></PrivateRoute>} />
+      <Route path="/student/settings" element={<PrivateRoute role="student"><StudentSettingsPage /></PrivateRoute>} />
 
       {/* Faculty Routes */}
-      {/* Stage 2: Standalone Full-Window Class Selector Page */}
       <Route path="/faculty" element={<StandaloneRoute role="faculty"><FacultyDashboard /></StandaloneRoute>} />
-      {/* Stage 3: Actual Class Dashboard (with Sidebar and DashboardLayout) */}
       <Route path="/faculty/class/:classId" element={<PrivateRoute role="faculty"><ClassDashboard /></PrivateRoute>} />
-      {/* Class-specific analytics — /faculty/class/:classId/analytics */}
       <Route path="/faculty/class/:classId/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilder /></StandaloneRoute>} />
-      {/* Legacy global analytics — kept for backward compat */}
       <Route path="/faculty/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/students" element={<PrivateRoute role="faculty"><div>Students Management (Placeholder)</div></PrivateRoute>} />
-      {/* Question Paper Bank — standalone, no sidebar */}
       <Route path="/faculty/paper-bank" element={<StandaloneRoute role="faculty"><QuestionPaperBank /></StandaloneRoute>} />
-      {/* Keep old route as redirect */}
       <Route path="/faculty/question-bank" element={<Navigate to="/faculty/paper-bank" replace />} />
-      {/* Quiz Management — standalone, no sidebar */}
       <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizManagement /></StandaloneRoute>} />
       <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
       <Route path="/faculty/remedial-quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
       <Route path="/faculty/department" element={<PrivateRoute role="faculty"><DepartmentInfo /></PrivateRoute>} />
 
-      {/* Common Pages (Placeholders) */}
-      <Route path="/profile" element={<div>Profile Page (Placeholder)</div>} />
-      <Route path="/settings" element={<div>Settings Page (Placeholder)</div>} />
+      {/* Unified Profile & Settings Routes */}
+      <Route
+        path="/profile"
+        element={<CommonAuthRoute studentChild={<StudentProfile />} facultyChild={<StudentProfile />} />}
+      />
+      <Route
+        path="/settings"
+        element={<CommonAuthRoute studentChild={<StudentSettingsPage />} facultyChild={<StudentSettingsPage />} />}
+      />
 
       <Route path="*" element={
         <div className="flex flex-col items-center justify-center min-h-screen">

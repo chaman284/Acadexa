@@ -5,6 +5,7 @@
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type QuestionType = 'mcq' | 'true-false' | 'short-answer' | 'fill-blank';
 export type QuestionStatus = 'approved' | 'pending' | 'draft';
+export type ExamType = 'cie' | 'see' | 'model' | 'practice';
 
 export interface Option {
   id: string;
@@ -31,6 +32,8 @@ export interface Question {
   createdAt: string;
   attempts: number;
   correctRate: number;
+  examType?: ExamType;
+  marks?: number;
 }
 
 export interface Quiz {

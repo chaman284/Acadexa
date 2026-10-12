@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 interface Breadcrumb {
   label: string;
   href?: string;
+  to?: string;
 }
 
 interface PageHeaderProps {
@@ -28,6 +29,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <React.Fragment key={i}>
                 {i > 0 && <ChevronRight className="w-3 h-3 text-[var(--color-text-muted)]" />}
                 <span
+                  onClick={() => {
+                    if (crumb.to) window.location.hash = ''; // or navigate
+                    if (crumb.href) window.location.href = crumb.href;
+                  }}
                   className={
                     i === breadcrumbs.length - 1
                       ? 'text-xs text-[var(--color-text-muted)]'
