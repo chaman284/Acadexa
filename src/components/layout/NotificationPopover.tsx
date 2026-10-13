@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { Bell, Check, CheckCheck, Trash2, ExternalLink, Sparkles, BookOpen, ClipboardList, Info, AlertCircle } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
+import { useAuth } from '../../context/AuthContext';
 import type { Notification, NotificationType } from '../../types/notification';
 
 interface NotificationPopoverProps {
@@ -37,13 +38,15 @@ const formatTimeAgo = (dateStr: string) => {
 };
 
 export const NotificationPopover: React.FC<NotificationPopoverProps> = ({ onNotificationClick }) => {
+  const { user } = useAuth();
+  const role = user?.role;
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const loadNotifications = () => {
-    setNotifications(notificationService.getNotifications());
+    setNotifications(notificationService.getNotifications(role));
   };
 
   useEffect(() => {
@@ -73,13 +76,13 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({ onNoti
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleMarkAllRead = () => {
-    const updated = notificationService.markAllAsRead();
+    const updated = notificationService.markAllAsRead(role);
     setNotifications(updated);
   };
 
   const handleItemClick = (notification: Notification) => {
     if (!notification.isRead) {
-      const updated = notificationService.markAsRead(notification.id);
+      const updated = notificationService.markAsRead(notification.id, role);
       setNotifications(updated);
     }
     if (notification.actionUrl) {
@@ -91,7 +94,7 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({ onNoti
 
   const handleDeleteItem = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const updated = notificationService.clearNotification(id);
+    const updated = notificationService.clearNotification(id, role);
     setNotifications(updated);
   };
 

@@ -31,6 +31,8 @@ import { QuizManagement } from '../pages/faculty/QuizManagement';
 import { LearningGapAnalytics } from '../pages/faculty/LearningGapAnalytics';
 import { ClassDashboard } from '../pages/faculty/ClassDashboard';
 import { QuizBuilder } from '../pages/faculty/QuizBuilder';
+import { FacultyProfile } from '../pages/faculty/FacultyProfile';
+import { FacultySettings } from '../pages/faculty/FacultySettings';
 
 // Guard wrapper — reads from AuthContext
 const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' }) => {
@@ -107,15 +109,17 @@ export const AppRoutes = () => {
       <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
       <Route path="/faculty/remedial-quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
       <Route path="/faculty/department" element={<PrivateRoute role="faculty"><DepartmentInfo /></PrivateRoute>} />
+      <Route path="/faculty/profile" element={<PrivateRoute role="faculty"><FacultyProfile /></PrivateRoute>} />
+      <Route path="/faculty/settings" element={<PrivateRoute role="faculty"><FacultySettings /></PrivateRoute>} />
 
       {/* Unified Profile & Settings Routes */}
       <Route
         path="/profile"
-        element={<CommonAuthRoute studentChild={<StudentProfile />} facultyChild={<StudentProfile />} />}
+        element={<CommonAuthRoute studentChild={<StudentProfile />} facultyChild={<FacultyProfile />} />}
       />
       <Route
         path="/settings"
-        element={<CommonAuthRoute studentChild={<StudentSettingsPage />} facultyChild={<StudentSettingsPage />} />}
+        element={<CommonAuthRoute studentChild={<StudentSettingsPage />} facultyChild={<FacultySettings />} />}
       />
 
       <Route path="*" element={

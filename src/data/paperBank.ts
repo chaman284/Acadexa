@@ -16,6 +16,9 @@ export interface PreviousYearPaper {
   uploadedAt: string;
   tags: string[];      // topics covered
   fileSize?: string;
+  fileName?: string;
+  fileData?: string;
+  fileType?: string;
 }
 
 export interface SubjectPaperGroup {

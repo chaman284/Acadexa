@@ -61,7 +61,7 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const nextQuiz = mockQuizzes.find(q => q.status === 'active' || q.status === 'upcoming');
-  const recentEvents = departmentEvents.slice(0, 3);
+  const recentEvents = departmentEvents;
 
   // Overall average course progress
   const averageProgress = courses.length > 0
@@ -151,9 +151,9 @@ export const StudentDashboard: React.FC = () => {
       )}
 
       {/* Priority Activities & Schedule */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 items-start">
         {/* Upcoming Schedule / Department Events */}
-        <Card>
+        <Card className="h-fit">
           <CardHeader
             title="Upcoming Schedule"
             subtitle="Exams & department calendar"
@@ -170,14 +170,14 @@ export const StudentDashboard: React.FC = () => {
             {recentEvents.map(ev => (
               <div key={ev.id} className="p-3 rounded-xl border border-[var(--color-border)] flex items-start gap-3">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  ev.category === 'exam' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                  ev.category === 'exam' ? 'bg-rose-50 text-rose-600' : ev.category === 'deadline' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
                 }`}>
                   <Calendar className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">{ev.title}</span>
-                    <Badge color={ev.category === 'exam' ? 'red' : 'amber'} className="text-[9px] py-0 px-1 capitalize">
+                    <Badge color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'indigo' : 'amber'} className="text-[9px] py-0 px-1 capitalize">
                       {ev.category}
                     </Badge>
                   </div>
@@ -191,7 +191,7 @@ export const StudentDashboard: React.FC = () => {
         </Card>
 
         {/* Class Leaderboard */}
-        <Card padding="none">
+        <Card padding="none" className="h-fit">
           <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between flex-wrap gap-3">
             <h3 className="font-semibold text-[var(--color-text-primary)]">Class Leaderboard</h3>
             <ControlledTabs tabs={leaderboardTabs} activeTab={leaderboardTab} onChange={setLeaderboardTab} />
