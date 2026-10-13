@@ -51,35 +51,75 @@ export const LearningGaps: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* All topics performance */}
-        <Card>
-          <CardHeader title="Topic Performance" subtitle="All subjects this semester" />
-          <div className="space-y-3">
-            {mockTopicPerformance.map(topic => (
-              <div key={topic.topicId}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm text-[var(--color-text-secondary)] truncate">{topic.topicName}</span>
-                    <span className="text-xs text-[var(--color-text-muted)] flex-shrink-0 hidden sm:inline">{topic.subjectName}</span>
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
+        {/* Left Column: Topic Performance & Topic Breakdowns */}
+        <div className="space-y-6">
+          {/* All topics performance */}
+          <Card>
+            <CardHeader
+              title="Topic Performance"
+              subtitle="All subjects this semester"
+              action={<span className="text-xs text-[var(--color-text-muted)] font-medium">{mockTopicPerformance.length} Topics</span>}
+            />
+            <div className="space-y-3.5">
+              {mockTopicPerformance.map(topic => (
+                <div key={topic.topicId}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm text-[var(--color-text-secondary)] truncate">{topic.topicName}</span>
+                      <span className="text-xs text-[var(--color-text-muted)] flex-shrink-0 hidden sm:inline">{topic.subjectName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                      <Badge
+                        color={topic.category === 'strong' ? 'green' : topic.category === 'needs-practice' ? 'red' : 'amber'}
+                        className="text-[10px] hidden sm:inline-flex"
+                      >
+                        {topic.category === 'strong' ? 'Strong' : topic.category === 'needs-practice' ? 'Practice' : 'Improving'}
+                      </Badge>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{topic.score}%</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                    <Badge
-                      color={topic.category === 'strong' ? 'green' : topic.category === 'needs-practice' ? 'red' : 'amber'}
-                      className="text-[10px] hidden sm:inline-flex"
-                    >
-                      {topic.category === 'strong' ? 'Strong' : topic.category === 'needs-practice' ? 'Practice' : 'Improving'}
-                    </Badge>
-                    <span className="text-sm font-bold text-[var(--color-text-primary)]">{topic.score}%</span>
-                  </div>
+                  <ProgressBar value={topic.score} height="xs" />
                 </div>
-                <ProgressBar value={topic.score} height="xs" />
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
 
-        {/* Recommendations */}
+          {/* Strong vs Weak breakdown */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader
+                title="Strong Topics"
+                action={<CheckCircle className="w-4 h-4 text-[var(--color-success)]" />}
+              />
+              <div className="space-y-2">
+                {strong.map(t => (
+                  <div key={t.topicId} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
+                    <span className="text-sm text-[var(--color-text-secondary)] truncate mr-2">{t.topicName}</span>
+                    <Badge color="green">{t.score}%</Badge>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Topics Needing Attention"
+                action={<AlertTriangle className="w-4 h-4 text-[var(--color-danger)]" />}
+              />
+              <div className="space-y-2">
+                {needsPractice.map(t => (
+                  <div key={t.topicId} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
+                    <span className="text-sm text-[var(--color-text-secondary)] truncate mr-2">{t.topicName}</span>
+                    <Badge color="red">{t.score}%</Badge>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Right Column: Recommendations */}
         <div className="space-y-4">
           <h2 className="font-semibold text-[var(--color-text-primary)]">Recommended Practice</h2>
           {studentLearningGaps.map(gap => (
@@ -121,38 +161,6 @@ export const LearningGaps: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Strong vs Weak breakdown */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader
-            title="Strong Topics"
-            action={<CheckCircle className="w-4 h-4 text-[var(--color-success)]" />}
-          />
-          <div className="space-y-2">
-            {strong.map(t => (
-              <div key={t.topicId} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
-                <span className="text-sm text-[var(--color-text-secondary)]">{t.topicName}</span>
-                <Badge color="green">{t.score}%</Badge>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card>
-          <CardHeader
-            title="Topics Needing Attention"
-            action={<AlertTriangle className="w-4 h-4 text-[var(--color-danger)]" />}
-          />
-          <div className="space-y-2">
-            {needsPractice.map(t => (
-              <div key={t.topicId} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
-                <span className="text-sm text-[var(--color-text-secondary)]">{t.topicName}</span>
-                <Badge color="red">{t.score}%</Badge>
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
     </div>
   );
