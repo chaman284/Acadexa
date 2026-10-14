@@ -45,14 +45,15 @@ model Section {
 }
 
 model Subject {
-  id           String           @id @default(cuid())
+  id           String             @id @default(cuid())
   name         String
   code         String
   departmentId String
-  department   Department       @relation(fields: [departmentId], references: [id])
+  department   Department         @relation(fields: [departmentId], references: [id])
   assignments  FacultySubject[]
   quizzes      Quiz[]
   topics       Topic[]
+  syllabusDocs SyllabusDocument[]
 }
 
 model Student {
@@ -83,22 +84,26 @@ model FacultySubject {
 }
 
 model Topic {
-  id        String     @id @default(cuid())
-  name      String
-  subjectId String
-  subject   Subject    @relation(fields: [subjectId], references: [id])
-  questions Question[]
+  id           String             @id @default(cuid())
+  name         String
+  subjectId    String
+  subject      Subject            @relation(fields: [subjectId], references: [id])
+  questions    Question[]
+  syllabusDocs SyllabusDocument[]
 }
 
 model Question {
-  id            String         @id @default(cuid())
-  text          String
-  type          QuestionType   @default(MCQ)
-  difficulty    Difficulty     @default(MEDIUM)
-  topicId       String
-  topic         Topic          @relation(fields: [topicId], references: [id])
-  options       Option[]
-  quizQuestions QuizQuestion[]
+  id             String          @id @default(cuid())
+  text           String
+  type           QuestionType    @default(MCQ)
+  difficulty     Difficulty      @default(MEDIUM)
+  cognitiveLevel CognitiveLevel  @default(CL1_REMEMBER)
+  status         QuestionStatus  @default(APPROVED)
+  explanation    String?
+  topicId        String
+  topic          Topic           @relation(fields: [topicId], references: [id])
+  options        Option[]
+  quizQuestions  QuizQuestion[]
   attemptAnswers AttemptAnswer[]
 }
 
@@ -112,6 +117,21 @@ enum Difficulty {
   EASY
   MEDIUM
   HARD
+}
+
+enum CognitiveLevel {
+  CL1_REMEMBER
+  CL2_UNDERSTAND
+  CL3_APPLY
+  CL4_ANALYZE
+  CL5_EVALUATE
+  CL6_CREATE
+}
+
+enum QuestionStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
 }
 
 model Option {
@@ -179,4 +199,32 @@ model AttemptAnswer {
   question   Question    @relation(fields: [questionId], references: [id])
   optionId   String
   isCorrect  Boolean
+}
+
+model SyllabusDocument {
+  id         String   @id @default(cuid())
+  subject    String
+  topic      String
+  content    String   @db.Text
+  subjectId  String?
+  subjectRel Subject? @relation(fields: [subjectId], references: [id])
+  topicId    String?
+  topicRel   Topic?   @relation(fields: [topicId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+enum DeptInfoType {
+  HOLIDAY
+  EVENT
+  ACHIEVEMENT
+}
+
+model DeptInformation {
+  id          String       @id @default(cuid())
+  type        DeptInfoType
+  title       String
+  date        DateTime
+  description String       @db.Text
+  targetDept  String       @default("ALL")
+  createdAt   DateTime     @default(now())
 }
