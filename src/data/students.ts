@@ -14,6 +14,11 @@ export const mockCurrentStudent: Student = {
 };
 
 export const mockStudents: Student[] = [
+  {
+    id: 'stu_rehan', name: 'Rehan Patel', email: 'rehan@cs.college.edu', rollNumber: '21CS001',
+    semester: 5, department: 'Computer Science', enrolledCourses: ['c1', 'c2', 'c3', 'c4'],
+    quizAverage: 88, streak: 14, learningProgress: 20,
+  },
   mockCurrentStudent,
   {
     id: 'stu002', name: 'Priya Nair', email: 'priya@cs.college.edu', rollNumber: '21CS046',

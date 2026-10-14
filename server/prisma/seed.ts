@@ -47,6 +47,29 @@ async function main() {
   });
   console.log('✅ Student user:', studentUser.email);
 
+  // 3b. Rehan Patel Student user
+  const rehanHash = await bcrypt.hash('rehan123', 10);
+  const rehanUser = await prisma.user.upsert({
+    where: { email: 'rehan@cs.college.edu' },
+    update: {
+      name: 'Rehan Patel',
+      passwordHash: rehanHash,
+    },
+    create: {
+      email: 'rehan@cs.college.edu',
+      passwordHash: rehanHash,
+      name: 'Rehan Patel',
+      role: 'STUDENT',
+      student: {
+        create: {
+          rollNo: '21CS001',
+          sectionId: section.id,
+        },
+      },
+    },
+  });
+  console.log('✅ Student user:', rehanUser.email);
+
   // 4. Demo Faculty user
   const facultyHash = await bcrypt.hash('faculty123', 10);
   const facultyUser = await prisma.user.upsert({
@@ -63,6 +86,26 @@ async function main() {
     },
   });
   console.log('✅ Faculty user:', facultyUser.email);
+
+  // 4b. Soumya Faculty user
+  const soumyaHash = await bcrypt.hash('soumya123', 10);
+  const soumyaUser = await prisma.user.upsert({
+    where: { email: 'soumya@cs.college.edu' },
+    update: {
+      name: 'Soumya',
+      passwordHash: soumyaHash,
+    },
+    create: {
+      email: 'soumya@cs.college.edu',
+      passwordHash: soumyaHash,
+      name: 'Soumya',
+      role: 'FACULTY',
+      faculty: {
+        create: {},
+      },
+    },
+  });
+  console.log('✅ Faculty user:', soumyaUser.email);
 
   // 5. Subject
   const subject = await prisma.subject.upsert({
@@ -179,12 +222,29 @@ async function main() {
         sectionId: section.id,
       },
     });
-    console.log('✅ Faculty assignment created');
+    console.log('✅ Faculty assignment created for Dr. Ramesh');
+  }
+
+  const soumyaRecord = await prisma.faculty.findUnique({ where: { userId: soumyaUser.id } });
+  if (soumyaRecord) {
+    await prisma.facultySubject.upsert({
+      where: { id: 'fa-assign-soumya' },
+      update: {},
+      create: {
+        id: 'fa-assign-soumya',
+        facultyId: soumyaRecord.id,
+        subjectId: subject.id,
+        sectionId: section.id,
+      },
+    });
+    console.log('✅ Faculty assignment created for Soumya');
   }
 
   console.log('\n🎉 Seed complete!');
-  console.log('Student:  chaman@cs.college.edu / student123');
-  console.log('Faculty:  faculty@cs.college.edu / faculty123');
+  console.log('Student:  rehan@cs.college.edu / rehan123  (Rehan Patel)');
+  console.log('Student:  chaman@cs.college.edu / student123  (Chaman)');
+  console.log('Faculty:  soumya@cs.college.edu / soumya123  (Soumya)');
+  console.log('Faculty:  faculty@cs.college.edu / faculty123  (Dr. Ramesh)');
 }
 
 main()

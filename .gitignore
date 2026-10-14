@@ -7,12 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
-*.local
 
-# Editor directories and files
+# Environment Variables & Secrets
+.env
+.env.*
+*.env
+*.env.*
+*.local
+!.env.example
+!server/.env.example
+
+# Editor & OS files
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,3 +31,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.tsbuildinfo
+
+# Agent Skills & Tool Configs
+.agents/
+skills-lock.json

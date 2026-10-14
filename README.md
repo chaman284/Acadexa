@@ -120,6 +120,7 @@ graph TD
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Audio & FX**: Web Audio API Synthesizer + [Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)
 - **HTTP Client**: [Axios](https://axios-http.com/)
+- **BaaS / Database Client**: [Supabase JS Client](https://supabase.com/docs/reference/javascript/introduction) (`@supabase/supabase-js`)
 - **Code Linter**: [Oxlint](https://oxc.rs/)
 
 ### Backend
@@ -127,7 +128,8 @@ graph TD
 - **Framework**: [Express 5](https://expressjs.com/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/) (executed with `ts-node-dev`)
 - **ORM**: [Prisma 5.22](https://www.prisma.io/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **Database**: [PostgreSQL (Supabase Hosted / Local)](https://supabase.com/)
+- **Server Utilities**: [@supabase/server](https://www.npmjs.com/package/@supabase/server)
 - **Authentication**: [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) + [bcryptjs](https://github.com/dcodeIO/bcrypt.js)
 - **AI Integration**: [Google Gemini 1.5 Flash API](https://ai.google.dev/)
 - **Cross-Origin**: [cors](https://expressjs.com/en/resources/middleware/cors.html)
@@ -218,6 +220,8 @@ Acadexa/
 ├── tailwind.config.js       # Tailwind CSS theme tokens & styles
 ├── tsconfig.json            # Root TypeScript compiler options
 ├── .oxlintrc.json           # Fast Oxlint rules configuration
+├── .env.example             # Frontend environment variables template
+├── .agents/skills/          # Installed Supabase Agent Skills
 │
 ├── src/                     # Frontend Application
 │   ├── main.tsx             # Application entry point
@@ -245,7 +249,11 @@ Acadexa/
 │   │   └── students.ts      # Student roster & cohort metadata
 │   │
 │   ├── lib/                 # Core Utilities
-│   │   └── apiClient.ts     # Axios instance configured with JWT interceptors
+│   │   ├── apiClient.ts     # Axios instance configured with JWT interceptors
+│   │   └── supabase.ts      # Supabase JavaScript client singleton
+│   │
+│   ├── utils/               # Helper Utilities
+│   │   └── supabase/        # Supabase client helper
 │   │
 │   ├── pages/               # Application Route Views
 │   │   ├── auth/            # Login.tsx
@@ -262,7 +270,7 @@ Acadexa/
 └── server/                  # Backend Application
     ├── package.json         # Server dependencies & scripts
     ├── tsconfig.json        # Server TypeScript configuration
-    ├── .env                 # Backend environment configuration
+    ├── .env.example         # Backend environment variables template
     │
     ├── prisma/              # Database Schema & Migrations
     │   ├── schema.prisma    # PostgreSQL Prisma relational schema
@@ -311,14 +319,24 @@ npm install
 ```
 
 #### Configure Environment Variables
-Create or verify `server/.env`:
+Create `server/.env` (copy from `server/.env.example`):
 ```env
 PORT=3001
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/acadexa?schema=public"
+CORS_ORIGIN="http://localhost:5173"
+
+# Supabase or Local PostgreSQL
+# Note: If your password contains special characters like '@', percent-encode them (e.g., '@' -> '%40')
+DATABASE_URL="postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres?schema=public"
+
 JWT_SECRET="your_secure_jwt_secret_key"
 JWT_EXPIRES_IN="7d"
-CORS_ORIGIN="http://localhost:5173"
 GEMINI_API_KEY="your_optional_gemini_api_key_here"
+
+# Supabase Server Configuration
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
+SUPABASE_SECRET_KEY="your-secret-key"
+SUPABASE_JWKS_URL="https://your-project.supabase.co/auth/v1/.well-known/jwks.json"
 ```
 
 #### Run Database Migrations & Seed Data
@@ -326,8 +344,11 @@ GEMINI_API_KEY="your_optional_gemini_api_key_here"
 # Generate Prisma Client
 npm run prisma:generate
 
-# Run Migrations against your PostgreSQL database
-npm run prisma:migrate
+# Sync schema directly to Supabase / PostgreSQL
+npx prisma db push
+
+# (Alternative) Run traditional Prisma migrations
+# npm run prisma:migrate
 
 # Seed Demo Users, Subjects, Questions, and Quizzes
 npm run seed
@@ -351,7 +372,17 @@ cd ..
 
 # Install frontend dependencies
 npm install
+```
 
+#### Configure Frontend Environment Variables
+Create `.env.local` in the root directory (copy from `.env.example`):
+```env
+VITE_SUPABASE_URL="https://your-project.supabase.co"
+VITE_SUPABASE_ANON_KEY="your-anon-or-publishable-key"
+```
+
+#### Start Frontend Server
+```bash
 # Start Vite development server
 npm run dev
 ```
@@ -376,16 +407,27 @@ Pre-configured demo accounts ready for testing:
 
 ## ⚙️ Environment Variables
 
+### Frontend (`.env.local`)
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `VITE_SUPABASE_URL` | String | - | Supabase Project URL |
+| `VITE_SUPABASE_ANON_KEY` | String | - | Supabase Publishable / Anon Client Key |
+
 ### Server (`server/.env`)
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `PORT` | Number | `3001` | Express server port |
-| `DATABASE_URL` | String | - | PostgreSQL connection string |
+| `DATABASE_URL` | String | - | Supabase or local PostgreSQL connection URL |
 | `JWT_SECRET` | String | `acadexa_super_secret...` | Key used for signing JWT authentication tokens |
 | `JWT_EXPIRES_IN` | String | `7d` | Token validity period |
 | `CORS_ORIGIN` | String | `http://localhost:5173` | Allowed frontend origin |
 | `GEMINI_API_KEY` | String | `""` | Google AI Studio key for live Gemini 1.5 Flash tutor responses |
+| `SUPABASE_URL` | String | - | Supabase Project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | String | - | Supabase Publishable API Key |
+| `SUPABASE_SECRET_KEY` | String | - | Supabase Secret Key (Server-side only) |
+| `SUPABASE_JWKS_URL` | String | - | Supabase Auth JWKS verification URL |
 
 ---
 

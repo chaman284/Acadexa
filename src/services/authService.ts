@@ -13,9 +13,17 @@ export interface AuthUser {
 
 // Mocked credentials for offline / development fallback
 const MOCK_USERS: Record<string, { password: string; user: AuthUser }> = {
+  'rehan@cs.college.edu': {
+    password: 'rehan123',
+    user: { id: 'stu_rehan', name: 'Rehan Patel', email: 'rehan@cs.college.edu', role: 'student' },
+  },
   'chaman@cs.college.edu': {
     password: 'student123',
     user: { id: 'stu001', name: 'Chaman', email: 'chaman@cs.college.edu', role: 'student' },
+  },
+  'soumya@cs.college.edu': {
+    password: 'soumya123',
+    user: { id: 'fac_soumya', name: 'Soumya', email: 'soumya@cs.college.edu', role: 'faculty' },
   },
   'faculty@cs.college.edu': {
     password: 'faculty123',
