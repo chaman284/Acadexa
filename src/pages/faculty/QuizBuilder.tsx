@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Check,
   BookOpen, Clock, BarChart2, Layers,
-  Plus, Trash2, Sparkles, Users, GraduationCap,
+  Plus, Trash2, Sparkles, Users, GraduationCap, CheckCircle2, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { facultyClasses } from '../../data/facultyClasses';
 import { mockQuestions } from '../../data/quizzes';
+import { questionService } from '../../services/quizService';
+import type { Question } from '../../types/quiz';
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 const steps = ['Quiz Details', 'Questions', 'Assign & Schedule'];
@@ -74,6 +76,18 @@ export const QuizBuilder: React.FC = () => {
   // Step 2 state
   const [selectedQIds, setSelectedQIds] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [availableQuestions, setAvailableQuestions] = useState<Question[]>(
+    mockQuestions.filter(q => q.status === 'approved')
+  );
+
+  useEffect(() => {
+    questionService.getQuestions({ status: 'APPROVED' }).then(res => {
+      const approvedOnly = res.filter(q => q.status === 'approved');
+      if (approvedOnly.length > 0) {
+        setAvailableQuestions(approvedOnly);
+      }
+    });
+  }, []);
 
   // Step 3 state
   const [assignedClassIds, setAssignedClassIds] = useState<string[]>([]);
@@ -88,8 +102,8 @@ export const QuizBuilder: React.FC = () => {
 
   const simulateAI = async () => {
     setAiLoading(true);
-    await new Promise(r => setTimeout(r, 1400));
-    setSelectedQIds(mockQuestions.slice(0, 4).map(q => q.id));
+    await new Promise(r => setTimeout(r, 1000));
+    setSelectedQIds(availableQuestions.slice(0, 4).map(q => q.id));
     setAiLoading(false);
   };
 
@@ -223,8 +237,16 @@ export const QuizBuilder: React.FC = () => {
             </Button>
           </div>
 
+          {/* Approved questions notice */}
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <span>
+              <strong>Verified Items Only:</strong> Only questions with <strong>APPROVED</strong> status from the Question Bank are available for weekly quizzes.
+            </span>
+          </div>
+
           <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-            {mockQuestions.map(q => {
+            {availableQuestions.map(q => {
               const selected = selectedQIds.includes(q.id);
               return (
                 <button

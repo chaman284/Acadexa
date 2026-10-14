@@ -112,38 +112,170 @@ export const quizService = {
   },
 };
 
+// Helper to map DB/API Question to Frontend Question
+const mapApiQuestion = (q: any): Question => ({
+  id: q.id,
+  text: q.text,
+  courseId: q.topic?.subjectId || q.courseId || 'c1',
+  courseName: q.topic?.subject?.name || q.courseName || 'Data Structures & Algorithms',
+  unitId: q.unitId || 'u1',
+  unitName: q.unitName || 'Core Curriculum',
+  topicId: q.topicId || 't1',
+  topicName: q.topic?.name || q.topicName || 'General',
+  difficulty: (q.difficulty || 'MEDIUM').toLowerCase() as any,
+  type: q.type === 'MCQ' ? 'mcq' : (q.type?.toLowerCase() || 'mcq') as any,
+  options: (q.options || []).map((opt: any) => ({
+    id: opt.id,
+    text: opt.text,
+    isCorrect: Boolean(opt.isCorrect),
+  })),
+  explanation: q.explanation || '',
+  status:
+    (q.status || 'APPROVED').toLowerCase().includes('pending')
+      ? 'pending'
+      : (q.status || 'APPROVED').toLowerCase().includes('draft')
+      ? 'draft'
+      : 'approved',
+  isAiGenerated: q.status === 'PENDING_APPROVAL' || q.status === 'pending' || Boolean(q.isAiGenerated),
+  createdBy: q.createdBy || (q.status === 'PENDING_APPROVAL' ? 'Gemini 1.5 AI' : 'Faculty Member'),
+  createdAt: q.createdAt || new Date().toISOString(),
+  attempts: q.attempts || 0,
+  correctRate: q.correctRate || 0,
+  cognitiveLevel: q.cognitiveLevel || 'CL2_UNDERSTAND',
+  examType: q.examType || 'cie',
+  marks: q.marks || 2,
+});
+
 export const questionService = {
   /** GET /api/questions */
-  getQuestions: async (filters?: Partial<Question>): Promise<Question[]> => {
+  getQuestions: async (filters?: {
+    topicId?: string;
+    difficulty?: string;
+    status?: string;
+    cognitiveLevel?: string;
+    subjectId?: string;
+    search?: string;
+  }): Promise<Question[]> => {
     try {
       const res = await api.get('/questions', { params: filters });
-      if (res.data && res.data.length > 0) return res.data;
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        return res.data.map(mapApiQuestion);
+      }
     } catch (e) {
       console.warn('API getQuestions fallback to mock', e);
     }
     return mockQuestions;
   },
 
-  /** POST /api/questions/generate (AI) */
-  generateQuestions: async (_params: {
-    courseId: string;
-    unitId: string;
-    topicId: string;
+  /** POST /api/questions/generate (Gemini 1.5 AIG) */
+  generateQuestions: async (params: {
+    subject: string;
+    topic: string;
     difficulty: string;
-    type: string;
-    count: number;
+    bloomsLevel?: string;
+    cognitiveLevel?: string;
+    count?: number;
+    topicId?: string;
   }): Promise<Question[]> => {
-    await new Promise(r => setTimeout(r, 1500));
-    return mockQuestions.filter(q => q.isAiGenerated);
+    try {
+      const res = await api.post('/questions/generate', {
+        subject: params.subject,
+        topic: params.topic,
+        difficulty: params.difficulty,
+        bloomsLevel: params.bloomsLevel || params.cognitiveLevel,
+        cognitiveLevel: params.cognitiveLevel || params.bloomsLevel,
+        count: params.count || 3,
+        topicId: params.topicId,
+      });
+
+      if (res.data?.questions && Array.isArray(res.data.questions)) {
+        return res.data.questions.map(mapApiQuestion);
+      }
+    } catch (e) {
+      console.warn('API generateQuestions fallback to simulated generation', e);
+    }
+
+    // Fallback in case of network issues
+    const fallbackCognitive = params.bloomsLevel || params.cognitiveLevel || 'CL2_UNDERSTAND';
+    return [
+      {
+        id: `gen_${Date.now()}_1`,
+        text: `In ${params.subject}, which principle best describes ${params.topic} under ${params.difficulty} requirements?`,
+        courseId: 'c1',
+        courseName: params.subject,
+        unitId: 'u1',
+        unitName: 'Unit 1',
+        topicId: params.topicId || 't1',
+        topicName: params.topic,
+        difficulty: params.difficulty.toLowerCase() as any,
+        type: 'mcq',
+        options: [
+          { id: 'opt_1', text: `Primary invariant property of ${params.topic}`, isCorrect: true },
+          { id: 'opt_2', text: `Secondary non-deterministic condition`, isCorrect: false },
+          { id: 'opt_3', text: `Degenerate boundary case without balancing`, isCorrect: false },
+          { id: 'opt_4', text: `Asymptotic upper bound violation`, isCorrect: false },
+        ],
+        explanation: `Pedagogical analysis targeting Bloom's ${fallbackCognitive} demonstrates that evaluating structural invariants ensures correctness.`,
+        status: 'pending',
+        isAiGenerated: true,
+        createdBy: 'Gemini 1.5 AI',
+        createdAt: new Date().toISOString(),
+        attempts: 0,
+        correctRate: 0,
+        cognitiveLevel: fallbackCognitive,
+        examType: 'cie',
+        marks: 2,
+      },
+    ];
   },
 
-  /** PATCH /api/questions/:id */
-  approveQuestion: async (questionId: string): Promise<void> => {
+  /** PATCH /api/questions/:id/review (Approve Question) */
+  approveQuestion: async (questionId: string): Promise<Question | null> => {
     try {
-      await api.put(`/questions/${questionId}`, { approved: true });
+      const res = await api.patch(`/questions/${questionId}/review`, { status: 'APPROVED' });
+      if (res.data?.question) {
+        return mapApiQuestion(res.data.question);
+      }
     } catch (e) {
       console.warn('API approveQuestion fallback', e);
     }
+    return null;
+  },
+
+  /** PATCH /api/questions/:id/review (Reject Question) */
+  rejectQuestion: async (questionId: string): Promise<boolean> => {
+    try {
+      await api.patch(`/questions/${questionId}/review`, { action: 'reject' });
+      return true;
+    } catch (e) {
+      console.warn('API rejectQuestion fallback', e);
+      return false;
+    }
+  },
+
+  /** PATCH /api/questions/:id/review (Edit & Review) */
+  reviewQuestion: async (
+    questionId: string,
+    data: {
+      status?: string;
+      text?: string;
+      difficulty?: string;
+      cognitiveLevel?: string;
+      bloomsLevel?: string;
+      explanation?: string;
+      options?: { text: string; isCorrect: boolean }[];
+      action?: 'approve' | 'reject';
+    }
+  ): Promise<Question | null> => {
+    try {
+      const res = await api.patch(`/questions/${questionId}/review`, data);
+      if (res.data?.question) {
+        return mapApiQuestion(res.data.question);
+      }
+    } catch (e) {
+      console.warn('API reviewQuestion fallback', e);
+    }
+    return null;
   },
 
   /** DELETE /api/questions/:id */
@@ -155,3 +287,4 @@ export const questionService = {
     }
   },
 };
+

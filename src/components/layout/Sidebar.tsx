@@ -52,10 +52,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ? [
         { to: `/faculty/class/${classId}`, label: 'Overview', icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, end: true },
         { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/question-bank', label: 'Question Bank', icon: <Database className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/paper-bank', label: 'Paper Bank', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
       ]
     : [
         { to: '/faculty', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, end: true },
         { to: '/faculty/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/question-bank', label: 'Question Bank', icon: <Database className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/paper-bank', label: 'Paper Bank', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
       ];
 
   const navItems = role === 'student' ? studentNav : facultyNav;

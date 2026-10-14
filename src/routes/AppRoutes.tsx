@@ -14,7 +14,7 @@ import { Courses } from '../pages/student/Courses';
 import { Quiz } from '../pages/student/Quiz';
 import { QuizScreen } from '../pages/student/QuizScreen';
 import { QuizResult } from '../pages/student/QuizResult';
-import { QuestionBank } from '../pages/student/QuestionBank';
+import { QuestionBank as StudentQuestionBank } from '../pages/student/QuestionBank';
 import { LearningGaps } from '../pages/student/LearningGaps';
 import { Leaderboard } from '../pages/student/Leaderboard';
 import { AcademicChatbot } from '../pages/student/AcademicChatbot';
@@ -25,7 +25,7 @@ import { StudentSettingsPage } from '../pages/student/StudentSettings';
 // Faculty Pages
 import { FacultyDashboard } from '../pages/faculty/FacultyDashboard';
 import { ClassAnalytics } from '../pages/faculty/ClassAnalytics';
-import { QuestionBankManagement } from '../pages/faculty/QuestionBankManagement';
+import { QuestionBank as FacultyQuestionBank } from '../pages/faculty/QuestionBank';
 import { QuestionPaperBank } from '../pages/faculty/QuestionPaperBank';
 import { QuizManagement } from '../pages/faculty/QuizManagement';
 import { LearningGapAnalytics } from '../pages/faculty/LearningGapAnalytics';
@@ -88,7 +88,7 @@ export const AppRoutes = () => {
       <Route path="/student/quiz" element={<PrivateRoute role="student"><Quiz /></PrivateRoute>} />
       <Route path="/student/quiz/:id" element={<StandaloneRoute role="student"><QuizScreen /></StandaloneRoute>} />
       <Route path="/student/quiz/:id/result" element={<StandaloneRoute role="student"><QuizResult /></StandaloneRoute>} />
-      <Route path="/student/question-bank" element={<PrivateRoute role="student"><QuestionBank /></PrivateRoute>} />
+      <Route path="/student/question-bank" element={<PrivateRoute role="student"><StudentQuestionBank /></PrivateRoute>} />
       <Route path="/student/learning-gaps" element={<PrivateRoute role="student"><LearningGaps /></PrivateRoute>} />
       <Route path="/student/leaderboard" element={<PrivateRoute role="student"><Leaderboard /></PrivateRoute>} />
       <Route path="/student/tutor" element={<PrivateRoute role="student"><AcademicChatbot /></PrivateRoute>} />
@@ -104,7 +104,7 @@ export const AppRoutes = () => {
       <Route path="/faculty/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/students" element={<PrivateRoute role="faculty"><div>Students Management (Placeholder)</div></PrivateRoute>} />
       <Route path="/faculty/paper-bank" element={<StandaloneRoute role="faculty"><QuestionPaperBank /></StandaloneRoute>} />
-      <Route path="/faculty/question-bank" element={<Navigate to="/faculty/paper-bank" replace />} />
+      <Route path="/faculty/question-bank" element={<PrivateRoute role="faculty"><FacultyQuestionBank /></PrivateRoute>} />
       <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizManagement /></StandaloneRoute>} />
       <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
       <Route path="/faculty/remedial-quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
