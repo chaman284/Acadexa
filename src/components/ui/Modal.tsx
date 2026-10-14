@@ -47,8 +47,8 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-      style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       <div

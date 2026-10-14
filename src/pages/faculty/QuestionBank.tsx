@@ -306,6 +306,7 @@ export const QuestionBank: React.FC = () => {
               Refresh
             </Button>
             <Button
+              id="btn-generate-gemini"
               variant="primary"
               size="sm"
               onClick={() => setIsGenerateOpen(true)}
