@@ -1,4 +1,5 @@
 import { prisma } from '../prisma';
+import { analyticsService } from './analytics';
 
 export const quizService = {
   async getQuizzes(filters?: { sectionId?: string; subjectId?: string; status?: string }) {
@@ -99,7 +100,7 @@ export const quizService = {
 
     const score = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
 
-    return prisma.quizAttempt.create({
+    const attempt = await prisma.quizAttempt.create({
       data: {
         quizId: data.quizId,
         studentId: data.studentId,
@@ -114,6 +115,14 @@ export const quizService = {
         quiz: true,
       },
     });
+
+    // Run Knowledge Tracing update
+    const knowledgeTracing = await analyticsService.computeKnowledgeTracing(data.studentId);
+
+    return {
+      ...attempt,
+      knowledgeTracing,
+    };
   },
 
   async getQuizResults(quizId: string) {

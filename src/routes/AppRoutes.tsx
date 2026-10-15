@@ -9,6 +9,7 @@ import { Login } from '../pages/auth/Login';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 
 // Student Pages
+import { Dashboard } from '../pages/student/Dashboard';
 import { StudentDashboard } from '../pages/student/StudentDashboard';
 import { Courses } from '../pages/student/Courses';
 import { Quiz } from '../pages/student/Quiz';
@@ -83,7 +84,8 @@ export const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
 
       {/* Student Routes */}
-      <Route path="/student" element={<PrivateRoute role="student"><StudentDashboard /></PrivateRoute>} />
+      <Route path="/student" element={<PrivateRoute role="student"><Dashboard /></PrivateRoute>} />
+      <Route path="/student/dashboard" element={<PrivateRoute role="student"><Dashboard /></PrivateRoute>} />
       <Route path="/student/courses" element={<PrivateRoute role="student"><Courses /></PrivateRoute>} />
       <Route path="/student/quiz" element={<PrivateRoute role="student"><Quiz /></PrivateRoute>} />
       <Route path="/student/quiz/:id" element={<StandaloneRoute role="student"><QuizScreen /></StandaloneRoute>} />

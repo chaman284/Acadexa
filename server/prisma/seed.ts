@@ -120,24 +120,47 @@ async function main() {
   });
   console.log('✅ Subject:', subject.name);
 
-  // 6. Topic
-  const topic = await prisma.topic.upsert({
+  // 6. Topics
+  const topicArrays = await prisma.topic.upsert({
     where: { id: 'topic-arrays' },
     update: {},
-    create: {
-      id: 'topic-arrays',
-      name: 'Arrays',
-      subjectId: subject.id,
-    },
+    create: { id: 'topic-arrays', name: 'Arrays', subjectId: subject.id },
   });
-  console.log('✅ Topic:', topic.name);
 
-  // 7. A few Questions
-  const questions = [
+  const topicTrees = await prisma.topic.upsert({
+    where: { id: 'topic-trees' },
+    update: {},
+    create: { id: 'topic-trees', name: 'Trees', subjectId: subject.id },
+  });
+
+  const topicStacks = await prisma.topic.upsert({
+    where: { id: 'topic-stacks' },
+    update: {},
+    create: { id: 'topic-stacks', name: 'Stacks & Queues', subjectId: subject.id },
+  });
+
+  const topicGraphs = await prisma.topic.upsert({
+    where: { id: 'topic-graphs' },
+    update: {},
+    create: { id: 'topic-graphs', name: 'Graph Algorithms', subjectId: subject.id },
+  });
+
+  const topicDP = await prisma.topic.upsert({
+    where: { id: 'topic-dp' },
+    update: {},
+    create: { id: 'topic-dp', name: 'Dynamic Programming', subjectId: subject.id },
+  });
+  console.log('✅ Topics: Arrays, Trees, Stacks, Graphs, Dynamic Programming');
+
+  // 7. Comprehensive Questions with Bloom Cognitive Levels
+  const allQuestions = [
+    // Arrays
     {
-      id: 'q1',
+      id: 'q-arr-1',
       text: 'What is the time complexity of accessing an element in an array by index?',
+      topicId: topicArrays.id,
       difficulty: 'EASY' as const,
+      cognitiveLevel: 'CL1_REMEMBER' as const,
       options: [
         { text: 'O(1)', isCorrect: true },
         { text: 'O(n)', isCorrect: false },
@@ -146,68 +169,258 @@ async function main() {
       ],
     },
     {
-      id: 'q2',
-      text: 'Which data structure uses LIFO (Last In, First Out) ordering?',
-      difficulty: 'EASY' as const,
+      id: 'q-arr-2',
+      text: 'Which technique is optimal to find a pair with target sum in a sorted array?',
+      topicId: topicArrays.id,
+      difficulty: 'MEDIUM' as const,
+      cognitiveLevel: 'CL2_UNDERSTAND' as const,
       options: [
-        { text: 'Queue', isCorrect: false },
-        { text: 'Stack', isCorrect: true },
-        { text: 'Linked List', isCorrect: false },
-        { text: 'Tree', isCorrect: false },
+        { text: 'Two-pointer technique', isCorrect: true },
+        { text: 'Bubble sort', isCorrect: false },
+        { text: 'Breadth-first search', isCorrect: false },
+        { text: 'Brute-force nested loops', isCorrect: false },
       ],
     },
     {
-      id: 'q3',
-      text: 'What is the worst-case time complexity of binary search?',
+      id: 'q-arr-3',
+      text: 'What is the space complexity of Kadane’s algorithm for Maximum Subarray Sum?',
+      topicId: topicArrays.id,
       difficulty: 'MEDIUM' as const,
+      cognitiveLevel: 'CL3_APPLY' as const,
       options: [
-        { text: 'O(1)', isCorrect: false },
-        { text: 'O(n)', isCorrect: false },
-        { text: 'O(log n)', isCorrect: true },
+        { text: 'O(1) auxiliary space', isCorrect: true },
+        { text: 'O(n) auxiliary space', isCorrect: false },
         { text: 'O(n log n)', isCorrect: false },
+        { text: 'O(n²)', isCorrect: false },
+      ],
+    },
+    // Trees (Weak topic -> 45%)
+    {
+      id: 'q-tree-1',
+      text: 'What is the maximum number of nodes at depth k in a binary tree?',
+      topicId: topicTrees.id,
+      difficulty: 'EASY' as const,
+      cognitiveLevel: 'CL1_REMEMBER' as const,
+      options: [
+        { text: '2^k', isCorrect: true },
+        { text: '2^(k+1) - 1', isCorrect: false },
+        { text: 'k²', isCorrect: false },
+        { text: 'log k', isCorrect: false },
+      ],
+    },
+    {
+      id: 'q-tree-2',
+      text: 'In an AVL tree, what is the maximum allowed balance factor difference between child subtrees?',
+      topicId: topicTrees.id,
+      difficulty: 'MEDIUM' as const,
+      cognitiveLevel: 'CL2_UNDERSTAND' as const,
+      options: [
+        { text: '1', isCorrect: true },
+        { text: '0', isCorrect: false },
+        { text: '2', isCorrect: false },
+        { text: 'No limit', isCorrect: false },
+      ],
+    },
+    {
+      id: 'q-tree-3',
+      text: 'Which tree traversal yields sorted keys for a Binary Search Tree (BST)?',
+      topicId: topicTrees.id,
+      difficulty: 'EASY' as const,
+      cognitiveLevel: 'CL2_UNDERSTAND' as const,
+      options: [
+        { text: 'Inorder Traversal', isCorrect: true },
+        { text: 'Preorder Traversal', isCorrect: false },
+        { text: 'Postorder Traversal', isCorrect: false },
+        { text: 'Level-order Traversal', isCorrect: false },
+      ],
+    },
+    {
+      id: 'q-tree-4',
+      text: 'What is the worst-case search complexity in an unbalanced Binary Search Tree?',
+      topicId: topicTrees.id,
+      difficulty: 'HARD' as const,
+      cognitiveLevel: 'CL4_ANALYZE' as const,
+      options: [
+        { text: 'O(n)', isCorrect: true },
+        { text: 'O(log n)', isCorrect: false },
+        { text: 'O(1)', isCorrect: false },
+        { text: 'O(n log n)', isCorrect: false },
+      ],
+    },
+    // Stacks
+    {
+      id: 'q-stack-1',
+      text: 'Which data structure follows LIFO (Last In, First Out) ordering?',
+      topicId: topicStacks.id,
+      difficulty: 'EASY' as const,
+      cognitiveLevel: 'CL1_REMEMBER' as const,
+      options: [
+        { text: 'Stack', isCorrect: true },
+        { text: 'Queue', isCorrect: false },
+        { text: 'Linked List', isCorrect: false },
+        { text: 'Heap', isCorrect: false },
+      ],
+    },
+    {
+      id: 'q-stack-2',
+      text: 'Which problem is typically solved using a monotonic stack in O(n) time?',
+      topicId: topicStacks.id,
+      difficulty: 'MEDIUM' as const,
+      cognitiveLevel: 'CL3_APPLY' as const,
+      options: [
+        { text: 'Next Greater Element', isCorrect: true },
+        { text: 'Binary Search', isCorrect: false },
+        { text: 'Shortest Path in Graph', isCorrect: false },
+        { text: 'Matrix Multiplication', isCorrect: false },
       ],
     },
   ];
 
-  for (const q of questions) {
+  for (const q of allQuestions) {
     await prisma.question.upsert({
       where: { id: q.id },
-      update: {},
+      update: {
+        cognitiveLevel: q.cognitiveLevel,
+      },
       create: {
         id: q.id,
         text: q.text,
         type: 'MCQ',
         difficulty: q.difficulty,
-        topicId: topic.id,
+        cognitiveLevel: q.cognitiveLevel,
+        status: 'APPROVED',
+        topicId: q.topicId,
         options: {
           create: q.options,
         },
       },
     });
   }
-  console.log('✅ Questions seeded');
+  console.log('✅ Seeded questions with cognitive levels');
 
-  // 8. Demo Active Quiz
-  const quiz = await prisma.quiz.upsert({
-    where: { id: 'quiz-demo-1' },
+  // 8. Weekly Quizzes
+  const weeklyQuiz1 = await prisma.quiz.upsert({
+    where: { id: 'quiz-week-1' },
     update: {},
     create: {
-      id: 'quiz-demo-1',
-      title: 'Week 1 — Arrays & Stacks',
+      id: 'quiz-week-1',
+      title: 'Week 1 — Arrays & Linear Sequences',
+      type: 'WEEKLY',
+      status: 'COMPLETED',
+      duration: 30,
+      subjectId: subject.id,
+      sectionId: section.id,
+      questions: {
+        create: [
+          { questionId: 'q-arr-1', order: 1 },
+          { questionId: 'q-arr-2', order: 2 },
+          { questionId: 'q-arr-3', order: 3 },
+          { questionId: 'q-stack-1', order: 4 },
+        ],
+      },
+    },
+  });
+
+  const weeklyQuiz2 = await prisma.quiz.upsert({
+    where: { id: 'quiz-week-2' },
+    update: {},
+    create: {
+      id: 'quiz-week-2',
+      title: 'Week 2 — Binary Trees & BST Analysis',
       type: 'WEEKLY',
       status: 'ACTIVE',
       duration: 30,
       subjectId: subject.id,
       sectionId: section.id,
       questions: {
-        create: questions.map((q, i) => ({
-          questionId: q.id,
-          order: i + 1,
-        })),
+        create: [
+          { questionId: 'q-tree-1', order: 1 },
+          { questionId: 'q-tree-2', order: 2 },
+          { questionId: 'q-tree-3', order: 3 },
+          { questionId: 'q-tree-4', order: 4 },
+        ],
       },
     },
   });
-  console.log('✅ Quiz:', quiz.title);
+  console.log('✅ Quizzes: Week 1 & Week 2');
+
+  // 8b. Seed realistic historical attempts for Student (Chaman & Rehan)
+  // Arrays: 92% mastery (High), Trees: 45% mastery (Learning Gap < 60%)
+  const studentRecord = await prisma.student.findUnique({ where: { userId: studentUser.id } });
+  if (studentRecord) {
+    // Attempt 1: Arrays Quiz -> 100%
+    const arrQuestions = await prisma.question.findMany({
+      where: { topicId: topicArrays.id },
+      include: { options: true },
+    });
+    const treeQuestions = await prisma.question.findMany({
+      where: { topicId: topicTrees.id },
+      include: { options: true },
+    });
+
+    const existingAttempts = await prisma.quizAttempt.count({
+      where: { studentId: studentRecord.id },
+    });
+
+    if (existingAttempts === 0) {
+      // Create Week 1 attempt (Arrays strong)
+      const attempt1 = await prisma.quizAttempt.create({
+        data: {
+          studentId: studentRecord.id,
+          quizId: weeklyQuiz1.id,
+          score: 92,
+          timeTaken: 1120,
+          submittedAt: new Date(Date.now() - 7 * 86400000),
+        },
+      });
+
+      for (const q of arrQuestions) {
+        const correctOpt = q.options.find(o => o.isCorrect);
+        if (correctOpt) {
+          await prisma.attemptAnswer.create({
+            data: {
+              attemptId: attempt1.id,
+              questionId: q.id,
+              optionId: correctOpt.id,
+              isCorrect: true,
+            },
+          });
+        }
+      }
+
+      // Create Week 2 attempt (Trees weak -> 45%)
+      const attempt2 = await prisma.quizAttempt.create({
+        data: {
+          studentId: studentRecord.id,
+          quizId: weeklyQuiz2.id,
+          score: 45,
+          timeTaken: 1450,
+          submittedAt: new Date(Date.now() - 2 * 86400000),
+        },
+      });
+
+      for (let i = 0; i < treeQuestions.length; i++) {
+        const q = treeQuestions[i];
+        // 1st question correct, rest incorrect to simulate 45% / weak grasp
+        const isRight = i === 0;
+        const opt = isRight
+          ? q.options.find(o => o.isCorrect)
+          : q.options.find(o => !o.isCorrect) || q.options[0];
+
+        if (opt) {
+          await prisma.attemptAnswer.create({
+            data: {
+              attemptId: attempt2.id,
+              questionId: q.id,
+              optionId: opt.id,
+              isCorrect: isRight,
+            },
+          });
+        }
+      }
+      console.log('✅ Seeded student quiz attempts (Arrays: 92%, Trees: 45%)');
+    }
+  }
 
   // 9. FacultySubject assignment
   const facultyRecord = await prisma.faculty.findUnique({ where: { userId: facultyUser.id } });
