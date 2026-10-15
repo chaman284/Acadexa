@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, ArrowRight, RotateCcw, TrendingUp, Trophy, Star } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { mockQuizResults } from '../../data/quizzes';
+import type { QuizResult as QuizResultType } from '../../types/quiz';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
@@ -39,7 +40,8 @@ const playVictorySound = () => {
 
 export const QuizResult: React.FC = () => {
   const navigate = useNavigate();
-  const result = mockQuizResults[0];
+  const location = useLocation();
+  const result: QuizResultType = (location.state as any)?.result || mockQuizResults[0];
 
   useEffect(() => {
     playVictorySound();

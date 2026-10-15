@@ -4,10 +4,12 @@ import { ChevronLeft, Zap, Star, Maximize, Minimize } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { mockQuestions } from '../../data/quizzes';
+import { quizService } from '../../services/quizService';
+import type { Question } from '../../types/quiz';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// ─── Kahoot-style tile colours ───────────────────────────────────────────────
+// ─── Option tile colours ───────────────────────────────────────────────
 const OPTION_COLORS = [
   // [idle bg, selected-correct, selected-wrong, label bg]
   { base: '#7a8b1e', dark: '#5a6813', accent: '#c5d93a', label: '#8e9e22' }, // olive-green  A
@@ -143,7 +145,28 @@ export const QuizScreen: React.FC = () => {
   const [showCorrectFlash, setShowCorrectFlash] = useState(false);
   const [showWrongFlash, setShowWrongFlash] = useState(false);
 
-  const questions = mockQuestions.slice(0, 5);
+  const [questions, setQuestions] = useState<Question[]>(mockQuestions.slice(0, 5));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchQuestions = async () => {
+      if (!id) return;
+      try {
+        const fetched = await quizService.getQuizQuestions(id);
+        if (isMounted && fetched && fetched.length > 0) {
+          setQuestions(fetched);
+        }
+      } catch (err) {
+        console.warn('Could not fetch quiz questions, using defaults:', err);
+      }
+    };
+    fetchQuestions();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
   const current = questions[currentIndex];
   const total = questions.length;
   const hasAnsweredCurrent = answers[currentIndex] !== undefined;
@@ -196,13 +219,29 @@ export const QuizScreen: React.FC = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     playSound('pop');
     if (currentIndex < total - 1) {
       setCurrentIndex(i => i + 1);
     } else {
+      setIsSubmitting(true);
       if (isFullscreenActive()) exitFullscreen();
-      navigate(`/student/quiz/${id}/result`);
+      try {
+        const answersMap: Record<string, string> = {};
+        Object.entries(answers).forEach(([idxStr, val]) => {
+          const q = questions[parseInt(idxStr, 10)];
+          if (q) {
+            answersMap[q.id] = val.optionId;
+          }
+        });
+        const result = await quizService.submitQuiz(id || 'quiz-week-2', answersMap);
+        navigate(`/student/quiz/${id}/result`, { state: { result } });
+      } catch (err) {
+        console.error('Quiz submission error:', err);
+        navigate(`/student/quiz/${id}/result`);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -392,7 +431,7 @@ export const QuizScreen: React.FC = () => {
               </h2>
             </div>
 
-            {/* ── Kahoot-style option grid ── */}
+            {/* ── Option grid ── */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -511,9 +550,14 @@ export const QuizScreen: React.FC = () => {
                   <Button
                     size="lg"
                     onClick={handleNext}
-                    className="!bg-indigo-600 hover:!bg-indigo-500 !text-white !px-12 !py-3.5 !text-lg !rounded-full shadow-[0_0_24px_rgba(79,70,229,0.5)] transition-all hover:scale-105"
+                    disabled={isSubmitting}
+                    className="!bg-indigo-600 hover:!bg-indigo-500 !text-white !px-12 !py-3.5 !text-lg !rounded-full shadow-[0_0_24px_rgba(79,70,229,0.5)] transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {currentIndex < total - 1 ? 'Next Question →' : '🎉 View Results'}
+                    {isSubmitting
+                      ? 'Submitting Assessment...'
+                      : currentIndex < total - 1
+                      ? 'Next Question →'
+                      : '🎉 View Results'}
                   </Button>
                 </motion.div>
               )}
