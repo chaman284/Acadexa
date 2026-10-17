@@ -20,8 +20,8 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
     navigate('/login');
   };
 
-  const profilePath = user?.role === 'student' ? '/student/profile' : '/profile';
-  const settingsPath = user?.role === 'student' ? '/student/settings' : '/settings';
+  const profilePath = user?.role === 'student' ? '/student/profile' : user?.role === 'admin' ? '/admin/profile' : '/profile';
+  const settingsPath = user?.role === 'student' ? '/student/settings' : user?.role === 'admin' ? '/admin/settings' : '/settings';
 
   return (
     <header
@@ -39,7 +39,7 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
         </button>
         <div className="hidden sm:block">
           <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
-            {user?.role === 'faculty' ? 'Faculty Portal' : 'Student Portal'}
+            {user?.role === 'admin' ? 'Admin Portal' : user?.role === 'faculty' ? 'Faculty Portal' : 'Student Portal'}
           </span>
         </div>
       </div>
@@ -61,8 +61,8 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
               <p className="text-sm font-semibold text-[var(--color-text-primary)] leading-none mb-0.5">
                 {user?.name?.split(' ')[0] || 'User'}
               </p>
-              <Badge color="indigo" className="text-[10px] py-0 px-1.5 font-medium">
-                {user?.role === 'faculty' ? 'Faculty' : 'Student'}
+              <Badge color={user?.role === 'admin' ? 'purple' : 'indigo'} className="text-[10px] py-0 px-1.5 font-medium">
+                {user?.role === 'admin' ? 'Admin' : user?.role === 'faculty' ? 'Faculty' : 'Student'}
               </Badge>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-muted)] hidden md:block" />

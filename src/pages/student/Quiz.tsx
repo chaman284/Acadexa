@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { QuizCard } from '../../components/dashboard/CourseCard';
@@ -25,15 +25,17 @@ export const Quiz: React.FC = () => {
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Active quiz highlight */}
         <div className="lg:col-span-2">
-          {(activeQuiz || upcomingQuiz) && (() => {
+          {(activeQuiz || upcomingQuiz) ? (() => {
             const q = activeQuiz || upcomingQuiz!;
             return (
               <div
                 className="card p-6 relative overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #1e2a3b 0%, #2d3f56 100%)' }}
               >
-                <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
-                  style={{ background: 'var(--color-accent)', transform: 'translate(30%,-30%)' }} />
+                <div
+                  className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+                  style={{ background: 'var(--color-accent)', transform: 'translate(30%,-30%)' }}
+                />
 
                 <div className="flex items-start justify-between mb-4 relative z-10">
                   <div>
@@ -65,8 +67,6 @@ export const Quiz: React.FC = () => {
                   {activeQuiz && (
                     <Button
                       onClick={() => {
-                        // Request fullscreen before navigating; QuizScreen will also
-                        // attempt fullscreen on mount as a fallback.
                         const el = document.documentElement;
                         if (el.requestFullscreen) {
                           el.requestFullscreen().catch(() => {});
@@ -90,7 +90,15 @@ export const Quiz: React.FC = () => {
                 </div>
               </div>
             );
-          })()}
+          })() : (
+            <Card className="p-8 text-center h-full flex flex-col items-center justify-center">
+              <ClipboardList className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3 opacity-40" />
+              <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">No Active Quizzes</h3>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                There are currently no active or upcoming weekly quizzes scheduled.
+              </p>
+            </Card>
+          )}
         </div>
 
         {/* Quiz stats */}
@@ -98,15 +106,15 @@ export const Quiz: React.FC = () => {
           <CardHeader title="This Week" />
           <div className="space-y-4">
             <div className="text-center py-4">
-              <div className="text-4xl font-bold text-[var(--color-accent)]">78%</div>
+              <div className="text-4xl font-bold text-[var(--color-accent)]">0%</div>
               <p className="text-sm text-[var(--color-text-muted)] mt-1">Last quiz score</p>
             </div>
             <div className="space-y-2">
               {[
-                { label: 'Quizzes completed', value: '4 / 6' },
-                { label: 'Questions answered', value: '54' },
-                { label: 'Correct answers', value: '42' },
-                { label: 'Current streak', value: '7 days' },
+                { label: 'Quizzes completed', value: '0' },
+                { label: 'Questions answered', value: '0' },
+                { label: 'Correct answers', value: '0' },
+                { label: 'Current streak', value: '0 days' },
               ].map((item, i) => (
                 <div key={i} className="flex justify-between items-center py-2 border-b border-[var(--color-border)] last:border-0">
                   <span className="text-sm text-[var(--color-text-secondary)]">{item.label}</span>
@@ -134,7 +142,7 @@ export const Quiz: React.FC = () => {
                 status={q.status}
                 scheduledDate={q.scheduledDate}
                 type={q.type}
-              onStart={() => {
+                onStart={() => {
                   const el = document.documentElement;
                   if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
                   else if ((el as any).webkitRequestFullscreen) (el as any).webkitRequestFullscreen();
@@ -149,26 +157,30 @@ export const Quiz: React.FC = () => {
       {/* Previous quizzes */}
       <div>
         <h2 className="font-semibold text-[var(--color-text-primary)] mb-3">Previous Quizzes</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {completedQuizzes.map(q => (
-            <QuizCard
-              key={q.id}
-              title={q.title}
-              courseName={q.courseName}
-              questionCount={q.questionCount}
-              duration={q.duration}
-              difficulty={q.difficulty}
-              status={q.status}
-              scheduledDate={q.scheduledDate}
-              onStart={() => {
+        {completedQuizzes.length > 0 ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedQuizzes.map(q => (
+              <QuizCard
+                key={q.id}
+                title={q.title}
+                courseName={q.courseName}
+                questionCount={q.questionCount}
+                duration={q.duration}
+                difficulty={q.difficulty}
+                status={q.status}
+                scheduledDate={q.scheduledDate}
+                onStart={() => {
                   const el = document.documentElement;
                   if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
                   else if ((el as any).webkitRequestFullscreen) (el as any).webkitRequestFullscreen();
                   navigate(`/student/quiz/${q.id}/result`);
                 }}
-            />
-          ))}
-        </div>
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--color-text-muted)]">No previous quizzes completed yet.</p>
+        )}
       </div>
     </div>
   );

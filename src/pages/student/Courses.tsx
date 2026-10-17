@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
+import api from '../../lib/apiClient';
+
 export const Courses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   // selectedCourseId is null initially -> only show enrolled subjects list
@@ -23,9 +25,53 @@ export const Courses: React.FC = () => {
     loadCourses();
   }, []);
 
-  const loadCourses = () => {
+  const loadCourses = async () => {
     const list = courseService.getCoursesWithProgress();
-    setCourses(list);
+    try {
+      const res = await api.get('/courses');
+      const dbCourses: any[] = res.data;
+      if (Array.isArray(dbCourses) && dbCourses.length > 0) {
+        const merged: Course[] = list.map(localCourse => {
+          const match = dbCourses.find(d => d.code === localCourse.code);
+          if (match) {
+            return {
+              ...localCourse,
+              enrollmentStatus: match.enrollmentStatus,
+              facultyName: match.assignments?.[0]?.facultyName || localCourse.facultyName,
+            };
+          }
+          return {
+            ...localCourse,
+            enrollmentStatus: 'Enrolled' as const,
+          };
+        });
+
+        dbCourses.forEach(dbCourse => {
+          const already = merged.some(m => m.code === dbCourse.code);
+          if (!already) {
+            merged.push({
+              id: dbCourse.id,
+              name: dbCourse.name,
+              code: dbCourse.code,
+              semester: dbCourse.assignments?.[0]?.semester || 5,
+              department: dbCourse.departmentName || 'Computer Science',
+              creditHours: 4,
+              facultyId: dbCourse.assignments?.[0]?.facultyId || '',
+              facultyName: dbCourse.assignments?.[0]?.facultyName || 'Awaiting Faculty',
+              color: '#8b5cf6',
+              units: [],
+              progress: 0,
+              enrollmentStatus: dbCourse.enrollmentStatus || 'Available',
+            });
+          }
+        });
+        setCourses(merged);
+        return;
+      }
+    } catch {
+      // Keep local list on network error
+    }
+    setCourses(list.map(c => ({ ...c, enrollmentStatus: 'Enrolled' as const })));
   };
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
@@ -151,7 +197,21 @@ export const Courses: React.FC = () => {
                   >
                     <BookOpen className="w-5 h-5" style={{ color: course.color || '#6366f1' }} />
                   </div>
-                  <Badge color="gray">{course.code}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      color={
+                        course.enrollmentStatus === 'Enrolled'
+                          ? 'green'
+                          : course.enrollmentStatus === 'Available'
+                          ? 'blue'
+                          : 'gray'
+                      }
+                      className="text-[10px] font-semibold"
+                    >
+                      {course.enrollmentStatus || 'Enrolled'}
+                    </Badge>
+                    <Badge color="gray">{course.code}</Badge>
+                  </div>
                 </div>
 
                 <h3 className="font-bold text-[var(--color-text-primary)] text-sm mb-1 leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">

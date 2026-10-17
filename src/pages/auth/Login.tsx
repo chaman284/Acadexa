@@ -11,7 +11,7 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'student' | 'faculty'>('student');
+  const [role, setRole] = useState<'student' | 'faculty' | 'admin'>('student');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [remember, setRemember] = useState(false);
@@ -26,7 +26,8 @@ export const Login: React.FC = () => {
     setIsLoading(true);
     try {
       const user = await login(email, password, role);
-      if (user.role === 'faculty') navigate('/faculty');
+      if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'faculty') navigate('/faculty');
       else navigate('/student');
     } catch {
       setError('Invalid credentials. Please try again.');
@@ -35,13 +36,22 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (demoRole: 'student' | 'faculty') => {
+  const handleDemoLogin = async (demoRole: 'student' | 'faculty' | 'admin') => {
     setIsLoading(true);
     try {
-      const demoEmail = demoRole === 'student' ? 'student@college.edu' : 'faculty@college.edu';
-      const demoPassword = demoRole === 'student' ? 'student123' : 'faculty123';
+      let demoEmail = 'student@college.edu';
+      let demoPassword = 'student123';
+      if (demoRole === 'faculty') {
+        demoEmail = 'faculty@college.edu';
+        demoPassword = 'faculty123';
+      } else if (demoRole === 'admin') {
+        demoEmail = 'admin@college.edu';
+        demoPassword = 'admin123';
+      }
+
       const user = await login(demoEmail, demoPassword, demoRole);
-      if (demoRole === 'faculty') navigate('/faculty');
+      if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'faculty') navigate('/faculty');
       else navigate('/student');
     } catch {
       setError('Failed to login with demo account.');
@@ -151,6 +161,16 @@ export const Login: React.FC = () => {
             >
               Faculty
             </button>
+            <button
+              onClick={() => setRole('admin')}
+              className={`flex-1 py-2 rounded-[8px] text-sm font-medium transition-all duration-150 ${
+                role === 'admin'
+                  ? 'bg-white text-[var(--color-text-primary)] shadow-sm'
+                  : 'text-[var(--color-text-muted)]'
+              }`}
+            >
+              Admin
+            </button>
           </div>
 
           {/* Form */}
@@ -159,7 +179,7 @@ export const Login: React.FC = () => {
               id="login-email"
               label="College Email"
               type="email"
-              placeholder={role === 'student' ? 'you@cs.college.edu' : 'professor@college.edu'}
+              placeholder={role === 'admin' ? 'admin@college.edu' : role === 'student' ? 'you@cs.college.edu' : 'professor@college.edu'}
               value={email}
               onChange={e => setEmail(e.target.value)}
               leftIcon={<Mail className="w-4 h-4" />}
@@ -215,7 +235,7 @@ export const Login: React.FC = () => {
           </div>
 
           {/* Demo buttons */}
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -223,7 +243,7 @@ export const Login: React.FC = () => {
               onClick={() => handleDemoLogin('student')}
               id="demo-student-btn"
             >
-              Demo Student
+              Student
             </Button>
             <Button
               variant="outline"
@@ -232,7 +252,16 @@ export const Login: React.FC = () => {
               onClick={() => handleDemoLogin('faculty')}
               id="demo-faculty-btn"
             >
-              Demo Faculty
+              Faculty
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              fullWidth
+              onClick={() => handleDemoLogin('admin')}
+              id="demo-admin-btn"
+            >
+              Admin
             </Button>
           </div>
 

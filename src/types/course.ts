@@ -36,6 +36,7 @@ export interface Course {
   progress: number;
   nextQuizDate?: string;
   nextQuizTopic?: string;
+  enrollmentStatus?: 'Enrolled' | 'Available' | 'Not Available';
 }
 
 export interface CourseProgressRecord {

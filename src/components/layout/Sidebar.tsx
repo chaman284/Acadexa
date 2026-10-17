@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
   MessageSquare, Building2, User, Settings, LogOut,
   GraduationCap, BarChart3, X, TrendingUp,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Users, Bell,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 
@@ -26,8 +26,17 @@ const studentNav: NavItem[] = [
   { to: '/student/department', label: 'Department', icon: <Building2 className="w-5 h-5 flex-shrink-0" /> },
 ];
 
+const adminNav: NavItem[] = [
+  { to: '/admin', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, end: true },
+  { to: '/admin/faculty', label: 'Faculty', icon: <Users className="w-5 h-5 flex-shrink-0" /> },
+  { to: '/admin/courses', label: 'Courses', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
+  { to: '/admin/students', label: 'Students', icon: <GraduationCap className="w-5 h-5 flex-shrink-0" /> },
+  { to: '/admin/sections', label: 'Sections', icon: <Building2 className="w-5 h-5 flex-shrink-0" /> },
+  { to: '/admin/notifications', label: 'Notifications', icon: <Bell className="w-5 h-5 flex-shrink-0" /> },
+];
+
 interface SidebarProps {
-  role: 'student' | 'faculty';
+  role: 'student' | 'faculty' | 'admin';
   isCollapsed: boolean;
   onToggle: () => void;
   isMobileOpen?: boolean;
@@ -58,9 +67,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { to: '/faculty/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
       ];
 
-  const navItems = role === 'student' ? studentNav : facultyNav;
-  const profileUrl = role === 'student' ? '/student/profile' : '/profile';
-  const settingsUrl = role === 'student' ? '/student/settings' : '/settings';
+  const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;
+  const profileUrl = role === 'student' ? '/student/profile' : role === 'admin' ? '/admin/profile' : '/profile';
+  const settingsUrl = role === 'student' ? '/student/settings' : role === 'admin' ? '/admin/settings' : '/settings';
 
   const handleLogout = () => {
     authService.clearCurrentUser();
@@ -113,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   Acadexa
                 </span>
                 <span className="text-white/50 text-[10px] leading-none mt-1 block truncate">
-                  {role === 'faculty' ? 'Faculty Portal' : 'Student Portal'}
+                  {role === 'admin' ? 'Admin Portal' : role === 'faculty' ? 'Faculty Portal' : 'Student Portal'}
                 </span>
               </div>
             )}

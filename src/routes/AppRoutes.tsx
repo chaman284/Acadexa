@@ -34,8 +34,18 @@ import { QuizBuilder } from '../pages/faculty/QuizBuilder';
 import { FacultyProfile } from '../pages/faculty/FacultyProfile';
 import { FacultySettings } from '../pages/faculty/FacultySettings';
 
+// Admin Pages
+import { AdminOverview } from '../pages/admin/AdminOverview';
+import { FacultyManagement } from '../pages/admin/FacultyManagement';
+import { CourseManagement } from '../pages/admin/CourseManagement';
+import { StudentManagement } from '../pages/admin/StudentManagement';
+import { SectionManagement } from '../pages/admin/SectionManagement';
+import { AdminNotifications } from '../pages/admin/AdminNotifications';
+import { AdminProfile } from '../pages/admin/AdminProfile';
+import { AdminSettings } from '../pages/admin/AdminSettings';
+
 // Guard wrapper — reads from AuthContext
-const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' }) => {
+const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' | 'admin' }) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -48,7 +58,15 @@ const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'st
 };
 
 // Common Authenticated Route
-const CommonAuthRoute = ({ studentChild, facultyChild }: { studentChild: React.ReactNode; facultyChild: React.ReactNode }) => {
+const CommonAuthRoute = ({
+  studentChild,
+  facultyChild,
+  adminChild,
+}: {
+  studentChild: React.ReactNode;
+  facultyChild: React.ReactNode;
+  adminChild: React.ReactNode;
+}) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -58,7 +76,7 @@ const CommonAuthRoute = ({ studentChild, facultyChild }: { studentChild: React.R
   if (!user) return <Navigate to="/login" replace />;
   return (
     <DashboardLayout role={user.role} user={user}>
-      {user.role === 'student' ? studentChild : facultyChild}
+      {user.role === 'student' ? studentChild : user.role === 'admin' ? adminChild : facultyChild}
     </DashboardLayout>
   );
 };
@@ -112,14 +130,25 @@ export const AppRoutes = () => {
       <Route path="/faculty/profile" element={<PrivateRoute role="faculty"><FacultyProfile /></PrivateRoute>} />
       <Route path="/faculty/settings" element={<PrivateRoute role="faculty"><FacultySettings /></PrivateRoute>} />
 
+      {/* Admin Routes */}
+      <Route path="/admin" element={<PrivateRoute role="admin"><AdminOverview /></PrivateRoute>} />
+      <Route path="/admin/faculty" element={<PrivateRoute role="admin"><FacultyManagement /></PrivateRoute>} />
+      <Route path="/admin/courses" element={<PrivateRoute role="admin"><CourseManagement /></PrivateRoute>} />
+      <Route path="/admin/students" element={<PrivateRoute role="admin"><StudentManagement /></PrivateRoute>} />
+      <Route path="/admin/sections" element={<PrivateRoute role="admin"><SectionManagement /></PrivateRoute>} />
+      <Route path="/admin/notifications" element={<PrivateRoute role="admin"><AdminNotifications /></PrivateRoute>} />
+      <Route path="/admin/assignments" element={<Navigate to="/admin/faculty" replace />} />
+      <Route path="/admin/profile" element={<PrivateRoute role="admin"><AdminProfile /></PrivateRoute>} />
+      <Route path="/admin/settings" element={<PrivateRoute role="admin"><AdminSettings /></PrivateRoute>} />
+
       {/* Unified Profile & Settings Routes */}
       <Route
         path="/profile"
-        element={<CommonAuthRoute studentChild={<StudentProfile />} facultyChild={<FacultyProfile />} />}
+        element={<CommonAuthRoute studentChild={<StudentProfile />} facultyChild={<FacultyProfile />} adminChild={<AdminProfile />} />}
       />
       <Route
         path="/settings"
-        element={<CommonAuthRoute studentChild={<StudentSettingsPage />} facultyChild={<FacultySettings />} />}
+        element={<CommonAuthRoute studentChild={<StudentSettingsPage />} facultyChild={<FacultySettings />} adminChild={<AdminSettings />} />}
       />
 
       <Route path="*" element={

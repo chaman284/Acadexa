@@ -9,6 +9,9 @@ import quizzesRoutes from './routes/quizzes';
 import questionsRoutes from './routes/questions';
 import analyticsRoutes from './routes/analytics';
 import chatbotRoutes from './routes/chatbot';
+import adminRoutes from './routes/admin';
+import notificationsRoutes from './routes/notifications';
+import coursesRoutes from './routes/courses';
 
 const app = express();
 
@@ -33,6 +36,9 @@ app.use('/api/quizzes', quizzesRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/courses', coursesRoutes);
 
 // Error Handler
 app.use(errorHandler);

@@ -1,6 +1,6 @@
 import api from '../lib/apiClient';
 
-export type UserRole = 'student' | 'faculty';
+export type UserRole = 'student' | 'faculty' | 'admin';
 
 export interface AuthUser {
   id: string;

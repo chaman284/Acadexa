@@ -19,8 +19,8 @@ export const defaultFacultySettings: FacultySettings = {
 
 export const defaultFacultyProfile: FacultyProfile = {
   id: 'f1',
-  name: 'Dr. Ramesh Kumar',
-  email: 'faculty@cs.college.edu',
+  name: 'Demo Faculty',
+  email: 'faculty@college.edu',
   phone: '+91 98451 23456',
   designation: 'Associate Professor',
   department: 'Computer Science & Engineering',

@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -27,43 +30,98 @@ async function main() {
   });
   console.log('✅ Section: 5A');
 
-  // 3. Demo Student user
+  // 3. Demo Student (student@college.edu / student123)
   const studentHash = await bcrypt.hash('student123', 10);
-  const studentUser = await prisma.user.upsert({
-    where: { email: 'chaman@cs.college.edu' },
-    update: {},
-    create: {
-      email: 'chaman@cs.college.edu',
+  const demoStudentUser = await prisma.user.upsert({
+    where: { email: 'student@college.edu' },
+    update: {
+      name: 'Demo Student',
       passwordHash: studentHash,
-      name: 'Chaman',
+      role: 'STUDENT',
+    },
+    create: {
+      email: 'student@college.edu',
+      passwordHash: studentHash,
+      name: 'Demo Student',
       role: 'STUDENT',
       student: {
         create: {
-          rollNo: '21CS045',
+          rollNo: 'DEMO2026STU01',
           sectionId: section.id,
         },
       },
     },
+    include: {
+      student: true,
+    },
   });
-  console.log('✅ Student user:', studentUser.email);
 
+  if (!demoStudentUser.student) {
+    await prisma.student.upsert({
+      where: { userId: demoStudentUser.id },
+      update: {
+        sectionId: section.id,
+      },
+      create: {
+        userId: demoStudentUser.id,
+        rollNo: 'DEMO2026STU01',
+        sectionId: section.id,
+      },
+    });
+  }
+  console.log('✅ Demo Student user:', demoStudentUser.email);
 
-  // 4. Demo Faculty user
+  // 4. Demo Faculty (faculty@college.edu / faculty123)
   const facultyHash = await bcrypt.hash('faculty123', 10);
-  const facultyUser = await prisma.user.upsert({
-    where: { email: 'faculty@cs.college.edu' },
-    update: {},
-    create: {
-      email: 'faculty@cs.college.edu',
+  const demoFacultyUser = await prisma.user.upsert({
+    where: { email: 'faculty@college.edu' },
+    update: {
+      name: 'Demo Faculty',
       passwordHash: facultyHash,
-      name: 'Dr. Ramesh Kumar',
+      role: 'FACULTY',
+    },
+    create: {
+      email: 'faculty@college.edu',
+      passwordHash: facultyHash,
+      name: 'Demo Faculty',
       role: 'FACULTY',
       faculty: {
         create: {},
       },
     },
+    include: {
+      faculty: true,
+    },
   });
-  console.log('✅ Faculty user:', facultyUser.email);
+
+  if (!demoFacultyUser.faculty) {
+    await prisma.faculty.upsert({
+      where: { userId: demoFacultyUser.id },
+      update: {},
+      create: {
+        userId: demoFacultyUser.id,
+      },
+    });
+  }
+  console.log('✅ Demo Faculty user:', demoFacultyUser.email);
+
+  // 4c. Demo Admin user (admin@college.edu / admin123)
+  const adminHash = await bcrypt.hash('admin123', 10);
+  const demoAdminUser = await prisma.user.upsert({
+    where: { email: 'admin@college.edu' },
+    update: {
+      name: 'System Administrator',
+      passwordHash: adminHash,
+      role: 'ADMIN',
+    },
+    create: {
+      email: 'admin@college.edu',
+      passwordHash: adminHash,
+      name: 'System Administrator',
+      role: 'ADMIN',
+    },
+  });
+  console.log('✅ Demo Admin user:', demoAdminUser.email);
 
 
   // 5. Subject
@@ -169,24 +227,25 @@ async function main() {
   console.log('✅ Quiz:', quiz.title);
 
   // 9. FacultySubject assignment
-  const facultyRecord = await prisma.faculty.findUnique({ where: { userId: facultyUser.id } });
-  if (facultyRecord) {
+  const demoFacultyRecord = await prisma.faculty.findUnique({ where: { userId: demoFacultyUser.id } });
+  if (demoFacultyRecord) {
     await prisma.facultySubject.upsert({
-      where: { id: 'fa-assign-1' },
+      where: { id: 'fa-assign-demo' },
       update: {},
       create: {
-        id: 'fa-assign-1',
-        facultyId: facultyRecord.id,
+        id: 'fa-assign-demo',
+        facultyId: demoFacultyRecord.id,
         subjectId: subject.id,
         sectionId: section.id,
       },
     });
-    console.log('✅ Faculty assignment created for Dr. Ramesh');
+    console.log('✅ Faculty assignment created for Demo Faculty');
   }
 
   console.log('\n🎉 Seed complete!');
-  console.log('Student:  chaman@cs.college.edu / student123  (Chaman)');
-  console.log('Faculty:  faculty@cs.college.edu / faculty123  (Dr. Ramesh)');
+  console.log('Demo Admin:   admin@college.edu / admin123    (System Administrator)');
+  console.log('Demo Student: student@college.edu / student123  (Demo Student)');
+  console.log('Demo Faculty: faculty@college.edu / faculty123  (Demo Faculty)');
 }
 
 main()

@@ -15,8 +15,9 @@ model User {
   role         Role     @default(STUDENT)
   avatarUrl    String?
   createdAt    DateTime @default(now())
-  student      Student?
-  faculty      Faculty?
+  student       Student?
+  faculty       Faculty?
+  notifications Notification[]
 }
 
 enum Role {
@@ -227,4 +228,17 @@ model DeptInformation {
   description String       @db.Text
   targetDept  String       @default("ALL")
   createdAt   DateTime     @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  title     String
+  message   String   @db.Text
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  actionUrl String?
+  role      String?
+  createdAt DateTime @default(now())
 }

@@ -5,7 +5,7 @@ import { Topbar } from './Topbar';
 import type { AuthUser } from '../../services/authService';
 
 interface DashboardLayoutProps {
-  role: 'student' | 'faculty';
+  role: 'student' | 'faculty' | 'admin';
   user: AuthUser | null;
   children: React.ReactNode;
 }
