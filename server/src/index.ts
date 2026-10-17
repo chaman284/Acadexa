@@ -9,6 +9,7 @@ import quizzesRoutes from './routes/quizzes';
 import questionsRoutes from './routes/questions';
 import analyticsRoutes from './routes/analytics';
 import chatbotRoutes from './routes/chatbot';
+import deptRoutes from './routes/dept';
 
 const app = express();
 
@@ -19,7 +20,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -33,6 +35,7 @@ app.use('/api/quizzes', quizzesRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/dept', deptRoutes);
 
 // Error Handler
 app.use(errorHandler);

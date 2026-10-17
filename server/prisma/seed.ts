@@ -453,6 +453,91 @@ async function main() {
     console.log('✅ Faculty assignment created for Soumya');
   }
 
+  // 10. Syllabus Documents for RAG Knowledge Base
+  const syllabusData = [
+    {
+      subject: 'Data Structures & Algorithms',
+      topic: 'Binary Search Trees',
+      content: 'Binary Search Trees (BST) enforce left < root < right invariant. Traversals: In-order traversal yields sorted order. Search, insert, and delete operations take O(h) time, where h is height. Self-balancing AVL and Red-Black trees maintain O(log n) worst-case time by applying rotations.',
+    },
+    {
+      subject: 'Data Structures & Algorithms',
+      topic: 'Arrays & Two Pointers',
+      content: 'Arrays store contiguous elements with O(1) index access. Two-pointer algorithms, sliding window techniques, and binary search (O(log n)) are fundamental algorithmic paradigms for linear structures.',
+    },
+    {
+      subject: 'Data Structures & Algorithms',
+      topic: 'Graph Algorithms & Shortest Path',
+      content: 'Graphs are represented via Adjacency Matrix or Adjacency List. BFS uses queues for unweighted shortest paths. DFS uses recursion for cycle detection and topological sorting. Dijkstra algorithm finds shortest paths in weighted graphs using priority queues in O((V+E) log V).',
+    },
+    {
+      subject: 'Data Structures & Algorithms',
+      topic: 'Dynamic Programming',
+      content: 'Dynamic Programming applies when problems exhibit optimal substructure and overlapping subproblems. Solved via top-down memoization or bottom-up tabulation. Classical examples: 0/1 Knapsack, Longest Common Subsequence (LCS), Matrix Chain Multiplication.',
+    },
+    {
+      subject: 'Database Management Systems',
+      topic: 'Relational Normalization',
+      content: 'Normalization eliminates data redundancy and update anomalies. 1NF mandates atomic values. 2NF removes partial key dependencies. 3NF removes transitive dependencies. BCNF strictly requires every determinant to be a candidate key.',
+    },
+  ];
+
+  for (const s of syllabusData) {
+    await prisma.syllabusDocument.create({
+      data: {
+        subject: s.subject,
+        topic: s.topic,
+        content: s.content,
+      },
+    });
+  }
+  console.log('✅ Seeded Syllabus Documents for RAG');
+
+  // 11. Department Information & Calendar
+  const deptInfoData = [
+    {
+      type: 'EVENT' as const,
+      title: 'CS Department Annual Technical Symposium 2026',
+      date: new Date('2026-10-22T10:00:00.000Z'),
+      description: 'Annual technical symposium featuring keynote by Dr. Ramesh Kumar, student research presentations, and coding competitions in Seminar Hall.',
+      targetDept: 'CS',
+    },
+    {
+      type: 'EVENT' as const,
+      title: 'Continuous Internal Evaluation (CIE-1) Exams',
+      date: new Date('2026-10-15T09:30:00.000Z'),
+      description: '5th Semester CIE-1 exam schedule: Data Structures (Oct 15), DBMS (Oct 17), Operating Systems (Oct 20) in Rooms CS-301 to CS-305.',
+      targetDept: 'CS',
+    },
+    {
+      type: 'HOLIDAY' as const,
+      title: 'Diwali Institutional Holiday Break',
+      date: new Date('2026-11-01T00:00:00.000Z'),
+      description: 'University closed from November 1st to November 3rd, 2026 for Diwali celebrations. Normal academic classes resume November 4th.',
+      targetDept: 'ALL',
+    },
+    {
+      type: 'EVENT' as const,
+      title: 'Faculty Advising & Office Hours Directory',
+      date: new Date('2026-10-18T14:00:00.000Z'),
+      description: 'Dr. Ramesh Kumar (HOD, CS-405, Mon/Wed 2-4 PM), Prof. Sunita Sharma (CS-406, Tue/Thu 11 AM-1 PM), Department Office: Room CS-401.',
+      targetDept: 'CS',
+    },
+  ];
+
+  for (const d of deptInfoData) {
+    await prisma.deptInformation.create({
+      data: {
+        type: d.type,
+        title: d.title,
+        date: d.date,
+        description: d.description,
+        targetDept: d.targetDept,
+      },
+    });
+  }
+  console.log('✅ Seeded Department Information & Events');
+
   console.log('\n🎉 Seed complete!');
   console.log('Student:  rehan@cs.college.edu / rehan123  (Rehan Patel)');
   console.log('Student:  chaman@cs.college.edu / student123  (Chaman)');

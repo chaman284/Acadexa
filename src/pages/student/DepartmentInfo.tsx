@@ -8,23 +8,24 @@ import type { ChatMessage } from '../../types/department';
 import {
   announcements, departmentEvents, timetable, facultyMembers, departmentFAQs,
 } from '../../data/collegeInfo';
+import { departmentService } from '../../services/chatService';
 import {
-  Megaphone, Calendar, Clock, Users, HelpCircle, MessageSquare, Building2,
+  Megaphone, Calendar, Clock, Users, HelpCircle, MessageSquare, Building2, Upload, Sparkles, CheckCircle2,
 } from 'lucide-react';
 
 const DEPT_SUGGESTED_PROMPTS = [
   'When is the next department event?',
   'When are the internal exams?',
   'Who teaches Database Management Systems?',
-  "What is tomorrow's timetable?",
-  'Where is the department office?',
-  'When is the project submission deadline?',
+  "What is the syllabus for Trees in Data Structures?",
+  'Where is the department office and faculty hours?',
+  'Are there any upcoming holidays?',
 ];
 
 const DEPT_INITIAL_MESSAGE: ChatMessage = {
   id: 'dept_init',
   role: 'assistant',
-  content: 'Hello! I\'m the Acadexa Department Assistant. I can help you find information about announcements, events, timetables, faculty, examinations, and department policies. What would you like to know?',
+  content: 'Hello! I am Nexus, the official Department AI Assistant. I use verified Department Records and Syllabus Documents to provide factual guidance on courses, exams, schedules, and faculty hours. How can I assist you today?',
   timestamp: new Date().toISOString(),
   type: 'department',
 };
@@ -35,6 +36,8 @@ export const DepartmentInfo: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'announcements' | 'events' | 'timetable' | 'faculty' | 'faq' | 'chatbot'>('announcements');
   const [messages, setMessages] = useState<ChatMessage[]>([DEPT_INITIAL_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
   const handleSend = async (text: string) => {
     const userMsg: ChatMessage = {
@@ -47,8 +50,17 @@ export const DepartmentInfo: React.FC = () => {
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     try {
-      const response = await chatService.sendDepartmentMessage(text, messages);
-      setMessages(prev => [...prev, response]);
+      const response = await chatService.sendNexusMessage(text, messages);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: response.id,
+          role: 'assistant',
+          content: response.content,
+          timestamp: response.timestamp,
+          type: 'department',
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -251,8 +263,8 @@ export const DepartmentInfo: React.FC = () => {
             isLoading={isLoading}
             suggestedPrompts={DEPT_SUGGESTED_PROMPTS}
             type="department"
-            botName="Department Assistant"
-            botSubtitle="Ask about events, exams, faculty, and announcements"
+            botName="Nexus"
+            botSubtitle="Official Department AI Assistant (RAG Grounded)"
           />
         </div>
       )}

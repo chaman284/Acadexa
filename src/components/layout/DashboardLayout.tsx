@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { clsx } from 'clsx';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { NexusFloatingWidget } from '../chatbot/NexusFloatingWidget';
 import type { AuthUser } from '../../services/authService';
 
 interface DashboardLayoutProps {
@@ -37,6 +38,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role, user, ch
           {children}
         </main>
       </div>
+
+      {/* Floating Nexus Department AI Assistant */}
+      <NexusFloatingWidget />
     </div>
   );
 };
