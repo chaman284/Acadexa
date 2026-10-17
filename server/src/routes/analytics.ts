@@ -102,4 +102,49 @@ router.get('/leaderboard/:sectionId', authenticateJWT, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/analytics/class-gaps
+ * Aggregates all student knowledge tracing data across the section to find
+ * the most missed topics and cohort learning gaps.
+ */
+router.get('/class-gaps', authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const sectionId = (req.query.sectionId as string) || 'section-5a';
+    const subjectId = req.query.subjectId as string | undefined;
+
+    const data = await analyticsService.computeClassGaps(sectionId, subjectId);
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error computing class gaps:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * POST /api/analytics/remedial-quiz
+ * Automatically pulls APPROVED questions for the weakest topics and assigns them to the class.
+ */
+router.post(
+  '/remedial-quiz',
+  authenticateJWT,
+  requireRole(['FACULTY', 'ADMIN']),
+  async (req: AuthRequest, res) => {
+    try {
+      const { sectionId, topicIds, title, duration, questionCount } = req.body;
+      const result = await analyticsService.generateRemedialQuiz({
+        sectionId: sectionId || 'section-5a',
+        topicIds,
+        title,
+        duration,
+        questionCount,
+      });
+
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error('Error generating remedial quiz:', error);
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
 export default router;

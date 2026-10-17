@@ -9,9 +9,34 @@ import type { Question } from '../../types/quiz';
 import { Search, Sparkles, Plus, Download, Check, X, Edit2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
+import { questionService } from '../../services/quizService';
 
 export const QuestionBankManagement: React.FC = () => {
+  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
   const [isGenerateModalOpen, setGenerateModalOpen] = useState(false);
+  const [course, setCourse] = useState('Data Structures & Algorithms');
+  const [topic, setTopic] = useState('Graphs - BFS & DFS');
+  const [difficulty, setDifficulty] = useState('MEDIUM');
+  const [count, setCount] = useState(5);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const generated = await questionService.generateQuestions({
+        subject: course,
+        topic,
+        difficulty,
+        count,
+      });
+      setQuestions(prev => [...generated, ...prev]);
+      setGenerateModalOpen(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   
   const columns = [
     {
@@ -84,37 +109,60 @@ export const QuestionBankManagement: React.FC = () => {
             <option>Pending</option>
           </select>
         </div>
-        <DataTable columns={columns} data={mockQuestions} keyField="id" />
+        <DataTable columns={columns} data={questions} keyField="id" />
       </Card>
 
-      <Modal isOpen={isGenerateModalOpen} onClose={() => setGenerateModalOpen(false)} title="Generate Questions with AI">
+      <Modal isOpen={isGenerateModalOpen} onClose={() => !isGenerating && setGenerateModalOpen(false)} title="Generate Questions with AI">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-primary)]">Course</label>
-              <select className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white outline-none focus:border-[var(--color-accent)]">
-                <option>Data Structures & Algorithms</option>
-              </select>
+              <input
+                value={course}
+                onChange={e => setCourse(e.target.value)}
+                className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white dark:bg-[var(--color-surface)] outline-none focus:border-[var(--color-accent)] text-[var(--color-text-primary)]"
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-primary)]">Topic</label>
-              <select className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white outline-none focus:border-[var(--color-accent)]">
-                <option>Graphs - BFS & DFS</option>
-              </select>
+              <input
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white dark:bg-[var(--color-surface)] outline-none focus:border-[var(--color-accent)] text-[var(--color-text-primary)]"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-primary)]">Difficulty</label>
-              <select className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white outline-none focus:border-[var(--color-accent)]">
-                <option>Mixed</option>
-                <option>Hard</option>
+              <select
+                value={difficulty}
+                onChange={e => setDifficulty(e.target.value)}
+                className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white dark:bg-[var(--color-surface)] outline-none focus:border-[var(--color-accent)] text-[var(--color-text-primary)]"
+              >
+                <option value="EASY">Easy</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HARD">Hard</option>
               </select>
             </div>
-            <Input label="Number of Questions" type="number" defaultValue={5} min={1} max={20} />
+            <Input
+              label="Number of Questions"
+              type="number"
+              value={count}
+              onChange={e => setCount(parseInt(e.target.value, 10) || 3)}
+              min={1}
+              max={10}
+            />
           </div>
-          <Button fullWidth className="mt-2" onClick={() => setGenerateModalOpen(false)} leftIcon={<Sparkles className="w-4 h-4"/>}>
-            Generate Questions
+          <Button
+            fullWidth
+            className="mt-2"
+            disabled={isGenerating}
+            isLoading={isGenerating}
+            onClick={handleGenerate}
+            leftIcon={!isGenerating ? <Sparkles className="w-4 h-4"/> : undefined}
+          >
+            {isGenerating ? 'Synthesizing with Gemini 1.5...' : 'Generate Questions'}
           </Button>
         </div>
       </Modal>

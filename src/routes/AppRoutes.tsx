@@ -25,6 +25,7 @@ import { StudentSettingsPage } from '../pages/student/StudentSettings';
 
 // Faculty Pages
 import { FacultyDashboard } from '../pages/faculty/FacultyDashboard';
+import { Dashboard as FacultyHeatmapDashboard } from '../pages/faculty/Dashboard';
 import { ClassAnalytics } from '../pages/faculty/ClassAnalytics';
 import { QuestionBank as FacultyQuestionBank } from '../pages/faculty/QuestionBank';
 import { QuestionPaperBank } from '../pages/faculty/QuestionPaperBank';
@@ -100,15 +101,16 @@ export const AppRoutes = () => {
 
       {/* Faculty Routes */}
       <Route path="/faculty" element={<StandaloneRoute role="faculty"><FacultyDashboard /></StandaloneRoute>} />
+      <Route path="/faculty/dashboard" element={<PrivateRoute role="faculty"><FacultyHeatmapDashboard /></PrivateRoute>} />
       <Route path="/faculty/class/:classId" element={<PrivateRoute role="faculty"><ClassDashboard /></PrivateRoute>} />
       <Route path="/faculty/class/:classId/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilder /></StandaloneRoute>} />
-      <Route path="/faculty/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
+      <Route path="/faculty/analytics" element={<PrivateRoute role="faculty"><FacultyHeatmapDashboard /></PrivateRoute>} />
       <Route path="/faculty/students" element={<PrivateRoute role="faculty"><div>Students Management (Placeholder)</div></PrivateRoute>} />
       <Route path="/faculty/paper-bank" element={<StandaloneRoute role="faculty"><QuestionPaperBank /></StandaloneRoute>} />
       <Route path="/faculty/question-bank" element={<PrivateRoute role="faculty"><FacultyQuestionBank /></PrivateRoute>} />
       <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizManagement /></StandaloneRoute>} />
-      <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
+      <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><FacultyHeatmapDashboard /></PrivateRoute>} />
       <Route path="/faculty/remedial-quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
       <Route path="/faculty/department" element={<PrivateRoute role="faculty"><DepartmentInfo /></PrivateRoute>} />
       <Route path="/faculty/profile" element={<PrivateRoute role="faculty"><FacultyProfile /></PrivateRoute>} />
