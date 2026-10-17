@@ -18,11 +18,7 @@ import { mockLeaderboard } from '../../data/students';
 import type { Student } from '../../types/student';
 import type { Course } from '../../types/course';
 
-const mostImprovedData = [
-  { rank: 1, studentId: 'stu006', studentName: 'Divya Rao', score: 65, change: 'up' as const, changeValue: 3 },
-  { rank: 2, studentId: 'stu001', studentName: 'Chaman', score: 78, change: 'up' as const, changeValue: 2 },
-  { rank: 3, studentId: 'stu002', studentName: 'Priya Nair', score: 82, change: 'up' as const, changeValue: 1 },
-];
+const mostImprovedData: { rank: number; studentId: string; studentName: string; score: number; change: 'up' | 'down' | 'same'; changeValue: number }[] = [];
 
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -74,10 +70,12 @@ export const StudentDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
-            Welcome back, {student?.name?.split(' ')[0] || 'Student'}! 👋
+            Welcome back{student?.name ? `, ${student.name.split(' ')[0]}` : ''}! 👋
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {student?.department || 'Computer Science'} · {student?.semester || 5}th Semester ({student?.section || 'Sec A'}) · Academic Overview
+            {student?.department
+              ? `${student.department} · ${student.semester ? `${student.semester}th Semester` : ''} ${student.section ? `(${student.section}) · ` : ''}Academic Overview`
+              : 'Academic Overview'}
           </p>
         </div>
 
@@ -98,23 +96,23 @@ export const StudentDashboard: React.FC = () => {
         />
         <StatCard
           title="Quiz Average"
-          value={`${student?.quizAverage || 78}%`}
-          trend={5}
-          trendLabel="accuracy score"
+          value={`${student?.quizAverage || 0}%`}
+          trend={student?.quizAverage ? 0 : undefined}
+          trendLabel={student?.quizAverage ? "accuracy score" : undefined}
           icon={<ClipboardList className="w-5 h-5" />}
           accent="navy"
         />
         <StatCard
           title="Learning Gain"
-          value={`+${student?.learningProgress || 12}%`}
-          trend={student?.learningProgress || 12}
-          trendLabel="this semester"
+          value={student?.learningProgress ? `+${student.learningProgress}%` : '0%'}
+          trend={student?.learningProgress ? student.learningProgress : undefined}
+          trendLabel={student?.learningProgress ? "this semester" : undefined}
           icon={<TrendingUp className="w-5 h-5" />}
           accent="success"
         />
         <StatCard
           title="Study Streak"
-          value={`${student?.streak || 7} days`}
+          value={`${student?.streak || 0} days`}
           subtitle="Consistency on track!"
           icon={<Flame className="w-5 h-5" />}
           accent="warning"
@@ -167,26 +165,32 @@ export const StudentDashboard: React.FC = () => {
             }
           />
           <div className="space-y-2.5">
-            {recentEvents.map(ev => (
-              <div key={ev.id} className="p-3 rounded-xl border border-[var(--color-border)] flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  ev.category === 'exam' ? 'bg-rose-50 text-rose-600' : ev.category === 'deadline' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
-                }`}>
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">{ev.title}</span>
-                    <Badge color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'indigo' : 'amber'} className="text-[9px] py-0 px-1 capitalize">
-                      {ev.category}
-                    </Badge>
+            {recentEvents.length > 0 ? (
+              recentEvents.map(ev => (
+                <div key={ev.id} className="p-3 rounded-xl border border-[var(--color-border)] flex items-start gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    ev.category === 'exam' ? 'bg-rose-50 text-rose-600' : ev.category === 'deadline' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
+                  }`}>
+                    <Calendar className="w-4 h-4" />
                   </div>
-                  <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                    {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {ev.time}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">{ev.title}</span>
+                      <Badge color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'indigo' : 'amber'} className="text-[9px] py-0 px-1 capitalize">
+                        {ev.category}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                      {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {ev.time}
+                    </p>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-xs text-[var(--color-text-muted)]">
+                No upcoming exams or department events scheduled.
               </div>
-            ))}
+            )}
           </div>
         </Card>
 
@@ -198,7 +202,7 @@ export const StudentDashboard: React.FC = () => {
           </div>
           <LeaderboardTable
             entries={leaderboardData}
-            currentStudentId={student?.id || 'stu001'}
+            currentStudentId={student?.id || ''}
           />
         </Card>
       </div>

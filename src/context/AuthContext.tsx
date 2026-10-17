@@ -17,7 +17,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Restore session from localStorage on mount
   useEffect(() => {
     const stored = authService.getCurrentUser();
-    if (stored) setUser(stored);
+    if (stored) {
+      if (stored.name === 'Rehan Patel' || stored.name === 'Chaman') {
+        authService.clearCurrentUser();
+        setUser(null);
+      } else {
+        setUser(stored);
+      }
+    }
     setIsLoading(false);
   }, []);
 

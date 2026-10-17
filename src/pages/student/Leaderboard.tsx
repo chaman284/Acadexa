@@ -7,11 +7,7 @@ import { Badge } from '../../components/ui/Badge';
 import { mockLeaderboard } from '../../data/students';
 import { Trophy, TrendingUp } from 'lucide-react';
 
-const mostImprovedData = [
-  { rank: 1, studentId: 'stu006', studentName: 'Divya Rao', score: 65, change: 'up' as const, changeValue: 3 },
-  { rank: 2, studentId: 'stu001', studentName: 'Chaman', score: 78, change: 'up' as const, changeValue: 2 },
-  { rank: 3, studentId: 'stu002', studentName: 'Priya Nair', score: 82, change: 'up' as const, changeValue: 1 },
-];
+const mostImprovedData: { rank: number; studentId: string; studentName: string; score: number; change: 'up' | 'down' | 'same'; changeValue: number }[] = [];
 
 export const Leaderboard: React.FC = () => {
   const [tab, setTab] = useState('weekly');

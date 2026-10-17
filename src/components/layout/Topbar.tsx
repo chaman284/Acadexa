@@ -62,7 +62,7 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
                 {user?.name?.split(' ')[0] || 'User'}
               </p>
               <Badge color="indigo" className="text-[10px] py-0 px-1.5 font-medium">
-                {user?.role === 'faculty' ? 'Faculty' : '5th Sem · CS'}
+                {user?.role === 'faculty' ? 'Faculty' : 'Student'}
               </Badge>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-muted)] hidden md:block" />

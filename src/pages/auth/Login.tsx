@@ -38,8 +38,8 @@ export const Login: React.FC = () => {
   const handleDemoLogin = async (demoRole: 'student' | 'faculty') => {
     setIsLoading(true);
     try {
-      const demoEmail = demoRole === 'student' ? 'rehan@cs.college.edu' : 'soumya@cs.college.edu';
-      const demoPassword = demoRole === 'student' ? 'rehan123' : 'soumya123';
+      const demoEmail = demoRole === 'student' ? 'student@college.edu' : 'faculty@college.edu';
+      const demoPassword = demoRole === 'student' ? 'student123' : 'faculty123';
       const user = await login(demoEmail, demoPassword, demoRole);
       if (demoRole === 'faculty') navigate('/faculty');
       else navigate('/student');
@@ -223,7 +223,7 @@ export const Login: React.FC = () => {
               onClick={() => handleDemoLogin('student')}
               id="demo-student-btn"
             >
-              Student (Rehan)
+              Demo Student
             </Button>
             <Button
               variant="outline"
@@ -232,7 +232,7 @@ export const Login: React.FC = () => {
               onClick={() => handleDemoLogin('faculty')}
               id="demo-faculty-btn"
             >
-              Faculty (Soumya)
+              Demo Faculty
             </Button>
           </div>
 

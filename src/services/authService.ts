@@ -13,21 +13,13 @@ export interface AuthUser {
 
 // Mocked credentials for offline / development fallback
 const MOCK_USERS: Record<string, { password: string; user: AuthUser }> = {
-  'rehan@cs.college.edu': {
-    password: 'rehan123',
-    user: { id: 'stu_rehan', name: 'Rehan Patel', email: 'rehan@cs.college.edu', role: 'student' },
-  },
-  'chaman@cs.college.edu': {
+  'student@college.edu': {
     password: 'student123',
-    user: { id: 'stu001', name: 'Chaman', email: 'chaman@cs.college.edu', role: 'student' },
+    user: { id: 'stu_demo', name: 'Student', email: 'student@college.edu', role: 'student' },
   },
-  'soumya@cs.college.edu': {
-    password: 'soumya123',
-    user: { id: 'fac_soumya', name: 'Soumya', email: 'soumya@cs.college.edu', role: 'faculty' },
-  },
-  'faculty@cs.college.edu': {
+  'faculty@college.edu': {
     password: 'faculty123',
-    user: { id: 'f1', name: 'Dr. Ramesh Kumar', email: 'faculty@cs.college.edu', role: 'faculty' },
+    user: { id: 'fac_demo', name: 'Faculty', email: 'faculty@college.edu', role: 'faculty' },
   },
 };
 
@@ -60,10 +52,13 @@ export const authService = {
         authService.setCurrentUser(entry.user);
         return entry.user;
       }
-      const fallbackUser: AuthUser =
-        role === 'student'
-          ? { id: 'stu001', name: 'Chaman', email, role: 'student' }
-          : { id: 'f1', name: 'Dr. Ramesh Kumar', email, role: 'faculty' };
+      const fallbackName = email ? email.split('@')[0].replace(/[._]/g, ' ') : (role === 'student' ? 'Student' : 'Faculty');
+      const fallbackUser: AuthUser = {
+        id: role === 'student' ? 'user_student' : 'user_faculty',
+        name: fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1),
+        email,
+        role,
+      };
       authService.setCurrentUser(fallbackUser);
       return fallbackUser;
     }

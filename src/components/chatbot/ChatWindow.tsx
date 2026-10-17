@@ -3,6 +3,7 @@ import { Send, Sparkles, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ChatMessage } from '../../types/department';
 import { Avatar } from '../ui/Avatar';
+import { useAuth } from '../../context/AuthContext';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -23,6 +24,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   botName = 'AI Tutor',
   botSubtitle = 'Ask me anything academic',
 }) => {
+  const { user } = useAuth();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -119,7 +121,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
             ) : (
-              <Avatar name="Chaman" size="sm" className="mt-1 flex-shrink-0" />
+              <Avatar name={user?.name || 'You'} size="sm" className="mt-1 flex-shrink-0" />
             )}
             <div
               className={clsx(

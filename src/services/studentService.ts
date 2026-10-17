@@ -2,8 +2,8 @@ import api from '../lib/apiClient';
 import type { Student, StudentSettings } from '../types/student';
 import { mockCurrentStudent } from '../data/students';
 
-const PROFILE_STORAGE_KEY = 'acadexa_student_profile_v1';
-const SETTINGS_STORAGE_KEY = 'acadexa_student_settings_v1';
+const PROFILE_STORAGE_KEY = 'acadexa_student_profile_v2';
+const SETTINGS_STORAGE_KEY = 'acadexa_student_settings_v2';
 
 const defaultSettings: StudentSettings = {
   emailNotifications: true,
@@ -18,10 +18,11 @@ const defaultSettings: StudentSettings = {
 
 const defaultProfile: Student = {
   ...mockCurrentStudent,
-  phone: '+91 98765 43210',
-  bio: 'Undergraduate student exploring data structures, algorithms, and full-stack system design.',
-  academicYear: '2024–2025',
-  section: 'Section A',
+  name: '',
+  phone: '',
+  bio: '',
+  academicYear: '',
+  section: '',
 };
 
 export const studentService = {
@@ -29,11 +30,25 @@ export const studentService = {
     // Attempt to load from localStorage first or fallback
     let localData = defaultProfile;
     try {
+      // Clear legacy storage keys if present
+      localStorage.removeItem('acadexa_student_profile_v1');
       const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
       if (stored) {
-        localData = { ...defaultProfile, ...JSON.parse(stored) };
-      } else {
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(defaultProfile));
+        const parsed = JSON.parse(stored);
+        if (parsed.name === 'Rehan Patel' || parsed.name === 'Chaman') {
+          localStorage.removeItem(PROFILE_STORAGE_KEY);
+        } else {
+          localData = { ...defaultProfile, ...parsed };
+        }
+      }
+      
+      const userStored = localStorage.getItem('acadexa_user');
+      if (userStored) {
+        const u = JSON.parse(userStored);
+        if (u.name && u.name !== 'Rehan Patel' && u.name !== 'Chaman') {
+          localData.name = u.name;
+          localData.email = u.email || localData.email;
+        }
       }
     } catch (e) {
       console.warn('Failed reading profile from storage:', e);

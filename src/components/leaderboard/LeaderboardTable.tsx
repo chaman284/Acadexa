@@ -16,6 +16,14 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   currentStudentId,
   compact = false,
 }) => {
+  if (!entries || entries.length === 0) {
+    return (
+      <div className="py-8 text-center text-xs text-[var(--color-text-muted)]">
+        No leaderboard data available yet.
+      </div>
+    );
+  }
+
   const rankColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
   const rankBg = ['bg-yellow-50', 'bg-gray-50', 'bg-amber-50'];
 
