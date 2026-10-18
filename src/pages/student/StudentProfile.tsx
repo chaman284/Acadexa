@@ -7,6 +7,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';
 import { studentService } from '../../services/studentService';
 import type { Student } from '../../types/student';
+import api from '../../lib/apiClient';
 import {
   User, Mail, Phone, BookOpen, GraduationCap, Building2,
   Calendar, Award, CheckCircle2, AlertCircle, Edit3, Save, X, Sparkles
@@ -14,6 +15,7 @@ import {
 
 export const StudentProfile: React.FC = () => {
   const [profile, setProfile] = useState<Student | null>(null);
+  const [coursesCount, setCoursesCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,8 +36,13 @@ export const StudentProfile: React.FC = () => {
   const loadProfile = async () => {
     setIsLoading(true);
     try {
-      const data = await studentService.getProfile();
+      const [data, coursesRes] = await Promise.all([
+        studentService.getProfile(),
+        api.get('/courses').catch(() => ({ data: [] })),
+      ]);
       setProfile(data);
+      const fetchedCourses = Array.isArray(coursesRes.data) ? coursesRes.data : [];
+      setCoursesCount(fetchedCourses.length > 0 ? fetchedCourses.length : (data.enrolledCourses?.length || 0));
       setFormData({
         name: data.name || '',
         phone: data.phone || '',
@@ -208,7 +215,7 @@ export const StudentProfile: React.FC = () => {
           </div>
           <div className="p-4 text-center">
             <p className="text-xs text-[var(--color-text-muted)] font-medium">Courses Enrolled</p>
-            <p className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{profile.enrolledCourses?.length || 4}</p>
+            <p className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{coursesCount}</p>
           </div>
         </div>
 
@@ -295,7 +302,7 @@ export const StudentProfile: React.FC = () => {
                   <div className="p-3 rounded-xl border border-[var(--color-border)] bg-white">
                     <GraduationCap className="w-4 h-4 text-[var(--color-text-muted)] mb-1" />
                     <p className="text-xs text-[var(--color-text-muted)]">Semester</p>
-                    <p className="font-semibold text-[var(--color-text-primary)]">{profile.semester}th Semester</p>
+                    <p className="font-semibold text-[var(--color-text-primary)]">Semester {profile.semester || 1}</p>
                   </div>
                   <div className="p-3 rounded-xl border border-[var(--color-border)] bg-white">
                     <Calendar className="w-4 h-4 text-[var(--color-text-muted)] mb-1" />

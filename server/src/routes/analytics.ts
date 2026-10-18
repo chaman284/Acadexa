@@ -1,8 +1,24 @@
 import { Router } from 'express';
 import { analyticsService } from '../services/analyticsService';
-import { authenticateJWT, requireRole } from '../middleware/auth';
+import { authenticateJWT, requireRole, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+// Faculty learning gaps breakdown across assigned classes
+router.get(
+  '/faculty/learning-gaps',
+  authenticateJWT,
+  requireRole(['FACULTY', 'ADMIN']),
+  async (req: AuthRequest, res) => {
+    try {
+      const classId = req.query.classId as string | undefined;
+      const data = await analyticsService.getFacultyLearningGaps(req.user!.id, classId);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
 
 // Student performance summary
 router.get('/student/:id', authenticateJWT, async (req, res) => {

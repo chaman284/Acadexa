@@ -33,6 +33,10 @@ export const FacultyManagement: React.FC = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedFacultyForProfile, setSelectedFacultyForProfile] = useState<FacultyRecord | null>(null);
 
+  // Remove Faculty Modal state
+  const [isRemoveFacultyModalOpen, setIsRemoveFacultyModalOpen] = useState(false);
+  const [selectedRemoveFacultyId, setSelectedRemoveFacultyId] = useState('');
+
   // Assignment form state
   const [assignFacultyId, setAssignFacultyId] = useState('');
   const [assignSubjectId, setAssignSubjectId] = useState('');
@@ -81,6 +85,45 @@ export const FacultyManagement: React.FC = () => {
     setAssignSectionId(sections.length > 0 ? sections[0].id : '');
     setIsAssignModalOpen(true);
     setActionMessage(null);
+  };
+
+  const handleOpenRemoveFacultyModal = (facultyId?: string) => {
+    setActionMessage(null);
+    if (facultyId) {
+      setSelectedRemoveFacultyId(facultyId);
+    } else if (facultyList.length > 0) {
+      setSelectedRemoveFacultyId(facultyList[0].id);
+    } else {
+      setSelectedRemoveFacultyId('');
+    }
+    setIsRemoveFacultyModalOpen(true);
+  };
+
+  const handleRemoveFacultySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRemoveFacultyId) return;
+
+    const facultyToDelete = facultyList.find(f => f.id === selectedRemoveFacultyId);
+    const facultyLabel = facultyToDelete ? `${facultyToDelete.name} (${facultyToDelete.email})` : 'Faculty member';
+
+    setIsSubmitting(true);
+    try {
+      await adminService.deleteFaculty(selectedRemoveFacultyId);
+      setIsRemoveFacultyModalOpen(false);
+      setSelectedRemoveFacultyId('');
+      setActionMessage({
+        type: 'success',
+        text: `${facultyLabel} was successfully removed.`,
+      });
+      loadData();
+    } catch (err: any) {
+      setActionMessage({
+        type: 'error',
+        text: err?.response?.data?.message || 'Failed to remove faculty member.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAssignSubmit = async (e: React.FormEvent) => {
@@ -134,10 +177,22 @@ export const FacultyManagement: React.FC = () => {
         subtitle="Manage teaching faculty, review assigned courses and section allocations"
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Faculty' }]}
         action={
-          <Button onClick={() => handleOpenAssignModal()} size="sm" className="gap-2 shadow-sm">
-            <Plus className="w-4 h-4" />
-            Assign Faculty
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => handleOpenRemoveFacultyModal()}
+              variant="outline"
+              size="sm"
+              className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+              disabled={facultyList.length === 0}
+            >
+              <Trash2 className="w-4 h-4" />
+              Remove Faculty
+            </Button>
+            <Button onClick={() => handleOpenAssignModal()} size="sm" className="gap-2 shadow-sm">
+              <Plus className="w-4 h-4" />
+              Assign Faculty
+            </Button>
+          </div>
         }
       />
 
@@ -317,6 +372,14 @@ export const FacultyManagement: React.FC = () => {
                           <Plus className="w-3.5 h-3.5" />
                           Assign
                         </button>
+                        <button
+                          onClick={() => handleOpenRemoveFacultyModal(faculty.id)}
+                          className="px-2.5 py-1 text-xs font-medium rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors flex items-center gap-1"
+                          title="Remove Faculty Member"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Remove
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -474,6 +537,103 @@ export const FacultyManagement: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* ── Remove Faculty Modal ── */}
+      <Modal
+        isOpen={isRemoveFacultyModalOpen}
+        onClose={() => setIsRemoveFacultyModalOpen(false)}
+        title="Remove Registered Faculty Member"
+      >
+        <form onSubmit={handleRemoveFacultySubmit} className="space-y-4">
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            Choose from the registered faculty members below to remove their account and revoke all their course allocations.
+          </p>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+              Registered Faculty Member
+            </label>
+            {facultyList.length === 0 ? (
+              <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                No faculty members are currently registered to remove.
+              </p>
+            ) : (
+              <select
+                id="remove-faculty-select"
+                value={selectedRemoveFacultyId}
+                onChange={e => setSelectedRemoveFacultyId(e.target.value)}
+                className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+                required
+              >
+                <option value="">-- Select a registered faculty member --</option>
+                {facultyList.map(f => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} — {f.email}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Details preview of the selected faculty */}
+          {(() => {
+            const facultyDetails = facultyList.find(f => f.id === selectedRemoveFacultyId);
+            if (!facultyDetails) return null;
+
+            return (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs text-slate-700">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-900">Selected Faculty:</span>
+                  <Badge color="purple" className="text-[11px]">
+                    Faculty Member
+                  </Badge>
+                </div>
+                <div className="text-sm font-bold text-slate-800">{facultyDetails.name}</div>
+                <div className="text-xs text-slate-500">{facultyDetails.email}</div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Courses Assigned</span>
+                    <span className="font-medium text-slate-700">{facultyDetails.coursesCount} courses</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Sections Assigned</span>
+                    <span className="font-medium text-slate-700">{facultyDetails.sectionsCount} sections</span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 flex items-start gap-2 mt-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-[11px] leading-tight">
+                    Warning: Removing this faculty member will delete their user account and detach all their assigned subjects and sections.
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="pt-2 flex justify-end gap-2 border-t border-[var(--color-border)] mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRemoveFacultyModalOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              isLoading={isSubmitting}
+              disabled={!selectedRemoveFacultyId || facultyList.length === 0}
+              className="gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" />
+              Remove Faculty
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

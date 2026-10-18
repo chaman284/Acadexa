@@ -11,7 +11,7 @@ import {
   type DepartmentRecord,
 } from '../../services/adminService';
 import {
-  Building2, Plus, Users, BookOpen,
+  Building2, Plus, Users, BookOpen, Trash2,
   CheckCircle2, AlertCircle, RefreshCw, Layers
 } from 'lucide-react';
 
@@ -27,6 +27,10 @@ export const SectionManagement: React.FC = () => {
   const [sectionName, setSectionName] = useState('A');
   const [sectionSemester, setSectionSemester] = useState(5);
   const [sectionDeptId, setSectionDeptId] = useState('');
+
+  // Remove Section Modal
+  const [isRemoveSectionModalOpen, setIsRemoveSectionModalOpen] = useState(false);
+  const [selectedRemoveSectionId, setSelectedRemoveSectionId] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -84,6 +88,47 @@ export const SectionManagement: React.FC = () => {
     }
   };
 
+  const handleOpenRemoveSectionModal = (sectionId?: string) => {
+    setActionMessage(null);
+    if (sectionId) {
+      setSelectedRemoveSectionId(sectionId);
+    } else if (sections.length > 0) {
+      setSelectedRemoveSectionId(sections[0].id);
+    } else {
+      setSelectedRemoveSectionId('');
+    }
+    setIsRemoveSectionModalOpen(true);
+  };
+
+  const handleRemoveSectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRemoveSectionId) return;
+
+    const sectionToDelete = sections.find(s => s.id === selectedRemoveSectionId);
+    const sectionLabel = sectionToDelete ? `Sem ${sectionToDelete.semester}-${sectionToDelete.name} (${sectionToDelete.departmentCode})` : 'Section';
+
+    setIsSubmitting(true);
+    try {
+      await adminService.deleteSection(selectedRemoveSectionId);
+      setIsRemoveSectionModalOpen(false);
+      setSelectedRemoveSectionId('');
+      setActionMessage({
+        type: 'success',
+        text: `Section ${sectionLabel} was successfully removed.`,
+      });
+      loadData();
+    } catch (err: any) {
+      setActionMessage({
+        type: 'error',
+        text: err?.response?.data?.message || 'Failed to remove section.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const selectedSectionDetails = sections.find(s => s.id === selectedRemoveSectionId);
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <PageHeader
@@ -91,10 +136,22 @@ export const SectionManagement: React.FC = () => {
         subtitle="Manage academic class cohorts, semesters, years, and student section allocations"
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Sections' }]}
         action={
-          <Button onClick={handleOpenAddModal} size="sm" className="gap-2 shadow-sm">
-            <Plus className="w-4 h-4" />
-            Add New Section
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => handleOpenRemoveSectionModal()}
+              variant="outline"
+              size="sm"
+              className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+              disabled={sections.length === 0}
+            >
+              <Trash2 className="w-4 h-4" />
+              Remove Section
+            </Button>
+            <Button onClick={handleOpenAddModal} size="sm" className="gap-2 shadow-sm">
+              <Plus className="w-4 h-4" />
+              Add New Section
+            </Button>
+          </div>
         }
       />
 
@@ -159,7 +216,7 @@ export const SectionManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {sections.map(section => (
-            <Card key={section.id} className="p-5 border border-[var(--color-border)] hover:border-indigo-200 transition-colors">
+            <Card key={section.id} className="p-5 border border-[var(--color-border)] hover:border-indigo-200 transition-colors relative group">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -174,8 +231,17 @@ export const SectionManagement: React.FC = () => {
                     {section.departmentName} ({section.departmentCode})
                   </p>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                  <Building2 className="w-4 h-4" />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => handleOpenRemoveSectionModal(section.id)}
+                    className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
+                    title="Remove Section"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <Building2 className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
 
@@ -285,6 +351,108 @@ export const SectionManagement: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ── Remove Section Modal ── */}
+      <Modal
+        isOpen={isRemoveSectionModalOpen}
+        onClose={() => setIsRemoveSectionModalOpen(false)}
+        title="Remove Academic Section"
+      >
+        <form onSubmit={handleRemoveSectionSubmit} className="space-y-4">
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            Choose from the registered class sections below to remove the cohort and clear its allocations.
+          </p>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+              Registered Section
+            </label>
+            {sections.length === 0 ? (
+              <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                No sections are currently registered to remove.
+              </p>
+            ) : (
+              <select
+                id="remove-section-select"
+                value={selectedRemoveSectionId}
+                onChange={e => setSelectedRemoveSectionId(e.target.value)}
+                className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+                required
+              >
+                <option value="">-- Select a registered section --</option>
+                {sections.map(s => (
+                  <option key={s.id} value={s.id}>
+                    Semester {s.semester} — Section {s.name} ({s.departmentName})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Details preview of the selected section */}
+          {selectedSectionDetails && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs text-slate-700">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-900">Selected Section:</span>
+                <Badge color="indigo" className="text-[11px]">
+                  Sem {selectedSectionDetails.semester} — {selectedSectionDetails.name}
+                </Badge>
+              </div>
+              <div className="text-sm font-bold text-slate-800">
+                {selectedSectionDetails.departmentName} ({selectedSectionDetails.departmentCode})
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Academic Year</span>
+                  <span className="font-medium text-slate-700">Year {selectedSectionDetails.year}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Enrolled Students</span>
+                  <span className="font-medium text-slate-700">{selectedSectionDetails.studentsCount} students</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Active Courses</span>
+                  <span className="font-medium text-slate-700">{selectedSectionDetails.assignmentsCount} courses</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Assigned Faculty</span>
+                  <span className="font-medium text-slate-700">{selectedSectionDetails.faculty.length} instructors</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 flex items-start gap-2 mt-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                <span className="text-[11px] leading-tight">
+                  Warning: Removing this section will permanently remove this class cohort, its student allocations, and faculty assignments.
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 flex justify-end gap-2 border-t border-[var(--color-border)] mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRemoveSectionModalOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              isLoading={isSubmitting}
+              disabled={!selectedRemoveSectionId || sections.length === 0}
+              className="gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" />
+              Remove Section
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
+

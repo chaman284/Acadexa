@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Check,
   BookOpen, Clock, BarChart2, Layers,
@@ -9,6 +9,27 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { facultyClasses } from '../../data/facultyClasses';
 import { mockQuestions } from '../../data/quizzes';
+import api from '../../lib/apiClient';
+
+interface CourseItem {
+  id: string;
+  name: string;
+  code: string;
+  semester: number;
+  departmentName?: string;
+  departmentCode?: string;
+}
+
+interface SectionItem {
+  id: string;
+  name: string;
+  section: string;
+  semester: number;
+  semesterLabel: string;
+  departmentName?: string;
+  departmentCode?: string;
+  studentsCount: number;
+}
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 const steps = ['Quiz Details', 'Questions', 'Assign & Schedule'];
@@ -62,23 +83,107 @@ const selectCls = inputCls + " cursor-pointer";
 // ─── Quiz Builder ─────────────────────────────────────────────────────────────
 export const QuizBuilder: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as {
+    title?: string;
+    topicId?: string;
+    topicName?: string;
+    courseId?: string;
+    subject?: string;
+    sectionId?: string;
+    section?: string;
+    semester?: string | number;
+    remedial?: boolean;
+  } | null;
+
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
 
+  // Available courses & sections loaded from DB
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [dbSections, setDbSections] = useState<SectionItem[]>([]);
+
   // Step 1 state
-  const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
+  const [title, setTitle] = useState(locationState?.title || '');
+  const [selectedSemester, setSelectedSemester] = useState<string>(
+    locationState?.semester ? String(locationState.semester).replace(/\D/g, '') : ''
+  );
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(locationState?.courseId || '');
+  const [subject, setSubject] = useState(locationState?.subject || '');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [duration, setDuration] = useState(20);
+
+  // Fetch registered courses and sections from DB
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [coursesRes, sectionsRes] = await Promise.all([
+          api.get('/courses'),
+          api.get('/sections'),
+        ]);
+        if (Array.isArray(coursesRes.data)) {
+          setCourses(coursesRes.data);
+          if (locationState?.courseId) {
+            const matched = coursesRes.data.find(c => c.id === locationState.courseId);
+            if (matched) {
+              setSelectedCourseId(matched.id);
+              setSelectedSemester(String(matched.semester));
+              setSubject(matched.name);
+            }
+          }
+        }
+        if (Array.isArray(sectionsRes.data)) {
+          setDbSections(sectionsRes.data);
+          if (locationState?.sectionId) {
+            setAssignedClassIds([locationState.sectionId]);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch courses or sections:', err);
+      }
+    };
+    fetchData();
+  }, [location.state]);
+
+  // Filter courses by chosen semester
+  const semesterCourses = useMemo(() => {
+    if (!selectedSemester) return [];
+    return courses.filter(c => (c.semester || 1) === Number(selectedSemester));
+  }, [courses, selectedSemester]);
 
   // Step 2 state
   const [selectedQIds, setSelectedQIds] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
 
+  const defaultQuestions = useMemo(() => [
+    { id: 'q1', text: `Which foundational algorithmic paradigm is best suited for ${subject || 'this course'} problem solving?`, difficulty: 'easy' as const, topicName: 'Foundations', correctRate: 85 },
+    { id: 'q2', text: 'Explain the runtime and memory overhead trade-offs for dynamic memory allocations.', difficulty: 'medium' as const, topicName: 'Architecture', correctRate: 70 },
+    { id: 'q3', text: 'Analyze the worst-case time complexity of balancing operations in self-balancing structures.', difficulty: 'medium' as const, topicName: 'Complex Operations', correctRate: 62 },
+    { id: 'q4', text: 'What is the consequence of priority inversion and how can synchronization protocols prevent it?', difficulty: 'hard' as const, topicName: 'Concurrency & Systems', correctRate: 46 },
+    { id: 'q5', text: 'Identify the invariant condition that must hold during transactional commits.', difficulty: 'easy' as const, topicName: 'Integrity Rules', correctRate: 89 },
+  ], [subject]);
+
+  const displayQuestions = mockQuestions.length > 0 ? mockQuestions : defaultQuestions;
+
   // Step 3 state
   const [assignedClassIds, setAssignedClassIds] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
   const [publishNow, setPublishNow] = useState(false);
+
+  // Dynamic sections strictly filtered by selected semester with true student count
+  const availableClasses = useMemo(() => {
+    if (!selectedSemester) return [];
+    const targetSem = Number(selectedSemester);
+    const matchingSections = dbSections.filter(s => s.semester === targetSem);
+
+    return matchingSections.map(s => ({
+      id: s.id,
+      semester: `Semester ${s.semester}`,
+      section: `Section ${s.name}`,
+      subject: subject || 'Curriculum Course',
+      studentsCount: s.studentsCount || 0,
+    }));
+  }, [dbSections, selectedSemester, subject]);
 
   const toggleQuestion = (id: string) =>
     setSelectedQIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -88,19 +193,48 @@ export const QuizBuilder: React.FC = () => {
 
   const simulateAI = async () => {
     setAiLoading(true);
-    await new Promise(r => setTimeout(r, 1400));
-    setSelectedQIds(mockQuestions.slice(0, 4).map(q => q.id));
+    await new Promise(r => setTimeout(r, 1200));
+    setSelectedQIds(displayQuestions.slice(0, 4).map(q => q.id));
     setAiLoading(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    navigate('/faculty/quizzes');
+    try {
+      if (selectedCourseId) {
+        const questionsToSend = displayQuestions
+          .filter(q => selectedQIds.includes(q.id))
+          .map(q => ({
+            id: q.id,
+            text: q.text,
+            difficulty: q.difficulty,
+            topicName: q.topicName,
+          }));
+
+        const targetSection = assignedClassIds[0] || (availableClasses.length > 0 ? availableClasses[0].id : '');
+
+        await api.post('/quizzes', {
+          title: title.trim(),
+          subjectId: selectedCourseId,
+          sectionId: targetSection,
+          duration: Number(duration),
+          type: 'WEEKLY',
+          scheduledAt: !publishNow && scheduledDate ? new Date(scheduledDate) : undefined,
+          questionIds: selectedQIds,
+          questions: questionsToSend,
+        });
+      }
+      navigate('/faculty/quizzes');
+    } catch (err: any) {
+      console.error('Failed to save quiz:', err);
+      alert(err?.response?.data?.message || 'Failed to create quiz. Please check requirements.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const canNext = [
-    title.trim().length > 0 && subject.length > 0,
+    title.trim().length > 0 && selectedSemester !== '' && selectedCourseId !== '',
     selectedQIds.length > 0,
     assignedClassIds.length > 0,
   ][step];
@@ -142,22 +276,80 @@ export const QuizBuilder: React.FC = () => {
             <h2 className="font-semibold text-[var(--color-text-primary)]">Basic Details</h2>
           </div>
 
-          <Field label="Quiz Title">
+          <Field label="Quiz Title" hint="Provide a clear, descriptive title for this quiz">
             <input
               className={inputCls}
-              placeholder="e.g. Week 7 — Binary Search Trees"
+              placeholder="e.g. Unit 3 Assessment — Binary Search & Trees"
               value={title}
               onChange={e => setTitle(e.target.value)}
+              required
             />
           </Field>
 
-          <Field label="Subject / Topic" hint="Choose the subject this quiz covers">
-            <select className={selectCls} value={subject} onChange={e => setSubject(e.target.value)}>
-              <option value="">Select subject…</option>
-              {[...new Set(facultyClasses.map(c => c.subject))].map(s => (
-                <option key={s} value={s}>{s}</option>
+          {/* Academic Semester Selector */}
+          <Field label="Academic Semester" hint="Choose the target semester for this quiz">
+            <select
+              className={selectCls}
+              value={selectedSemester}
+              onChange={e => {
+                const sem = e.target.value;
+                setSelectedSemester(sem);
+                setSelectedCourseId('');
+                setSubject('');
+                setAssignedClassIds([]);
+              }}
+              required
+            >
+              <option value="">-- Select Semester (1 - 8) --</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                <option key={s} value={s}>
+                  Semester {s}
+                </option>
               ))}
             </select>
+          </Field>
+
+          {/* Course / Subject Dropdown (Filtered by Semester) */}
+          <Field
+            label="Course / Subject"
+            hint={
+              !selectedSemester
+                ? 'Select a semester above to see registered courses'
+                : `Showing courses registered for Semester ${selectedSemester}`
+            }
+          >
+            <select
+              className={selectCls}
+              value={selectedCourseId}
+              disabled={!selectedSemester}
+              onChange={e => {
+                const courseId = e.target.value;
+                setSelectedCourseId(courseId);
+                const found = courses.find(c => c.id === courseId);
+                setSubject(found ? `${found.code} — ${found.name}` : '');
+              }}
+              required
+            >
+              {!selectedSemester ? (
+                <option value="">-- Select a semester first --</option>
+              ) : semesterCourses.length === 0 ? (
+                <option value="">-- No courses registered for Semester ${selectedSemester} --</option>
+              ) : (
+                <>
+                  <option value="">-- Select Course --</option>
+                  {semesterCourses.map(c => (
+                    <option key={c.id} value={c.id}>
+                      [{c.code}] {c.name} {c.departmentName ? `(${c.departmentName})` : ''}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+            {selectedSemester && semesterCourses.length === 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-2">
+                No courses are registered for Semester {selectedSemester} yet. Please register courses for Semester {selectedSemester} in the Admin Portal.
+              </p>
+            )}
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
@@ -224,7 +416,7 @@ export const QuizBuilder: React.FC = () => {
           </div>
 
           <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-            {mockQuestions.map(q => {
+            {displayQuestions.map(q => {
               const selected = selectedQIds.includes(q.id);
               return (
                 <button
@@ -283,48 +475,62 @@ export const QuizBuilder: React.FC = () => {
       {step === 2 && (
         <div className="space-y-4">
           <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4 text-[var(--color-accent)]" />
-              <h2 className="font-semibold text-[var(--color-text-primary)]">Assign to Classes</h2>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[var(--color-accent)]" />
+                <h2 className="font-semibold text-[var(--color-text-primary)]">Assign to Classes</h2>
+              </div>
+              {selectedSemester && (
+                <Badge color="indigo">Semester {selectedSemester}</Badge>
+              )}
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Select which classes will receive this quiz.
+              Select which section(s) in Semester {selectedSemester || ''} will receive this quiz.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-3">
-              {facultyClasses.map(cls => {
-                const assigned = assignedClassIds.includes(cls.id);
-                return (
-                  <button
-                    key={cls.id}
-                    onClick={() => toggleClass(cls.id)}
-                    className="text-left rounded-xl border-2 p-4 transition-all"
-                    style={{
-                      borderColor: assigned ? 'var(--color-accent)' : 'var(--color-border)',
-                      background: assigned ? 'var(--color-accent-light)' : '#fff',
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                          {cls.semester} · {cls.section}
-                        </p>
-                        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{cls.subject}</p>
-                        <p className="text-xs text-[var(--color-text-muted)]">{cls.studentsCount} students</p>
+            {availableClasses.length === 0 ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
+                No sections are registered in the database for Semester {selectedSemester}. Please add sections in the Admin Portal under Sections.
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {availableClasses.map(cls => {
+                  const assigned = assignedClassIds.includes(cls.id);
+                  return (
+                    <button
+                      key={cls.id}
+                      type="button"
+                      onClick={() => toggleClass(cls.id)}
+                      className="text-left rounded-xl border-2 p-4 transition-all"
+                      style={{
+                        borderColor: assigned ? 'var(--color-accent)' : 'var(--color-border)',
+                        background: assigned ? 'var(--color-accent-light)' : '#fff',
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-[var(--color-text-primary)]">
+                            {cls.semester} · {cls.section}
+                          </p>
+                          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{cls.subject}</p>
+                          <p className="text-xs text-[var(--color-text-muted)] font-medium">
+                            {cls.studentsCount} {cls.studentsCount === 1 ? 'student enrolled' : 'students enrolled'}
+                          </p>
+                        </div>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center transition-all"
+                          style={{
+                            background: assigned ? 'var(--color-accent)' : 'var(--color-muted)',
+                          }}
+                        >
+                          {assigned && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
                       </div>
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center transition-all"
-                        style={{
-                          background: assigned ? 'var(--color-accent)' : 'var(--color-muted)',
-                        }}
-                      >
-                        {assigned && <Check className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="card p-6 space-y-4">
@@ -363,8 +569,14 @@ export const QuizBuilder: React.FC = () => {
             <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Summary</p>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-[var(--color-text-muted)]">Title</span>
-                <span className="font-semibold text-[var(--color-text-primary)]">{title || '—'}</span>
+                <span className="text-[var(--color-text-muted)]">Semester</span>
+                <span className="font-semibold text-[var(--color-text-primary)]">
+                  {selectedSemester ? `Semester ${selectedSemester}` : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--color-text-muted)]">Course</span>
+                <span className="font-semibold text-[var(--color-text-primary)]">{subject || '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-muted)]">Questions</span>
@@ -378,7 +590,7 @@ export const QuizBuilder: React.FC = () => {
                 <span className="text-[var(--color-text-muted)]">Classes</span>
                 <span className="font-semibold text-[var(--color-text-primary)]">
                   {assignedClassIds.length > 0
-                    ? facultyClasses.filter(c => assignedClassIds.includes(c.id)).map(c => `${c.section}`).join(', ')
+                    ? availableClasses.filter(c => assignedClassIds.includes(c.id)).map(c => `${c.section}`).join(', ')
                     : '—'}
                 </span>
               </div>

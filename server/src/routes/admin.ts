@@ -387,6 +387,55 @@ router.delete(['/faculty/assignments/:id', '/faculty/assignment/:id'], async (re
   }
 });
 
+// Remove Faculty Member
+router.delete('/faculty/:id', async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+
+    const faculty = await prisma.faculty.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        assignments: true,
+      },
+    });
+
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty member not found' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Remove all faculty subject/section assignments
+      await tx.facultySubject.deleteMany({
+        where: { facultyId: id },
+      });
+
+      // 2. Remove notifications targeted to this user
+      await tx.notification.deleteMany({
+        where: { userId: faculty.userId },
+      });
+
+      // 3. Remove faculty profile
+      await tx.faculty.delete({
+        where: { id },
+      });
+
+      // 4. Remove underlying user account
+      await tx.user.delete({
+        where: { id: faculty.userId },
+      });
+    });
+
+    res.json({
+      message: `Faculty member "${faculty.user.name}" (${faculty.user.email}) removed successfully.`,
+      deletedFacultyId: id,
+    });
+  } catch (error: any) {
+    console.error('Error removing faculty:', error);
+    res.status(500).json({ message: error.message || 'Failed to remove faculty member' });
+  }
+});
+
 // ============================================================
 // 3. COURSE / SUBJECT MANAGEMENT
 // ============================================================
@@ -394,7 +443,20 @@ router.delete(['/faculty/assignments/:id', '/faculty/assignment/:id'], async (re
 // List all courses
 router.get('/courses', async (req, res) => {
   try {
+    const { departmentId, semester, search } = req.query;
+
+    const where: any = {};
+    if (departmentId) where.departmentId = String(departmentId);
+    if (semester) where.semester = parseInt(String(semester), 10);
+    if (search) {
+      where.OR = [
+        { code: { contains: String(search), mode: 'insensitive' } },
+        { name: { contains: String(search), mode: 'insensitive' } },
+      ];
+    }
+
     const courses = await prisma.subject.findMany({
+      where,
       include: {
         department: true,
         assignments: {
@@ -409,13 +471,14 @@ router.get('/courses', async (req, res) => {
           select: { quizzes: true, topics: true },
         },
       },
-      orderBy: { code: 'asc' },
+      orderBy: [{ semester: 'asc' }, { code: 'asc' }],
     });
 
     const formatted = courses.map(c => ({
       id: c.id,
       name: c.name,
       code: c.code,
+      semester: (c as any).semester || 1,
       departmentId: c.departmentId,
       departmentName: c.department.name,
       departmentCode: c.department.code,
@@ -441,11 +504,13 @@ router.get('/courses', async (req, res) => {
 // Add new course
 router.post('/courses', async (req, res) => {
   try {
-    const { name, code, departmentId } = req.body;
+    const { name, code, departmentId, semester } = req.body;
 
     if (!name || !code || !departmentId) {
       return res.status(400).json({ message: 'Course name, unique code, and department are required' });
     }
+
+    const semNumber = semester ? parseInt(String(semester), 10) : 1;
 
     // Check duplicate course code
     const existing = await prisma.subject.findFirst({
@@ -465,6 +530,7 @@ router.post('/courses', async (req, res) => {
         name: name.trim(),
         code: code.trim().toUpperCase(),
         departmentId,
+        semester: semNumber,
       },
       include: { department: true },
     });
@@ -479,7 +545,7 @@ router.post('/courses', async (req, res) => {
 router.put('/courses/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const { name, code, departmentId } = req.body;
+    const { name, code, departmentId, semester } = req.body;
 
     const course = await prisma.subject.findUnique({ where: { id } });
     if (!course) return res.status(404).json({ message: 'Course not found' });
@@ -502,6 +568,7 @@ router.put('/courses/:id', async (req, res) => {
         ...(name ? { name: name.trim() } : {}),
         ...(code ? { code: code.trim().toUpperCase() } : {}),
         ...(departmentId ? { departmentId } : {}),
+        ...(semester !== undefined ? { semester: parseInt(String(semester), 10) } : {}),
       },
       include: { department: true },
     });
@@ -511,6 +578,125 @@ router.put('/courses/:id', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// Delete course (remove course registered by admin)
+router.delete('/courses/:id', async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+
+    const course = await prisma.subject.findUnique({
+      where: { id },
+      include: {
+        department: true,
+      },
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete faculty assignments
+      await tx.facultySubject.deleteMany({
+        where: { subjectId: id },
+      });
+
+      // 2. Delete syllabus documents linked to this subject
+      await tx.syllabusDocument.deleteMany({
+        where: { subjectId: id },
+      });
+
+      // 3. Handle quizzes linked to this course
+      const quizzes = await tx.quiz.findMany({
+        where: { subjectId: id },
+        select: { id: true },
+      });
+      const quizIds = quizzes.map((q) => q.id);
+
+      if (quizIds.length > 0) {
+        // Delete attempt answers for quiz attempts
+        await tx.attemptAnswer.deleteMany({
+          where: {
+            attempt: {
+              quizId: { in: quizIds },
+            },
+          },
+        });
+
+        // Delete quiz attempts
+        await tx.quizAttempt.deleteMany({
+          where: { quizId: { in: quizIds } },
+        });
+
+        // Delete quiz questions
+        await tx.quizQuestion.deleteMany({
+          where: { quizId: { in: quizIds } },
+        });
+
+        // Delete quizzes
+        await tx.quiz.deleteMany({
+          where: { id: { in: quizIds } },
+        });
+      }
+
+      // 4. Handle topics and questions
+      const topics = await tx.topic.findMany({
+        where: { subjectId: id },
+        select: { id: true },
+      });
+      const topicIds = topics.map((t) => t.id);
+
+      if (topicIds.length > 0) {
+        // Delete syllabus documents linked to topics
+        await tx.syllabusDocument.deleteMany({
+          where: { topicId: { in: topicIds } },
+        });
+
+        const questions = await tx.question.findMany({
+          where: { topicId: { in: topicIds } },
+          select: { id: true },
+        });
+        const questionIds = questions.map((q) => q.id);
+
+        if (questionIds.length > 0) {
+          await tx.attemptAnswer.deleteMany({
+            where: { questionId: { in: questionIds } },
+          });
+
+          await tx.quizQuestion.deleteMany({
+            where: { questionId: { in: questionIds } },
+          });
+
+          await tx.option.deleteMany({
+            where: { questionId: { in: questionIds } },
+          });
+
+          await tx.question.deleteMany({
+            where: { id: { in: questionIds } },
+          });
+        }
+
+        await tx.topic.deleteMany({
+          where: { id: { in: topicIds } },
+        });
+      }
+
+      // 5. Finally delete the subject
+      await tx.subject.delete({
+        where: { id },
+      });
+    });
+
+    res.json({
+      message: `Course "${course.code} - ${course.name}" removed successfully.`,
+      deletedCourseId: id,
+    });
+  } catch (error: any) {
+    console.error('Error deleting course:', error);
+    res.status(500).json({ message: error.message || 'Failed to remove course' });
+  }
+});
+
 
 // ============================================================
 // 4. STUDENT AND SECTION MANAGEMENT
@@ -655,6 +841,66 @@ router.put('/students/:id/section', async (req, res) => {
   }
 });
 
+// Remove Student
+router.delete('/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+
+    const student = await prisma.student.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        section: { include: { department: true } },
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student record not found' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Find quiz attempts
+      const attempts = await tx.quizAttempt.findMany({
+        where: { studentId: id },
+        select: { id: true },
+      });
+      const attemptIds = attempts.map(a => a.id);
+
+      if (attemptIds.length > 0) {
+        await tx.attemptAnswer.deleteMany({
+          where: { attemptId: { in: attemptIds } },
+        });
+        await tx.quizAttempt.deleteMany({
+          where: { studentId: id },
+        });
+      }
+
+      // 2. Remove notifications targeted to this user
+      await tx.notification.deleteMany({
+        where: { userId: student.userId },
+      });
+
+      // 3. Remove student record
+      await tx.student.delete({
+        where: { id },
+      });
+
+      // 4. Remove underlying user account
+      await tx.user.delete({
+        where: { id: student.userId },
+      });
+    });
+
+    res.json({
+      message: `Student "${student.user.name}" (${student.rollNo}) removed successfully.`,
+      deletedStudentId: id,
+    });
+  } catch (error: any) {
+    console.error('Error removing student:', error);
+    res.status(500).json({ message: error.message || 'Failed to remove student record' });
+  }
+});
+
 // ============================================================
 // 5. DEPARTMENT AND SECTION ORGANIZATION
 // ============================================================
@@ -767,6 +1013,99 @@ router.post('/sections', async (req, res) => {
     res.status(201).json(section);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Remove Section
+router.delete('/sections/:id', async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+
+    const section = await prisma.section.findUnique({
+      where: { id },
+      include: {
+        department: true,
+      },
+    });
+
+    if (!section) {
+      return res.status(404).json({ message: 'Section not found' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete faculty assignments for this section
+      await tx.facultySubject.deleteMany({
+        where: { sectionId: id },
+      });
+
+      // 2. Delete quizzes associated with this section
+      const quizzes = await tx.quiz.findMany({
+        where: { sectionId: id },
+        select: { id: true },
+      });
+      const quizIds = quizzes.map(q => q.id);
+
+      if (quizIds.length > 0) {
+        await tx.attemptAnswer.deleteMany({
+          where: { attempt: { quizId: { in: quizIds } } },
+        });
+        await tx.quizAttempt.deleteMany({
+          where: { quizId: { in: quizIds } },
+        });
+        await tx.quizQuestion.deleteMany({
+          where: { quizId: { in: quizIds } },
+        });
+        await tx.quiz.deleteMany({
+          where: { id: { in: quizIds } },
+        });
+      }
+
+      // 3. Delete students in this section
+      const students = await tx.student.findMany({
+        where: { sectionId: id },
+        select: { id: true, userId: true },
+      });
+      const studentIds = students.map(s => s.id);
+      const studentUserIds = students.map(s => s.userId);
+
+      if (studentIds.length > 0) {
+        const attempts = await tx.quizAttempt.findMany({
+          where: { studentId: { in: studentIds } },
+          select: { id: true },
+        });
+        const attemptIds = attempts.map(a => a.id);
+        if (attemptIds.length > 0) {
+          await tx.attemptAnswer.deleteMany({
+            where: { attemptId: { in: attemptIds } },
+          });
+          await tx.quizAttempt.deleteMany({
+            where: { studentId: { in: studentIds } },
+          });
+        }
+        await tx.notification.deleteMany({
+          where: { userId: { in: studentUserIds } },
+        });
+        await tx.student.deleteMany({
+          where: { id: { in: studentIds } },
+        });
+        await tx.user.deleteMany({
+          where: { id: { in: studentUserIds } },
+        });
+      }
+
+      // 4. Finally delete the section
+      await tx.section.delete({
+        where: { id },
+      });
+    });
+
+    res.json({
+      message: `Section Sem ${section.semester}-${section.name} (${section.department.name}) removed successfully.`,
+      deletedSectionId: id,
+    });
+  } catch (error: any) {
+    console.error('Error removing section:', error);
+    res.status(500).json({ message: error.message || 'Failed to remove section' });
   }
 });
 

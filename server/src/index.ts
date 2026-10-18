@@ -12,6 +12,7 @@ import chatbotRoutes from './routes/chatbot';
 import adminRoutes from './routes/admin';
 import notificationsRoutes from './routes/notifications';
 import coursesRoutes from './routes/courses';
+import sectionsRoutes from './routes/sections';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/courses', coursesRoutes);
+app.use('/api/sections', sectionsRoutes);
 
 // Error Handler
 app.use(errorHandler);

@@ -411,7 +411,7 @@ export const FacultyProfile: React.FC = () => {
               subtitle="Current academic semester teaching responsibilities"
             />
             <div className="space-y-3">
-              {profile.subjectsTaught.map((subject, idx) => (
+              {(profile.subjectsTaught || []).map((subject, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-accent)]/30 transition-all"
@@ -467,7 +467,7 @@ export const FacultyProfile: React.FC = () => {
           <Card>
             <CardHeader title="Assigned Batches & Classes" />
             <div className="space-y-2">
-              {profile.assignedClasses.map((cls, i) => (
+              {(profile.assignedClasses || []).map((cls, i) => (
                 <div
                   key={i}
                   className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] flex items-center justify-between"

@@ -13,7 +13,7 @@ import {
   type DepartmentRecord,
 } from '../../services/adminService';
 import {
-  BookOpen, Search, Plus, Edit,
+  BookOpen, Search, Plus, Edit, Trash2,
   CheckCircle2, AlertCircle, RefreshCw, UserPlus
 } from 'lucide-react';
 
@@ -26,6 +26,7 @@ export const CourseManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
 
   // Course Add/Edit Modal
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -33,12 +34,18 @@ export const CourseManagement: React.FC = () => {
   const [courseFormName, setCourseFormName] = useState('');
   const [courseFormCode, setCourseFormCode] = useState('');
   const [courseFormDeptId, setCourseFormDeptId] = useState('');
+  const [courseFormSemester, setCourseFormSemester] = useState<number>(1);
 
   // Quick Assign Faculty Modal
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [targetCourse, setTargetCourse] = useState<CourseRecord | null>(null);
   const [assignFacultyId, setAssignFacultyId] = useState('');
   const [assignSectionId, setAssignSectionId] = useState('');
+
+  // Remove Course Modal
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [selectedRemoveCourseId, setSelectedRemoveCourseId] = useState('');
+  const [removeFilterSemester, setRemoveFilterSemester] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -51,6 +58,7 @@ export const CourseManagement: React.FC = () => {
         adminService.getCourses({
           search: search || undefined,
           departmentId: selectedDept || undefined,
+          semester: selectedSemester || undefined,
         }),
         adminService.getFaculty(),
         adminService.getSections(),
@@ -69,7 +77,7 @@ export const CourseManagement: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [selectedDept]);
+  }, [selectedDept, selectedSemester]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +90,7 @@ export const CourseManagement: React.FC = () => {
     setCourseFormName('');
     setCourseFormCode('');
     setCourseFormDeptId(departments.length > 0 ? departments[0].id : '');
+    setCourseFormSemester(1);
     setIsCourseModalOpen(true);
     setActionMessage(null);
   };
@@ -92,15 +101,34 @@ export const CourseManagement: React.FC = () => {
     setCourseFormName(c.name);
     setCourseFormCode(c.code);
     setCourseFormDeptId(c.departmentId);
+    setCourseFormSemester(c.semester || 1);
     setIsCourseModalOpen(true);
     setActionMessage(null);
+  };
+
+  // Open Remove Course Modal
+  const handleOpenRemoveModal = (preselectedCourseId?: string) => {
+    setActionMessage(null);
+    if (preselectedCourseId) {
+      const targetCourse = courses.find(c => c.id === preselectedCourseId);
+      setRemoveFilterSemester(targetCourse ? String(targetCourse.semester || 1) : '');
+      setSelectedRemoveCourseId(preselectedCourseId);
+    } else {
+      setRemoveFilterSemester('');
+      if (courses.length > 0) {
+        setSelectedRemoveCourseId(courses[0].id);
+      } else {
+        setSelectedRemoveCourseId('');
+      }
+    }
+    setIsRemoveModalOpen(true);
   };
 
   // Save Course (Create or Update)
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseFormName.trim() || !courseFormCode.trim() || !courseFormDeptId) {
-      setActionMessage({ type: 'error', text: 'Course name, unique code, and department are required.' });
+      setActionMessage({ type: 'error', text: 'Course name, unique code, department, and semester are required.' });
       return;
     }
 
@@ -111,6 +139,7 @@ export const CourseManagement: React.FC = () => {
           name: courseFormName.trim(),
           code: courseFormCode.trim(),
           departmentId: courseFormDeptId,
+          semester: Number(courseFormSemester),
         });
         setActionMessage({ type: 'success', text: 'Course updated successfully.' });
       } else {
@@ -118,13 +147,42 @@ export const CourseManagement: React.FC = () => {
           name: courseFormName.trim(),
           code: courseFormCode.trim(),
           departmentId: courseFormDeptId,
+          semester: Number(courseFormSemester),
         });
-        setActionMessage({ type: 'success', text: 'New course created and added to curriculum.' });
+        setActionMessage({ type: 'success', text: `New course created for Semester ${courseFormSemester}.` });
       }
       setIsCourseModalOpen(false);
       loadData();
     } catch (err: any) {
       setActionMessage({ type: 'error', text: err?.response?.data?.message || 'Operation failed.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Remove Course Submit
+  const handleRemoveCourseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRemoveCourseId) return;
+
+    const courseToDelete = courses.find(c => c.id === selectedRemoveCourseId);
+    const courseLabel = courseToDelete ? `${courseToDelete.code} (${courseToDelete.name})` : 'Selected course';
+
+    setIsSubmitting(true);
+    try {
+      await adminService.deleteCourse(selectedRemoveCourseId);
+      setIsRemoveModalOpen(false);
+      setSelectedRemoveCourseId('');
+      setActionMessage({
+        type: 'success',
+        text: `Course ${courseLabel} was successfully removed from curriculum.`,
+      });
+      loadData();
+    } catch (err: any) {
+      setActionMessage({
+        type: 'error',
+        text: err?.response?.data?.message || 'Failed to remove course.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -160,6 +218,17 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
+  // Helper for currently selected course in remove modal
+  const selectedCourseDetails = courses.find(c => c.id === selectedRemoveCourseId);
+
+  // Filter registered courses for remove modal by semester
+  const coursesAvailableForRemoval = courses.filter(c => {
+    if (removeFilterSemester) {
+      return (c.semester || 1) === Number(removeFilterSemester);
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <PageHeader
@@ -167,10 +236,22 @@ export const CourseManagement: React.FC = () => {
         subtitle="Create, configure curriculum courses, and assign faculty to active classes"
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Courses' }]}
         action={
-          <Button onClick={handleOpenCreateModal} size="sm" className="gap-2 shadow-sm">
-            <Plus className="w-4 h-4" />
-            Add New Course
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => handleOpenRemoveModal()}
+              variant="outline"
+              size="sm"
+              className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+              disabled={courses.length === 0}
+            >
+              <Trash2 className="w-4 h-4" />
+              Remove Course
+            </Button>
+            <Button onClick={handleOpenCreateModal} size="sm" className="gap-2 shadow-sm">
+              <Plus className="w-4 h-4" />
+              Add New Course
+            </Button>
+          </div>
         }
       />
 
@@ -218,6 +299,19 @@ export const CourseManagement: React.FC = () => {
             ))}
           </select>
 
+          <select
+            value={selectedSemester}
+            onChange={e => setSelectedSemester(e.target.value)}
+            className="text-xs font-medium bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+          >
+            <option value="">All Semesters</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+              <option key={s} value={s}>
+                Semester {s}
+              </option>
+            ))}
+          </select>
+
           <Button type="submit" variant="secondary" size="sm">
             Filter
           </Button>
@@ -227,6 +321,7 @@ export const CourseManagement: React.FC = () => {
             onClick={() => {
               setSearch('');
               setSelectedDept('');
+              setSelectedSemester('');
               loadData();
             }}
             className="p-2 text-slate-500 hover:text-slate-800 border border-[var(--color-border)] rounded-xl hover:bg-slate-50 transition-colors"
@@ -257,6 +352,7 @@ export const CourseManagement: React.FC = () => {
                 <tr className="bg-slate-50/75 border-b border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
                   <th className="py-3 px-4">Code</th>
                   <th className="py-3 px-4">Course Name</th>
+                  <th className="py-3 px-4">Semester</th>
                   <th className="py-3 px-4">Department</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Assigned Faculty & Sections</th>
@@ -271,6 +367,11 @@ export const CourseManagement: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-[var(--color-text-primary)]">
                       {course.name}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <Badge color="indigo" className="text-[11px] font-semibold">
+                        Sem {course.semester || 1}
+                      </Badge>
                     </td>
                     <td className="py-3.5 px-4 text-xs text-slate-600">
                       {course.departmentName} ({course.departmentCode})
@@ -320,6 +421,14 @@ export const CourseManagement: React.FC = () => {
                         >
                           <Edit className="w-3.5 h-3.5" />
                           Edit
+                        </button>
+                        <button
+                          onClick={() => handleOpenRemoveModal(course.id)}
+                          className="px-2.5 py-1 text-xs font-medium rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors flex items-center gap-1"
+                          title="Remove Course"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Remove
                         </button>
                       </div>
                     </td>
@@ -374,12 +483,162 @@ export const CourseManagement: React.FC = () => {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+              Target Academic Semester (1 - 8)
+            </label>
+            <select
+              value={courseFormSemester}
+              onChange={e => setCourseFormSemester(Number(e.target.value))}
+              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)] font-medium"
+              required
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                <option key={sem} value={sem}>
+                  Semester {sem} (Only Sem {sem} students can view & register)
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-[var(--color-text-secondary)] mt-1">
+              Students will only be able to see courses registered for their respective semester.
+            </p>
+          </div>
+
           <div className="pt-2 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setIsCourseModalOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" isLoading={isSubmitting}>
               {editingCourse ? 'Save Changes' : 'Create Course'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Remove Course Modal ── */}
+      <Modal
+        isOpen={isRemoveModalOpen}
+        onClose={() => setIsRemoveModalOpen(false)}
+        title="Remove Registered Course"
+      >
+        <form onSubmit={handleRemoveCourseSubmit} className="space-y-4">
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            Choose from the registered courses below to remove it from the curriculum. Only currently registered courses can be removed.
+          </p>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+              Filter by Semester (Optional)
+            </label>
+            <select
+              value={removeFilterSemester}
+              onChange={e => {
+                const semVal = e.target.value;
+                setRemoveFilterSemester(semVal);
+                const matching = semVal
+                  ? courses.filter(c => (c.semester || 1) === Number(semVal))
+                  : courses;
+                setSelectedRemoveCourseId(matching.length > 0 ? matching[0].id : '');
+              }}
+              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+            >
+              <option value="">All Semesters (Show all registered courses)</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                <option key={s} value={s}>
+                  Semester {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+              Registered Course to Remove
+            </label>
+            {coursesAvailableForRemoval.length === 0 ? (
+              <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                {removeFilterSemester
+                  ? `No courses registered for Semester ${removeFilterSemester} found to remove.`
+                  : 'No courses are currently registered to remove.'}
+              </p>
+            ) : (
+              <select
+                id="remove-course-select"
+                value={selectedRemoveCourseId}
+                onChange={e => setSelectedRemoveCourseId(e.target.value)}
+                className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+                required
+              >
+                <option value="">-- Select a registered course --</option>
+                {coursesAvailableForRemoval.map(c => (
+                  <option key={c.id} value={c.id}>
+                    [Sem {c.semester || 1}] {c.code} — {c.name} ({c.departmentCode || c.departmentName})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Details preview of the selected course */}
+          {selectedCourseDetails && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs text-slate-700">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-900">Selected Course:</span>
+                <Badge color="blue" className="text-[11px] font-mono">
+                  {selectedCourseDetails.code}
+                </Badge>
+              </div>
+              <div className="text-sm font-bold text-slate-800">{selectedCourseDetails.name}</div>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Department</span>
+                  <span className="font-medium text-slate-700">{selectedCourseDetails.departmentName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Semester</span>
+                  <span className="font-semibold text-indigo-700">Semester {selectedCourseDetails.semester || 1}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Status</span>
+                  <span className="font-medium text-slate-700">{selectedCourseDetails.status}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Faculty Allocations</span>
+                  <span className="font-medium text-slate-700">{selectedCourseDetails.assignments.length} assigned</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Quizzes</span>
+                  <span className="font-medium text-slate-700">{selectedCourseDetails.quizzesCount || 0} quizzes</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 flex items-start gap-2 mt-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                <span className="text-[11px] leading-tight">
+                  Warning: Removing this registered course will clear its faculty assignments and related curriculum records.
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 flex justify-end gap-2 border-t border-[var(--color-border)] mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRemoveModalOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              isLoading={isSubmitting}
+              disabled={!selectedRemoveCourseId || courses.length === 0}
+              className="gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" />
+              Remove Course
             </Button>
           </div>
         </form>
@@ -441,3 +700,4 @@ export const CourseManagement: React.FC = () => {
     </div>
   );
 };
+

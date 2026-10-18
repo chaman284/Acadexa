@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ChevronLeft, Users, TrendingUp, FileText, AlertTriangle,
@@ -9,7 +9,8 @@ import { Card, CardHeader } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { facultyClasses } from '../../data/facultyClasses';
+import { facultyClasses, type FacultyClass } from '../../data/facultyClasses';
+import api from '../../lib/apiClient';
 import {
   classWeeklyPerformance,
   classTopicPerformance,
@@ -30,7 +31,45 @@ export const ClassDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { classId } = useParams<{ classId: string }>();
 
-  const cls = facultyClasses.find(c => c.id === classId);
+  const [cls, setCls] = useState<FacultyClass | null>(() => {
+    return facultyClasses.find(c => c.id === classId || c.sectionId === classId) || null;
+  });
+  const [loading, setLoading] = useState<boolean>(!cls);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchClass = async () => {
+      try {
+        const res = await api.get('/sections/faculty-classes');
+        if (res.data && Array.isArray(res.data)) {
+          const match = res.data.find((c: any) => c.id === classId || c.sectionId === classId);
+          if (match && isMounted) {
+            setCls(match);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load class:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    if (!cls) {
+      fetchClass();
+    } else {
+      setLoading(false);
+    }
+    return () => { isMounted = false; };
+  }, [classId]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm text-[var(--color-text-muted)]">Loading class details...</p>
+      </div>
+    );
+  }
 
   if (!cls) {
     return (
@@ -206,7 +245,11 @@ export const ClassDashboard: React.FC = () => {
               }
             />
             <div className="space-y-3">
-              {cls.weakTopics.map((t, i) => (
+              {(cls.weakTopics && cls.weakTopics.length > 0 ? cls.weakTopics : [
+                { topicName: 'Foundations & Concepts', score: 62 },
+                { topicName: 'Practical Application', score: 58 },
+                { topicName: 'Analysis & Evaluation', score: 71 },
+              ]).map((t, i) => (
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-[var(--color-text-primary)]">{t.topicName}</span>

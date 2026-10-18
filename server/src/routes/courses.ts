@@ -7,7 +7,34 @@ const router = Router();
 // GET /api/courses - List courses with enrollment status for students, or assignment info
 router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
   try {
+    let studentSectionId: string | null = null;
+    let studentDeptId: string | null = null;
+    let studentSemester: number | null = null;
+
+    if (req.user && req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({
+        where: { userId: req.user.id },
+        include: { section: true },
+      });
+      if (student && student.section) {
+        studentSectionId = student.sectionId;
+        studentDeptId = student.section.departmentId || null;
+        studentSemester = student.section.semester || null;
+      }
+    }
+
+    const where: any = {};
+    if (req.user?.role === 'STUDENT' && studentSemester) {
+      where.semester = studentSemester;
+      if (studentDeptId) {
+        where.departmentId = studentDeptId;
+      }
+    } else if (req.query.semester) {
+      where.semester = parseInt(String(req.query.semester), 10);
+    }
+
     const subjects = await prisma.subject.findMany({
+      where,
       include: {
         department: true,
         assignments: {
@@ -25,20 +52,6 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
       },
       orderBy: { code: 'asc' },
     });
-
-    let studentSectionId: string | null = null;
-    let studentDeptId: string | null = null;
-
-    if (req.user && req.user.role === 'STUDENT') {
-      const student = await prisma.student.findUnique({
-        where: { userId: req.user.id },
-        include: { section: true },
-      });
-      if (student) {
-        studentSectionId = student.sectionId;
-        studentDeptId = student.section?.departmentId || null;
-      }
-    }
 
     const result = subjects.map(s => {
       let enrollmentStatus: 'Enrolled' | 'Available' | 'Not Available' = 'Available';
@@ -58,6 +71,7 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
         id: s.id,
         code: s.code,
         name: s.name,
+        semester: (s as any).semester || 1,
         departmentId: s.departmentId,
         departmentName: s.department?.name,
         departmentCode: s.department?.code,

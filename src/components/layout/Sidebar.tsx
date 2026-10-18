@@ -64,7 +64,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     : [
         { to: '/faculty', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, end: true },
+        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/paper-bank', label: 'Question Papers', icon: <Database className="w-5 h-5 flex-shrink-0" /> },
         { to: '/faculty/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/learning-gaps', label: 'Learning Gaps', icon: <TrendingUp className="w-5 h-5 flex-shrink-0" /> },
       ];
 
   const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;

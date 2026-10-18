@@ -53,7 +53,7 @@ export const Courses: React.FC = () => {
               id: dbCourse.id,
               name: dbCourse.name,
               code: dbCourse.code,
-              semester: dbCourse.assignments?.[0]?.semester || 5,
+              semester: dbCourse.semester || dbCourse.assignments?.[0]?.semester || 1,
               department: dbCourse.departmentName || 'Computer Science',
               creditHours: 4,
               facultyId: dbCourse.assignments?.[0]?.facultyId || '',
@@ -128,7 +128,11 @@ export const Courses: React.FC = () => {
       {!selectedCourse ? (
         <PageHeader
           title="My Courses"
-          subtitle="5th Semester · Computer Science · Select a subject to view its syllabus and unit progress"
+          subtitle={
+            courses.length > 0 && courses[0].semester
+              ? `Semester ${courses[0].semester} · Select a course to view its syllabus and unit progress`
+              : 'Select a course to view its syllabus and unit progress'
+          }
           breadcrumbs={[{ label: 'Dashboard', to: '/student' }, { label: 'My Courses' }]}
         />
       ) : (
@@ -147,22 +151,19 @@ export const Courses: React.FC = () => {
               onClick={handleBackToCourses}
               leftIcon={<ArrowLeft className="w-4 h-4" />}
             >
-              Back to All Courses
+              Back to My Courses
             </Button>
           }
         />
       )}
 
-      {/* VIEW 1: ENROLLED SUBJECTS GRID (Visible only when NO subject is selected) */}
+      {/* VIEW 1: COURSES GRID (Visible only when NO subject is selected) */}
       {!selectedCourse && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="font-bold text-base text-[var(--color-text-primary)]">Enrolled Subjects</h2>
-              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                Click on any course card below to view its unit portions and track completion.
-              </p>
-            </div>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Click on any course card below to view its unit portions and track completion.
+            </p>
 
             {courses.length > 2 && (
               <div className="flex items-center gap-2 bg-white border border-[var(--color-border)] rounded-xl px-3 py-1.5 text-xs w-full sm:w-72 shadow-2xs">
@@ -170,7 +171,7 @@ export const Courses: React.FC = () => {
                 <input
                   value={courseSearch}
                   onChange={e => setCourseSearch(e.target.value)}
-                  placeholder="Search subjects or faculty..."
+                  placeholder="Search courses or faculty..."
                   className="outline-none bg-transparent w-full text-xs text-[var(--color-text-primary)]"
                 />
               </div>
@@ -237,6 +238,17 @@ export const Courses: React.FC = () => {
                 </div>
               </div>
             ))}
+            {filteredCourses.length === 0 && (
+              <div className="col-span-full py-12 text-center bg-white rounded-2xl border border-[var(--color-border)] p-8">
+                <BookOpen className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3 opacity-40" />
+                <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">No Courses Available</h3>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  {courseSearch
+                    ? 'No courses matched your search query.'
+                    : 'No courses are registered for your semester yet.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -251,7 +263,7 @@ export const Courses: React.FC = () => {
               className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-accent)] hover:underline cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-2xs hover:bg-slate-50 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>← Back to all enrolled subjects</span>
+              <span>← Back to My Courses</span>
             </button>
             <span className="text-xs text-[var(--color-text-muted)]">
               Showing syllabus for <strong>{selectedCourse.name}</strong> only

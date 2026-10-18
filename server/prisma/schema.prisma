@@ -49,6 +49,7 @@ model Subject {
   id           String             @id @default(cuid())
   name         String
   code         String
+  semester     Int                @default(1)
   departmentId String
   department   Department         @relation(fields: [departmentId], references: [id])
   assignments  FacultySubject[]

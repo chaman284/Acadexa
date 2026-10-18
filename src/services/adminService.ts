@@ -87,6 +87,7 @@ export interface CourseRecord {
   id: string;
   name: string;
   code: string;
+  semester: number;
   departmentId: string;
   departmentName: string;
   departmentCode: string;
@@ -173,18 +174,28 @@ export const adminService = {
     return res.data;
   },
 
-  getCourses: async (params?: { search?: string; departmentId?: string }): Promise<CourseRecord[]> => {
+  deleteFaculty: async (id: string) => {
+    const res = await api.delete(`/admin/faculty/${id}`);
+    return res.data;
+  },
+
+  getCourses: async (params?: { search?: string; departmentId?: string; semester?: number | string }): Promise<CourseRecord[]> => {
     const res = await api.get('/admin/courses', { params });
     return res.data;
   },
 
-  createCourse: async (data: { name: string; code: string; departmentId: string }) => {
+  createCourse: async (data: { name: string; code: string; departmentId: string; semester: number }) => {
     const res = await api.post('/admin/courses', data);
     return res.data;
   },
 
-  updateCourse: async (id: string, data: { name?: string; code?: string; departmentId?: string }) => {
+  updateCourse: async (id: string, data: { name?: string; code?: string; departmentId?: string; semester?: number }) => {
     const res = await api.put(`/admin/courses/${id}`, data);
+    return res.data;
+  },
+
+  deleteCourse: async (id: string) => {
+    const res = await api.delete(`/admin/courses/${id}`);
     return res.data;
   },
 
@@ -203,6 +214,11 @@ export const adminService = {
     return res.data;
   },
 
+  deleteStudent: async (id: string) => {
+    const res = await api.delete(`/admin/students/${id}`);
+    return res.data;
+  },
+
   getSections: async (departmentId?: string): Promise<SectionRecord[]> => {
     const params = departmentId ? { departmentId } : {};
     const res = await api.get('/admin/sections', { params });
@@ -213,6 +229,12 @@ export const adminService = {
     const res = await api.post('/admin/sections', data);
     return res.data;
   },
+
+  deleteSection: async (id: string) => {
+    const res = await api.delete(`/admin/sections/${id}`);
+    return res.data;
+  },
+
 
   getDepartments: async (): Promise<DepartmentRecord[]> => {
     const res = await api.get('/admin/departments');

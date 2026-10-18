@@ -129,8 +129,17 @@ export const authService = {
           include: {
             assignments: {
               include: {
-                subject: true,
-                section: true,
+                subject: {
+                  include: {
+                    department: true,
+                  },
+                },
+                section: {
+                  include: {
+                    department: true,
+                    _count: { select: { students: true } },
+                  },
+                },
               },
             },
           },

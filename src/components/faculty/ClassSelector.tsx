@@ -20,6 +20,14 @@ interface ClassSelectorProps {
 export const ClassSelector: React.FC<ClassSelectorProps> = ({ classes, selectedClassId, onChange }) => {
   const selected = classes.find(c => c.id === selectedClassId) || classes[0];
 
+  if (!selected) {
+    return (
+      <div className="bg-white border border-[var(--color-border)] rounded-xl p-4 text-center text-sm text-[var(--color-text-muted)] mb-6">
+        No assigned classes found.
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border border-[var(--color-border)] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-4 justify-between shadow-sm mb-6">
       <div className="flex items-center gap-3">

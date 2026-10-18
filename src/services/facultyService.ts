@@ -18,25 +18,24 @@ export const defaultFacultySettings: FacultySettings = {
 };
 
 export const defaultFacultyProfile: FacultyProfile = {
-  id: 'f1',
+  id: 'cmvclxnlc0007x24jc9dot6ua',
   name: 'Demo Faculty',
   email: 'faculty@college.edu',
   phone: '+91 98451 23456',
   designation: 'Associate Professor',
-  department: 'Computer Science & Engineering',
+  department: 'Computer Science',
   employeeId: 'FAC-CS-1042',
   joiningYear: '2018',
   officeLocation: 'Academic Complex Block 3, 2nd Floor',
   cabinNumber: 'Room 208-B',
   qualifications: 'Ph.D. in Computer Science (IIT Bombay), M.Tech (CS)',
-  bio: 'Associate Professor specializing in Advanced Algorithms, Distributed Systems, and Database Architectures. Faculty advisor for 5th semester students.',
+  bio: 'Associate Professor specializing in Advanced Algorithms, Distributed Systems, and Database Architectures.',
   officeHours: 'Mon, Wed, Fri: 2:00 PM – 4:00 PM',
   subjectsTaught: [
-    'Data Structures & Algorithms (CS3101)',
-    'Database Systems (CS3202)',
-    'Cloud Computing (CS4105)',
+    'CV (BAI501)',
+    'Data Structures and Application (BAI303P)',
   ],
-  assignedClasses: ['Section 5A', 'Section 5B', 'Section 7C'],
+  assignedClasses: ['Semester 5 · Section A', 'Semester 3 · Section A'],
 };
 
 export const facultyService = {
@@ -73,13 +72,36 @@ export const facultyService = {
       if (res.data) {
         const u = res.data;
         if (u.role === 'FACULTY' || (currentUser && currentUser.role === 'faculty')) {
+          const assignments = u.faculty?.assignments || [];
+
+          // Derive real subjects and classes if assignments exist
+          const hasOldMockSubjects = Array.isArray(localData.subjectsTaught) &&
+            localData.subjectsTaught.some(s => s.includes('CS3101') || s.includes('CS7201'));
+
+          const realSubjects = assignments.length > 0
+            ? Array.from(new Set(assignments.map((a: any) => `${a.subject?.name} (${a.subject?.code})`)))
+            : hasOldMockSubjects ? defaultFacultyProfile.subjectsTaught : localData.subjectsTaught;
+
+          const hasOldMockClasses = Array.isArray(localData.assignedClasses) &&
+            localData.assignedClasses.some(c => c.includes('5B') || c.includes('7C'));
+
+          const realClasses = assignments.length > 0
+            ? Array.from(new Set(assignments.map((a: any) => `Semester ${a.section?.semester} · Section ${a.section?.name}`)))
+            : hasOldMockClasses ? defaultFacultyProfile.assignedClasses : localData.assignedClasses;
+
+          const realDepartment = assignments[0]?.subject?.department?.name ||
+            assignments[0]?.section?.department?.name ||
+            (localData.department === 'Computer Science & Engineering' ? 'Computer Science' : localData.department);
+
           const merged: FacultyProfile = {
             ...localData,
             id: u.id || localData.id,
             name: u.name || localData.name,
             email: u.email || localData.email,
             avatarUrl: u.avatarUrl || localData.avatarUrl,
-            department: u.faculty?.department || localData.department,
+            department: realDepartment,
+            subjectsTaught: realSubjects,
+            assignedClasses: realClasses,
           };
           localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(merged));
           return merged;
