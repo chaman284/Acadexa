@@ -580,7 +580,7 @@ export const StudentManagement: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">Academic Stage</span>
-                    <span className="font-medium text-slate-700">Year {studentDetails.yearNumber || studentDetails.year} · Sem {studentDetails.semester}</span>
+                    <span className="font-medium text-slate-700">Year {studentDetails.year} · Sem {studentDetails.semester}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-semibold">Quiz Attempts</span>

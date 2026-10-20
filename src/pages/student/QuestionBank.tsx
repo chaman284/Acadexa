@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { mockQuestions } from '../../data/quizzes';
-import { mockCourses } from '../../data/courses';
+import api from '../../lib/apiClient';
 import type { Question, ExamType } from '../../types/quiz';
 import { downloadQuestionsPdf } from '../../services/questionPdfGenerator';
 import {
   Search, Filter, Sparkles, BookOpen, Download,
-  CheckSquare, Square, FileText, CheckCircle2, AlertCircle, ChevronDown, Award
+  CheckSquare, Square, FileText, CheckCircle2, AlertCircle, ChevronDown, Award, X, RefreshCw
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -29,6 +29,13 @@ const EXAM_TYPE_BADGES: Record<string, 'indigo' | 'green' | 'amber' | 'gray'> = 
 };
 
 export const QuestionBank: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTopicId = searchParams.get('topicId') || '';
+  const urlTopicName = searchParams.get('topicName') || '';
+
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [courses, setCourses] = useState<Array<{ id: string; name: string }>>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
   const [filterUnit, setFilterUnit] = useState('all');
@@ -37,20 +44,70 @@ export const QuestionBank: React.FC = () => {
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Fetch live questions and subjects from backend
+  const loadQuestionsAndCourses = async () => {
+    setLoading(true);
+    try {
+      const [qRes, cRes] = await Promise.allSettled([
+        api.get('/questions'),
+        api.get('/courses'),
+      ]);
+
+      if (qRes.status === 'fulfilled' && Array.isArray(qRes.value.data)) {
+        const mapped: Question[] = qRes.value.data.map((q: any) => ({
+          id: q.id,
+          text: q.text,
+          courseId: q.topic?.subjectId || '',
+          courseName: q.topic?.subject?.name || 'Data Structures and Application',
+          unitId: q.unitId || 'unit-1',
+          unitName: q.unitName || 'Curriculum Unit',
+          topicId: q.topicId || q.topic?.id || '',
+          topicName: q.topic?.name || 'Curriculum Topic',
+          difficulty: (q.difficulty || 'medium').toLowerCase() as any,
+          type: (q.type || 'mcq').toLowerCase() as any,
+          options: (q.options || []).map((o: any) => ({
+            id: o.id,
+            text: o.text,
+            isCorrect: !!o.isCorrect,
+          })),
+          explanation: q.explanation || undefined,
+          status: 'approved',
+          isAiGenerated: false,
+          createdBy: 'Faculty',
+          createdAt: q.createdAt || new Date().toISOString(),
+          attempts: 0,
+          correctRate: 0,
+          marks: q.difficulty === 'HARD' ? 5 : q.difficulty === 'MEDIUM' ? 3 : 2,
+        }));
+        setQuestions(mapped);
+      }
+
+      if (cRes.status === 'fulfilled' && Array.isArray(cRes.value.data)) {
+        setCourses(cRes.value.data.map((c: any) => ({ id: c.id, name: c.name })));
+      }
+    } catch (err) {
+      console.error('Failed to load questions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestionsAndCourses();
+  }, []);
+
   // Available units based on selected subject
   const availableUnits = useMemo(() => {
-    if (filterSubject === 'all') {
-      const unitsMap = new Map<string, string>();
-      mockQuestions.forEach(q => {
-        if (q.unitId && q.unitName) {
+    const unitsMap = new Map<string, string>();
+    questions.forEach(q => {
+      if (q.unitId && q.unitName) {
+        if (filterSubject === 'all' || q.courseId === filterSubject) {
           unitsMap.set(q.unitId, q.unitName);
         }
-      });
-      return Array.from(unitsMap.entries()).map(([id, name]) => ({ id, name }));
-    }
-    const course = mockCourses.find(c => c.id === filterSubject);
-    return course ? course.units.map(u => ({ id: u.id, name: `Unit ${u.unitNumber}: ${u.name}` })) : [];
-  }, [filterSubject]);
+      }
+    });
+    return Array.from(unitsMap.entries()).map(([id, name]) => ({ id, name }));
+  }, [filterSubject, questions]);
 
   // Reset unit filter when subject changes
   const handleSubjectChange = (val: string) => {
@@ -58,9 +115,19 @@ export const QuestionBank: React.FC = () => {
     setFilterUnit('all');
   };
 
+  // Clear remedial topic filter
+  const handleClearRemedialFilter = () => {
+    setSearchParams({});
+  };
+
   // Filter questions
   const filtered = useMemo(() => {
-    return mockQuestions.filter(q => {
+    return questions.filter(q => {
+      // If arrived via remedial recommendation, filter by topicId
+      if (urlTopicId && q.topicId !== urlTopicId) {
+        return false;
+      }
+
       const matchSearch =
         q.text.toLowerCase().includes(search.toLowerCase()) ||
         q.topicName.toLowerCase().includes(search.toLowerCase()) ||
@@ -72,7 +139,7 @@ export const QuestionBank: React.FC = () => {
 
       return matchSearch && matchSubject && matchUnit && matchExam && matchDiff;
     });
-  }, [search, filterSubject, filterUnit, filterExamType, filterDifficulty]);
+  }, [questions, urlTopicId, search, filterSubject, filterUnit, filterExamType, filterDifficulty]);
 
   // Selection handlers
   const handleToggleSelectAll = () => {
@@ -97,8 +164,8 @@ export const QuestionBank: React.FC = () => {
         return;
       }
       const courseName = filterSubject !== 'all'
-        ? (mockCourses.find(c => c.id === filterSubject)?.name || 'Course')
-        : 'All Subjects';
+        ? (courses.find(c => c.id === filterSubject)?.name || 'Course')
+        : (urlTopicName ? `Practice — ${urlTopicName}` : 'All Subjects');
       const examLabel = EXAM_TYPE_LABELS[filterExamType] || 'All Exams';
 
       downloadQuestionsPdf(filtered, {
@@ -116,7 +183,7 @@ export const QuestionBank: React.FC = () => {
 
   const handleDownloadSelected = () => {
     try {
-      const selectedQuestions = mockQuestions.filter(q => selectedQuestionIds.includes(q.id));
+      const selectedQuestions = questions.filter(q => selectedQuestionIds.includes(q.id));
       if (selectedQuestions.length === 0) {
         setFeedback({ type: 'error', message: 'Please select at least one question to download.' });
         return;
@@ -194,6 +261,28 @@ export const QuestionBank: React.FC = () => {
         </div>
       )}
 
+      {/* Remedial Focus Banner */}
+      {urlTopicName && (
+        <div className="flex items-center justify-between p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <div className="text-xs">
+              <span className="font-bold">Targeted Remedial Practice:</span> Showing questions filtered for{' '}
+              <span className="font-semibold underline decoration-amber-400">{urlTopicName}</span> based on your learning gap analysis.
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleClearRemedialFilter}
+            leftIcon={<X className="w-3.5 h-3.5" />}
+            className="text-xs h-7 border-amber-300 hover:bg-amber-100"
+          >
+            Clear Filter
+          </Button>
+        </div>
+      )}
+
       {/* Filter Toolbar */}
       <Card>
         <div className="space-y-3">
@@ -232,7 +321,7 @@ export const QuestionBank: React.FC = () => {
               className="text-sm border border-[var(--color-border)] rounded-[10px] px-3 py-2 bg-white text-[var(--color-text-secondary)] outline-none focus:border-[var(--color-accent)]"
             >
               <option value="all">All Subjects</option>
-              {mockCourses.map(c => (
+              {courses.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -281,7 +370,10 @@ export const QuestionBank: React.FC = () => {
               )}
             </div>
 
-            <span>Showing {filtered.length} of {mockQuestions.length} questions</span>
+            <div className="flex items-center gap-2">
+              {loading && <RefreshCw className="w-3 h-3 animate-spin text-[var(--color-accent)]" />}
+              <span>Showing {filtered.length} of {questions.length} questions</span>
+            </div>
           </div>
         </div>
       </Card>

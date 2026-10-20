@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin';
 import notificationsRoutes from './routes/notifications';
 import coursesRoutes from './routes/courses';
 import sectionsRoutes from './routes/sections';
+import skillGapRoutes from './routes/skillGaps';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/quizzes', quizzesRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/skill-gaps', skillGapRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
