@@ -3,13 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Check,
   BookOpen, Clock, BarChart2, Layers,
-  Plus, Trash2, Sparkles, Users, GraduationCap,
+  Plus, Trash2, Sparkles, Users, GraduationCap, CheckCircle2, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { facultyClasses } from '../../data/facultyClasses';
 import { mockQuestions } from '../../data/quizzes';
 import api from '../../lib/apiClient';
+import { questionService } from '../../services/quizService';
+import type { Question } from '../../types/quiz';
 
 interface CourseItem {
   id: string;
@@ -154,6 +156,18 @@ export const QuizBuilder: React.FC = () => {
   // Step 2 state
   const [selectedQIds, setSelectedQIds] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [availableQuestions, setAvailableQuestions] = useState<Question[]>(
+    mockQuestions.filter(q => q.status === 'approved')
+  );
+
+  useEffect(() => {
+    questionService.getQuestions({ status: 'APPROVED' }).then(res => {
+      const approvedOnly = res.filter(q => q.status === 'approved');
+      if (approvedOnly.length > 0) {
+        setAvailableQuestions(approvedOnly);
+      }
+    });
+  }, []);
 
   const defaultQuestions = useMemo(() => [
     { id: 'q1', text: `Which foundational algorithmic paradigm is best suited for ${subject || 'this course'} problem solving?`, difficulty: 'easy' as const, topicName: 'Foundations', correctRate: 85 },
@@ -163,7 +177,7 @@ export const QuizBuilder: React.FC = () => {
     { id: 'q5', text: 'Identify the invariant condition that must hold during transactional commits.', difficulty: 'easy' as const, topicName: 'Integrity Rules', correctRate: 89 },
   ], [subject]);
 
-  const displayQuestions = mockQuestions.length > 0 ? mockQuestions : defaultQuestions;
+  const displayQuestions = availableQuestions.length > 0 ? availableQuestions : (mockQuestions.length > 0 ? mockQuestions : defaultQuestions);
 
   // Step 3 state
   const [assignedClassIds, setAssignedClassIds] = useState<string[]>([]);
@@ -193,7 +207,7 @@ export const QuizBuilder: React.FC = () => {
 
   const simulateAI = async () => {
     setAiLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 1000));
     setSelectedQIds(displayQuestions.slice(0, 4).map(q => q.id));
     setAiLoading(false);
   };
@@ -413,6 +427,14 @@ export const QuizBuilder: React.FC = () => {
             >
               {aiLoading ? 'Generating…' : 'AI Suggest'}
             </Button>
+          </div>
+
+          {/* Approved questions notice */}
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <span>
+              <strong>Verified Items Only:</strong> Only questions with <strong>APPROVED</strong> status from the Question Bank are available for weekly quizzes.
+            </span>
           </div>
 
           <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">

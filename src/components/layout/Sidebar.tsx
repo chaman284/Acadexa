@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
   MessageSquare, Building2, User, Settings, LogOut,
   GraduationCap, BarChart3, X, TrendingUp,
-  PanelLeftClose, PanelLeftOpen, Users, Bell,
+  PanelLeftClose, PanelLeftOpen, Users, Bell, Flame,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 
@@ -60,14 +60,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const facultyNav: NavItem[] = classId
     ? [
         { to: `/faculty/class/${classId}`, label: 'Overview', icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, end: true },
+        { to: '/faculty/dashboard', label: 'Class Heatmap', icon: <Flame className="w-5 h-5 flex-shrink-0" /> },
         { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/question-bank', label: 'Question Bank', icon: <Database className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/paper-bank', label: 'Paper Bank', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
       ]
     : [
         { to: '/faculty', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, end: true },
-        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-5 h-5 flex-shrink-0" /> },
-        { to: '/faculty/paper-bank', label: 'Question Papers', icon: <Database className="w-5 h-5 flex-shrink-0" /> },
-        { to: '/faculty/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/dashboard', label: 'Class Heatmap', icon: <Flame className="w-5 h-5 flex-shrink-0" /> },
         { to: '/faculty/learning-gaps', label: 'Learning Gaps', icon: <TrendingUp className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/question-bank', label: 'Question Bank', icon: <Database className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/paper-bank', label: 'Paper Bank', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
+        { to: '/faculty/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 flex-shrink-0" /> },
       ];
 
   const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;

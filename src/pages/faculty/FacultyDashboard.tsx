@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, ArrowRight, Sparkles, TrendingUp, TrendingDown, Minus,
-  ClipboardList, FileStack, BookOpen,
+  Users, ArrowRight,
+  Sparkles, TrendingUp, TrendingDown, Minus,
+  ClipboardList, FileStack, BookOpen, Database, Flame,
 } from 'lucide-react';
 import { facultyClasses, type FacultyClass } from '../../data/facultyClasses';
 import api from '../../lib/apiClient';
@@ -191,8 +192,22 @@ export const FacultyDashboard: React.FC = () => {
           <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
             Tools
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
+              {
+                icon: <Flame className="w-4 h-4" />,
+                label: 'Class Learning Heatmap',
+                description: 'Cohort failure rates & auto remedial quizzes.',
+                path: '/faculty/dashboard',
+                color: '#f43f5e',
+              },
+              {
+                icon: <Database className="w-4 h-4" />,
+                label: 'Question Bank & AI',
+                description: 'Generate MCQs with Gemini 1.5 & verify Bloom taxonomy.',
+                path: '/faculty/question-bank',
+                color: '#6366f1',
+              },
               {
                 icon: <ClipboardList className="w-4 h-4" />,
                 label: 'Quiz Management',

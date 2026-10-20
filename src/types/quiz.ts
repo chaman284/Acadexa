@@ -6,6 +6,13 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 export type QuestionType = 'mcq' | 'true-false' | 'short-answer' | 'fill-blank';
 export type QuestionStatus = 'approved' | 'pending' | 'draft';
 export type ExamType = 'cie' | 'see' | 'model' | 'practice';
+export type CognitiveLevel =
+  | 'CL1_REMEMBER'
+  | 'CL2_UNDERSTAND'
+  | 'CL3_APPLY'
+  | 'CL4_ANALYZE'
+  | 'CL5_EVALUATE'
+  | 'CL6_CREATE';
 
 export interface Option {
   id: string;
@@ -32,6 +39,7 @@ export interface Question {
   createdAt: string;
   attempts: number;
   correctRate: number;
+  cognitiveLevel?: CognitiveLevel | string;
   examType?: ExamType;
   marks?: number;
 }

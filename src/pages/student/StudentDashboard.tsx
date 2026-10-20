@@ -357,3 +357,5 @@ export const StudentDashboard: React.FC = () => {
     </div>
   );
 };
+
+export { Dashboard } from './Dashboard';

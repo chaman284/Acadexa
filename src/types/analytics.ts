@@ -71,3 +71,49 @@ export interface LearningGap {
   targetScore: number;
   recommendedQuestions: number;
 }
+
+export interface CognitiveMastery {
+  level: string;
+  name: string;
+  bloomOrder: number;
+  total: number;
+  correct: number;
+  accuracy: number;
+  status: 'NEEDS_ATTENTION' | 'DEVELOPING' | 'PROFICIENT' | 'MASTERY';
+}
+
+export interface TopicMastery {
+  topicId: string;
+  topicName: string;
+  subjectId?: string;
+  subjectName?: string;
+  totalAttempts: number;
+  correctCount: number;
+  mastery: number; // percentage 0 - 100
+  isLearningGap: boolean; // mastery < 60
+  severity: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'MASTERED';
+  cognitiveBreakdown: Record<string, { total: number; correct: number; accuracy: number }>;
+  recommendedQuestionsCount: number;
+}
+
+export interface KnowledgeTracingProfile {
+  studentId: string;
+  studentName?: string;
+  overallMastery: number;
+  totalQuestionsAnswered: number;
+  totalCorrect: number;
+  topicMastery: TopicMastery[];
+  learningGaps: TopicMastery[];
+  masteredTopics: TopicMastery[];
+  cognitiveMastery: CognitiveMastery[];
+  recommendations: {
+    topicId: string;
+    topicName: string;
+    subjectName?: string;
+    currentMastery: number;
+    targetMastery: number;
+    priority: 'CRITICAL' | 'HIGH' | 'MODERATE';
+    recommendedQuestionsCount: number;
+    reason: string;
+  }[];
+}

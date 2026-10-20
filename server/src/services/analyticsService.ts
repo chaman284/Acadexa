@@ -1,6 +1,10 @@
 import { prisma } from '../prisma';
+import { analytics as knowledgeAnalytics } from './analytics';
+
+export * from './analytics';
 
 export const analyticsService = {
+  ...knowledgeAnalytics,
   // Student performance summary
   async getStudentPerformance(studentId: string) {
     const attempts = await prisma.quizAttempt.findMany({

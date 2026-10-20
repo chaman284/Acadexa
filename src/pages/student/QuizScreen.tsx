@@ -7,7 +7,7 @@ import api from '../../lib/apiClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// ─── Kahoot-style tile colours ───────────────────────────────────────────────
+// ─── Option tile colours ───────────────────────────────────────────────
 const OPTION_COLORS = [
   // [idle bg, selected-correct, selected-wrong, label bg]
   { base: '#7a8b1e', dark: '#5a6813', accent: '#c5d93a', label: '#8e9e22' }, // olive-green  A
@@ -271,6 +271,7 @@ export const QuizScreen: React.FC = () => {
         });
       } finally {
         setSubmitting(false);
+      }
       }
     }
   };
@@ -670,7 +671,7 @@ export const QuizScreen: React.FC = () => {
               </h2>
             </div>
 
-            {/* ── Kahoot-style option grid ── */}
+            {/* ── Option grid ── */}
             <div
               style={{
                 display: 'grid',
@@ -813,9 +814,13 @@ export const QuizScreen: React.FC = () => {
                     disabled={submitting}
                     isLoading={submitting}
                     onClick={handleNext}
-                    className="!bg-indigo-600 hover:!bg-indigo-500 !text-white !px-12 !py-3.5 !text-lg !rounded-full shadow-[0_0_24px_rgba(79,70,229,0.5)] transition-all hover:scale-105"
+                    className="!bg-indigo-600 hover:!bg-indigo-500 !text-white !px-12 !py-3.5 !text-lg !rounded-full shadow-[0_0_24px_rgba(79,70,229,0.5)] transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {currentIndex < total - 1 ? 'Next Question →' : '🎉 Submit & View Results'}
+                    {submitting
+                      ? 'Submitting Assessment...'
+                      : currentIndex < total - 1
+                      ? 'Next Question →'
+                      : '🎉 Submit & View Results'}
                   </Button>
                 </motion.div>
               )}
