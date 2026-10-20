@@ -272,7 +272,6 @@ export const QuizScreen: React.FC = () => {
       } finally {
         setSubmitting(false);
       }
-      }
     }
   };
 
