@@ -363,7 +363,7 @@ async function main() {
 
   // 8b. Seed realistic historical attempts for Student (Chaman & Rehan)
   // Arrays: 92% mastery (High), Trees: 45% mastery (Learning Gap < 60%)
-  const studentRecord = await prisma.student.findUnique({ where: { userId: studentUser.id } });
+  const studentRecord = await prisma.student.findUnique({ where: { userId: demoStudentUser.id } });
   if (studentRecord) {
     // Attempt 1: Arrays Quiz -> 100%
     const arrQuestions = await prisma.question.findMany({
