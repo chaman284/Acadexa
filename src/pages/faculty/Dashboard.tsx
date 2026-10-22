@@ -56,19 +56,14 @@ interface ClassGapsData {
   topics: TopicGap[];
   weakestTopics: TopicGap[];
 }
-
-const AVAILABLE_SECTIONS = [
-  { id: 'section-5a', name: '5th Sem - Section A', subject: 'Data Structures & Algorithms', count: 48 },
-  { id: 'section-5b', name: '5th Sem - Section B', subject: 'Data Structures & Algorithms', count: 45 },
-  { id: 'section-7c', name: '7th Sem - Section C', subject: 'Cloud Computing & DevOps', count: 42 },
-  { id: 'section-3a', name: '3rd Sem - Section A', subject: 'Database Management Systems', count: 50 },
-];
+import api from '../../lib/apiClient';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [selectedSection, setSelectedSection] = useState('section-5a');
+  const [sections, setSections] = useState<{ id: string; name: string; subject: string; count: number }[]>([]);
+  const [selectedSection, setSelectedSection] = useState('');
   const [data, setData] = useState<ClassGapsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState<'ALL' | 'GAPS_ONLY'>('ALL');
@@ -83,6 +78,7 @@ export const Dashboard: React.FC = () => {
   const [successResult, setSuccessResult] = useState<any | null>(null);
 
   const loadData = async (secId: string) => {
+    if (!secId) return;
     setLoading(true);
     try {
       const res = await analyticsService.getClassLearningGaps(secId);
@@ -99,7 +95,31 @@ export const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData(selectedSection);
+    const fetchSections = async () => {
+      try {
+        const res = await api.get('/sections');
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = res.data.map((s: any) => ({
+            id: s.id,
+            name: `Sem ${s.semester} - Section ${s.name}`,
+            subject: s.assignments?.[0]?.subjectName || 'Course',
+            count: s.studentsCount || 0,
+          }));
+          setSections(mapped);
+          setSelectedSection(mapped[0].id);
+          loadData(mapped[0].id);
+        }
+      } catch (err) {
+        console.warn('Failed to load sections:', err);
+      }
+    };
+    fetchSections();
+  }, []);
+
+  useEffect(() => {
+    if (selectedSection) {
+      loadData(selectedSection);
+    }
   }, [selectedSection]);
 
   const handleOpenRemedialModal = (specificTopicId?: string) => {
@@ -186,7 +206,7 @@ export const Dashboard: React.FC = () => {
           <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider pl-1 mr-1">
             Section:
           </span>
-          {AVAILABLE_SECTIONS.map(sec => {
+          {sections.map(sec => {
             const isSelected = selectedSection === sec.id;
             return (
               <button

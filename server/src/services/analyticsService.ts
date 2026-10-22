@@ -189,7 +189,7 @@ export const analyticsService = {
       assignmentId: a.id,
       sectionId: a.sectionId,
       subjectId: a.subjectId,
-      semester: `Sem ${a.subject.semester || a.section.semester}`,
+      semester: `Sem ${(a.subject as any).semester || a.section.semester}`,
       section: `${a.section.semester}${a.section.name}`,
       sectionName: `Section ${a.section.name}`,
       subject: a.subject.name,
@@ -217,19 +217,7 @@ export const analyticsService = {
     });
 
     if (topics.length === 0) {
-      const defaultTopics = [
-        'Foundations & Core Principles',
-        'Advanced Concepts & Paradigms',
-        'System Architecture & Design',
-        'Practical Implementations & Lab',
-        'Optimization & Performance Analysis',
-      ];
-      for (const dName of defaultTopics) {
-        const created = await prisma.topic.create({
-          data: { name: dName, subjectId: selectedClass.subjectId },
-        });
-        topics.push(created);
-      }
+      return { classes, selectedClass, topics: [] };
     }
 
     const topicPerformance = await Promise.all(

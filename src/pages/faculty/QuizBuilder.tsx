@@ -7,8 +7,6 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { facultyClasses } from '../../data/facultyClasses';
-import { mockQuestions } from '../../data/quizzes';
 import api from '../../lib/apiClient';
 import { questionService } from '../../services/quizService';
 import type { Question } from '../../types/quiz';
@@ -156,28 +154,16 @@ export const QuizBuilder: React.FC = () => {
   // Step 2 state
   const [selectedQIds, setSelectedQIds] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
-  const [availableQuestions, setAvailableQuestions] = useState<Question[]>(
-    mockQuestions.filter(q => q.status === 'approved')
-  );
+  const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     questionService.getQuestions({ status: 'APPROVED' }).then(res => {
       const approvedOnly = res.filter(q => q.status === 'approved');
-      if (approvedOnly.length > 0) {
-        setAvailableQuestions(approvedOnly);
-      }
+      setAvailableQuestions(approvedOnly);
     });
   }, []);
 
-  const defaultQuestions = useMemo(() => [
-    { id: 'q1', text: `Which foundational algorithmic paradigm is best suited for ${subject || 'this course'} problem solving?`, difficulty: 'easy' as const, topicName: 'Foundations', correctRate: 85 },
-    { id: 'q2', text: 'Explain the runtime and memory overhead trade-offs for dynamic memory allocations.', difficulty: 'medium' as const, topicName: 'Architecture', correctRate: 70 },
-    { id: 'q3', text: 'Analyze the worst-case time complexity of balancing operations in self-balancing structures.', difficulty: 'medium' as const, topicName: 'Complex Operations', correctRate: 62 },
-    { id: 'q4', text: 'What is the consequence of priority inversion and how can synchronization protocols prevent it?', difficulty: 'hard' as const, topicName: 'Concurrency & Systems', correctRate: 46 },
-    { id: 'q5', text: 'Identify the invariant condition that must hold during transactional commits.', difficulty: 'easy' as const, topicName: 'Integrity Rules', correctRate: 89 },
-  ], [subject]);
-
-  const displayQuestions = availableQuestions.length > 0 ? availableQuestions : (mockQuestions.length > 0 ? mockQuestions : defaultQuestions);
+  const displayQuestions = availableQuestions;
 
   // Step 3 state
   const [assignedClassIds, setAssignedClassIds] = useState<string[]>([]);

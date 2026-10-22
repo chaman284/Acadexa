@@ -226,59 +226,12 @@ Return ONLY valid raw JSON without markdown markers or extra text.`;
 router.get('/info', authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
     const targetDept = (req.query.dept as string) || 'CS';
-    let records: any[] = [];
-
-    try {
-      records = await prisma.deptInformation.findMany({
-        where: {
-          OR: [{ targetDept }, { targetDept: 'ALL' }],
-        },
-        orderBy: { date: 'asc' },
-      });
-    } catch (dbErr) {
-      console.warn('DB read failed in /api/dept/info, using defaults:', dbErr);
-    }
-
-    if (records.length === 0) {
-      records = [
-        {
-          id: 'dept_info_1',
-          type: 'EVENT',
-          title: 'CS Department Annual Technical Symposium 2026',
-          date: '2026-10-22T10:00:00.000Z',
-          description: 'Technical symposium with research paper presentations, project exhibits, and keynote by Dr. Ramesh Kumar.',
-          targetDept: 'CS',
-          createdAt: new Date(),
-        },
-        {
-          id: 'dept_info_2',
-          type: 'EVENT',
-          title: 'CIE-1 Examination Schedule',
-          date: '2026-10-15T09:30:00.000Z',
-          description: '5th Semester CIE-1 exams in CS Block Room 301. Data Structures on Oct 15, DBMS on Oct 17.',
-          targetDept: 'CS',
-          createdAt: new Date(),
-        },
-        {
-          id: 'dept_info_3',
-          type: 'HOLIDAY',
-          title: 'Diwali Institutional Break',
-          date: '2026-11-01T00:00:00.000Z',
-          description: 'University closed for Diwali holidays from Nov 1 to Nov 3, 2026.',
-          targetDept: 'ALL',
-          createdAt: new Date(),
-        },
-        {
-          id: 'dept_info_4',
-          type: 'EVENT',
-          title: 'Faculty Advising & Office Hours',
-          date: '2026-10-18T14:00:00.000Z',
-          description: 'Office hours with Dr. Ramesh Kumar (CS-405, Mon/Wed 2-4 PM) and Prof. Sunita Sharma (CS-406, Tue/Thu 11 AM-1 PM).',
-          targetDept: 'CS',
-          createdAt: new Date(),
-        },
-      ];
-    }
+    const records = await prisma.deptInformation.findMany({
+      where: {
+        OR: [{ targetDept }, { targetDept: 'ALL' }],
+      },
+      orderBy: { date: 'asc' },
+    });
 
     res.json({ success: true, count: records.length, data: records });
   } catch (error: any) {
@@ -297,28 +250,15 @@ router.post('/info', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (
       return res.status(400).json({ message: 'Title and description are required' });
     }
 
-    let record;
-    try {
-      record = await prisma.deptInformation.create({
-        data: {
-          type: type || 'EVENT',
-          title,
-          date: date ? new Date(date) : new Date(),
-          description,
-          targetDept: targetDept || 'CS',
-        },
-      });
-    } catch (e) {
-      record = {
-        id: `dept_${Date.now()}`,
+    const record = await prisma.deptInformation.create({
+      data: {
         type: type || 'EVENT',
         title,
         date: date ? new Date(date) : new Date(),
         description,
         targetDept: targetDept || 'CS',
-        createdAt: new Date(),
-      };
-    }
+      },
+    });
 
     res.status(201).json({ success: true, data: record });
   } catch (error: any) {

@@ -1,6 +1,5 @@
 import api from '../lib/apiClient';
 import type { Student, StudentSettings } from '../types/student';
-import { mockCurrentStudent } from '../data/students';
 
 const PROFILE_STORAGE_KEY = 'acadexa_student_profile_v2';
 const SETTINGS_STORAGE_KEY = 'acadexa_student_settings_v2';
@@ -17,8 +16,16 @@ const defaultSettings: StudentSettings = {
 };
 
 const defaultProfile: Student = {
-  ...mockCurrentStudent,
+  id: '',
   name: '',
+  email: '',
+  rollNumber: '',
+  semester: 0,
+  department: '',
+  enrolledCourses: [],
+  quizAverage: 0,
+  streak: 0,
+  learningProgress: 0,
   phone: '',
   bio: '',
   academicYear: '',

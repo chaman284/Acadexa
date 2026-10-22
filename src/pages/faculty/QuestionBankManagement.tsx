@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { DataTable } from '../../components/ui/DataTable';
-import { mockQuestions } from '../../data/quizzes';
 import type { Question } from '../../types/quiz';
 import { Search, Sparkles, Plus, Download, Check, X, Edit2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
@@ -12,8 +11,12 @@ import { Input } from '../../components/ui/Input';
 import { questionService } from '../../services/quizService';
 
 export const QuestionBankManagement: React.FC = () => {
-  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [isGenerateModalOpen, setGenerateModalOpen] = useState(false);
+
+  useEffect(() => {
+    questionService.getQuestions().then(res => setQuestions(res));
+  }, []);
   const [course, setCourse] = useState('Data Structures & Algorithms');
   const [topic, setTopic] = useState('Graphs - BFS & DFS');
   const [difficulty, setDifficulty] = useState('MEDIUM');

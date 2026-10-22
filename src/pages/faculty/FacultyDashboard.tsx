@@ -5,7 +5,7 @@ import {
   Sparkles, TrendingUp, TrendingDown, Minus,
   ClipboardList, FileStack, BookOpen, Database, Flame,
 } from 'lucide-react';
-import { facultyClasses, type FacultyClass } from '../../data/facultyClasses';
+import type { FacultyClass } from '../../data/facultyClasses';
 import api from '../../lib/apiClient';
 
 // ─── Accent colours per class (light-friendly, no dark gradients) ─────────────
@@ -50,14 +50,14 @@ export const FacultyDashboard: React.FC = () => {
     const fetchClasses = async () => {
       try {
         const res = await api.get('/sections/faculty-classes');
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        if (res.data && Array.isArray(res.data)) {
           if (isMounted) setClasses(res.data);
         } else {
-          if (isMounted) setClasses(facultyClasses);
+          if (isMounted) setClasses([]);
         }
       } catch (err) {
         console.error('Failed to load faculty classes:', err);
-        if (isMounted) setClasses(facultyClasses);
+        if (isMounted) setClasses([]);
       } finally {
         if (isMounted) setLoading(false);
       }

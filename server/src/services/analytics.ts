@@ -281,137 +281,27 @@ export const analytics = {
    * Baseline profile with realistic knowledge tracing data (e.g. Arrays: 92%, Trees: 45%)
    */
   getBaselineKnowledgeProfile(studentId: string, studentName: string): KnowledgeTracingProfile {
-    const topics: TopicMastery[] = [
-      {
-        topicId: 'topic-arrays',
-        topicName: 'Arrays',
-        subjectName: 'Data Structures',
-        totalAttempts: 12,
-        correctCount: 11,
-        mastery: 92,
-        isLearningGap: false,
-        severity: 'MASTERED',
-        cognitiveBreakdown: {
-          CL1_REMEMBER: { total: 4, correct: 4, accuracy: 100 },
-          CL2_UNDERSTAND: { total: 4, correct: 4, accuracy: 100 },
-          CL3_APPLY: { total: 4, correct: 3, accuracy: 75 },
-        },
-        recommendedQuestionsCount: 2,
-      },
-      {
-        topicId: 'topic-trees',
-        topicName: 'Trees',
-        subjectName: 'Data Structures',
-        totalAttempts: 11,
-        correctCount: 5,
-        mastery: 45,
-        isLearningGap: true, // Flagged: 45% < 60%
-        severity: 'CRITICAL',
-        cognitiveBreakdown: {
-          CL1_REMEMBER: { total: 3, correct: 2, accuracy: 67 },
-          CL2_UNDERSTAND: { total: 4, correct: 2, accuracy: 50 },
-          CL3_APPLY: { total: 4, correct: 1, accuracy: 25 },
-        },
-        recommendedQuestionsCount: 8,
-      },
-      {
-        topicId: 'topic-stacks',
-        topicName: 'Stacks & Queues',
-        subjectName: 'Data Structures',
-        totalAttempts: 10,
-        correctCount: 8,
-        mastery: 80,
-        isLearningGap: false,
-        severity: 'MASTERED',
-        cognitiveBreakdown: {
-          CL1_REMEMBER: { total: 3, correct: 3, accuracy: 100 },
-          CL2_UNDERSTAND: { total: 4, correct: 3, accuracy: 75 },
-          CL3_APPLY: { total: 3, correct: 2, accuracy: 67 },
-        },
-        recommendedQuestionsCount: 2,
-      },
-      {
-        topicId: 'topic-graphs',
-        topicName: 'Graph Algorithms',
-        subjectName: 'Data Structures',
-        totalAttempts: 9,
-        correctCount: 5,
-        mastery: 55,
-        isLearningGap: true, // Flagged: 55% < 60%
-        severity: 'HIGH',
-        cognitiveBreakdown: {
-          CL2_UNDERSTAND: { total: 4, correct: 3, accuracy: 75 },
-          CL3_APPLY: { total: 3, correct: 1, accuracy: 33 },
-          CL4_ANALYZE: { total: 2, correct: 1, accuracy: 50 },
-        },
-        recommendedQuestionsCount: 6,
-      },
-      {
-        topicId: 'topic-recursion',
-        topicName: 'Recursion & Backtracking',
-        subjectName: 'Data Structures',
-        totalAttempts: 8,
-        correctCount: 6,
-        mastery: 75,
-        isLearningGap: false,
-        severity: 'MODERATE',
-        cognitiveBreakdown: {
-          CL2_UNDERSTAND: { total: 3, correct: 3, accuracy: 100 },
-          CL3_APPLY: { total: 3, correct: 2, accuracy: 67 },
-          CL4_ANALYZE: { total: 2, correct: 1, accuracy: 50 },
-        },
-        recommendedQuestionsCount: 3,
-      },
-      {
-        topicId: 'topic-dp',
-        topicName: 'Dynamic Programming',
-        subjectName: 'Data Structures',
-        totalAttempts: 8,
-        correctCount: 3,
-        mastery: 38,
-        isLearningGap: true, // Flagged: 38% < 60%
-        severity: 'CRITICAL',
-        cognitiveBreakdown: {
-          CL2_UNDERSTAND: { total: 3, correct: 1, accuracy: 33 },
-          CL3_APPLY: { total: 3, correct: 1, accuracy: 33 },
-          CL4_ANALYZE: { total: 2, correct: 1, accuracy: 50 },
-        },
-        recommendedQuestionsCount: 10,
-      },
-    ];
-
-    const learningGaps = topics.filter(t => t.isLearningGap).sort((a, b) => a.mastery - b.mastery);
-    const masteredTopics = topics.filter(t => !t.isLearningGap).sort((a, b) => b.mastery - a.mastery);
-
-    const cognitiveMastery: CognitiveMastery[] = [
-      { level: CognitiveLevel.CL1_REMEMBER, name: 'Remember', bloomOrder: 1, total: 12, correct: 10, accuracy: 83, status: 'PROFICIENT' },
-      { level: CognitiveLevel.CL2_UNDERSTAND, name: 'Understand', bloomOrder: 2, total: 18, correct: 13, accuracy: 72, status: 'DEVELOPING' },
-      { level: CognitiveLevel.CL3_APPLY, name: 'Apply', bloomOrder: 3, total: 17, correct: 8, accuracy: 47, status: 'NEEDS_ATTENTION' },
-      { level: CognitiveLevel.CL4_ANALYZE, name: 'Analyze', bloomOrder: 4, total: 6, correct: 3, accuracy: 50, status: 'NEEDS_ATTENTION' },
-      { level: CognitiveLevel.CL5_EVALUATE, name: 'Evaluate', bloomOrder: 5, total: 3, correct: 2, accuracy: 67, status: 'DEVELOPING' },
-      { level: CognitiveLevel.CL6_CREATE, name: 'Create', bloomOrder: 6, total: 2, correct: 1, accuracy: 50, status: 'NEEDS_ATTENTION' },
-    ];
+    const cognitiveMastery: CognitiveMastery[] = BLOOM_LEVELS.map(b => ({
+      level: b.level,
+      name: b.name,
+      bloomOrder: b.bloomOrder,
+      total: 0,
+      correct: 0,
+      accuracy: 0,
+      status: 'DEVELOPING',
+    }));
 
     return {
       studentId,
       studentName,
-      overallMastery: 64,
-      totalQuestionsAnswered: 58,
-      totalCorrect: 37,
-      topicMastery: topics,
-      learningGaps,
-      masteredTopics,
+      overallMastery: 0,
+      totalQuestionsAnswered: 0,
+      totalCorrect: 0,
+      topicMastery: [],
+      learningGaps: [],
+      masteredTopics: [],
       cognitiveMastery,
-      recommendations: learningGaps.map(gap => ({
-        topicId: gap.topicId,
-        topicName: gap.topicName,
-        subjectName: gap.subjectName,
-        currentMastery: gap.mastery,
-        targetMastery: 80,
-        priority: gap.severity === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
-        recommendedQuestionsCount: gap.recommendedQuestionsCount,
-        reason: `Mastery in ${gap.topicName} is ${gap.mastery}% (below 60% mastery threshold).`,
-      })),
+      recommendations: [],
     };
   },
 
@@ -678,141 +568,16 @@ export const analytics = {
     return this.getBaselineClassGaps(sectionId);
   },
 
-  getBaselineClassGaps(sectionId: string = 'section-5a') {
-    const topics = [
-      {
-        topicId: 'topic-dp',
-        topicName: 'Dynamic Programming',
-        subjectName: 'Data Structures & Algorithms',
-        averageMastery: 38,
-        failureRate: 62,
-        totalAttempts: 192,
-        correctCount: 73,
-        studentsAttempted: 46,
-        studentsFailing: 32,
-        totalEnrolled: 48,
-        isLearningGap: true,
-        severity: 'CRITICAL' as const,
-        cognitiveBreakdown: {
-          CL2_UNDERSTAND: { total: 48, correct: 24, accuracy: 50 },
-          CL3_APPLY: { total: 72, correct: 25, accuracy: 35 },
-          CL4_ANALYZE: { total: 72, correct: 24, accuracy: 33 },
-        },
-        recommendedRemedialCount: 8,
-      },
-      {
-        topicId: 'topic-trees',
-        topicName: 'Binary Trees & BST',
-        subjectName: 'Data Structures & Algorithms',
-        averageMastery: 45,
-        failureRate: 55,
-        totalAttempts: 240,
-        correctCount: 108,
-        studentsAttempted: 48,
-        studentsFailing: 28,
-        totalEnrolled: 48,
-        isLearningGap: true,
-        severity: 'CRITICAL' as const,
-        cognitiveBreakdown: {
-          CL1_REMEMBER: { total: 48, correct: 34, accuracy: 71 },
-          CL2_UNDERSTAND: { total: 96, correct: 44, accuracy: 46 },
-          CL3_APPLY: { total: 96, correct: 30, accuracy: 31 },
-        },
-        recommendedRemedialCount: 6,
-      },
-      {
-        topicId: 'topic-graphs',
-        topicName: 'Graph Algorithms & Shortest Path',
-        subjectName: 'Data Structures & Algorithms',
-        averageMastery: 54,
-        failureRate: 46,
-        totalAttempts: 216,
-        correctCount: 117,
-        studentsAttempted: 47,
-        studentsFailing: 23,
-        totalEnrolled: 48,
-        isLearningGap: true,
-        severity: 'HIGH' as const,
-        cognitiveBreakdown: {
-          CL2_UNDERSTAND: { total: 72, correct: 50, accuracy: 69 },
-          CL3_APPLY: { total: 72, correct: 36, accuracy: 50 },
-          CL4_ANALYZE: { total: 72, correct: 31, accuracy: 43 },
-        },
-        recommendedRemedialCount: 5,
-      },
-      {
-        topicId: 'topic-recursion',
-        topicName: 'Recursion & Backtracking',
-        subjectName: 'Data Structures & Algorithms',
-        averageMastery: 72,
-        failureRate: 28,
-        totalAttempts: 180,
-        correctCount: 130,
-        studentsAttempted: 45,
-        studentsFailing: 12,
-        totalEnrolled: 48,
-        isLearningGap: false,
-        severity: 'MODERATE' as const,
-        cognitiveBreakdown: {
-          CL2_UNDERSTAND: { total: 60, correct: 50, accuracy: 83 },
-          CL3_APPLY: { total: 60, correct: 42, accuracy: 70 },
-          CL4_ANALYZE: { total: 60, correct: 38, accuracy: 63 },
-        },
-        recommendedRemedialCount: 3,
-      },
-      {
-        topicId: 'topic-stacks',
-        topicName: 'Stacks & Queues',
-        subjectName: 'Data Structures & Algorithms',
-        averageMastery: 81,
-        failureRate: 19,
-        totalAttempts: 220,
-        correctCount: 178,
-        studentsAttempted: 48,
-        studentsFailing: 6,
-        totalEnrolled: 48,
-        isLearningGap: false,
-        severity: 'MASTERED' as const,
-        cognitiveBreakdown: {
-          CL1_REMEMBER: { total: 60, correct: 56, accuracy: 93 },
-          CL2_UNDERSTAND: { total: 80, correct: 66, accuracy: 82 },
-          CL3_APPLY: { total: 80, correct: 56, accuracy: 70 },
-        },
-        recommendedRemedialCount: 2,
-      },
-      {
-        topicId: 'topic-arrays',
-        topicName: 'Arrays & Two Pointers',
-        subjectName: 'Data Structures & Algorithms',
-        averageMastery: 92,
-        failureRate: 8,
-        totalAttempts: 250,
-        correctCount: 230,
-        studentsAttempted: 48,
-        studentsFailing: 2,
-        totalEnrolled: 48,
-        isLearningGap: false,
-        severity: 'MASTERED' as const,
-        cognitiveBreakdown: {
-          CL1_REMEMBER: { total: 80, correct: 78, accuracy: 98 },
-          CL2_UNDERSTAND: { total: 90, correct: 84, accuracy: 93 },
-          CL3_APPLY: { total: 80, correct: 68, accuracy: 85 },
-        },
-        recommendedRemedialCount: 1,
-      },
-    ];
-
-    const weakestTopics = topics.filter(t => t.isLearningGap);
-
+  getBaselineClassGaps(sectionId: string = '') {
     return {
       sectionId,
-      sectionName: '5th Sem - Section A',
-      subjectName: 'Data Structures & Algorithms',
-      totalStudents: 48,
-      overallMastery: 64,
-      criticalGapsCount: weakestTopics.length,
-      topics,
-      weakestTopics,
+      sectionName: '',
+      subjectName: '',
+      totalStudents: 0,
+      overallMastery: 0,
+      criticalGapsCount: 0,
+      topics: [],
+      weakestTopics: [],
     };
   },
 
@@ -827,16 +592,13 @@ export const analytics = {
     duration?: number;
     questionCount?: number;
   }) {
-    const sectionId = data.sectionId || 'section-5a';
+    const sectionId = data.sectionId || '';
     const targetCount = data.questionCount || 5;
 
     let targetTopicIds = data.topicIds || [];
-    if (targetTopicIds.length === 0) {
+    if (targetTopicIds.length === 0 && sectionId) {
       const classGaps = await this.computeClassGaps(sectionId);
       targetTopicIds = classGaps.weakestTopics.map(t => t.topicId);
-      if (targetTopicIds.length === 0) {
-        targetTopicIds = ['topic-trees', 'topic-dp'];
-      }
     }
 
     let approvedQuestions: any[] = [];
@@ -844,36 +606,31 @@ export const analytics = {
     let subjectRecord: any = null;
 
     try {
-      sectionRecord = await prisma.section.findUnique({
-        where: { id: sectionId },
-        include: { department: true },
-      });
-
-      subjectRecord = await prisma.subject.findFirst({
-        where: {
-          topics: { some: { id: { in: targetTopicIds } } },
-        },
-      });
-
-      approvedQuestions = await prisma.question.findMany({
-        where: {
-          status: 'APPROVED',
-          topicId: { in: targetTopicIds },
-        },
-        include: { options: true, topic: true },
-        take: targetCount * 2,
-      });
-
-      if (approvedQuestions.length < targetCount) {
-        const additional = await prisma.question.findMany({
-          where: { status: 'APPROVED' },
-          include: { options: true, topic: true },
-          take: targetCount,
+      if (sectionId) {
+        sectionRecord = await prisma.section.findUnique({
+          where: { id: sectionId },
+          include: { department: true },
         });
-        approvedQuestions = [...approvedQuestions, ...additional];
+      }
+
+      if (targetTopicIds.length > 0) {
+        subjectRecord = await prisma.subject.findFirst({
+          where: {
+            topics: { some: { id: { in: targetTopicIds } } },
+          },
+        });
+
+        approvedQuestions = await prisma.question.findMany({
+          where: {
+            status: 'APPROVED',
+            topicId: { in: targetTopicIds },
+          },
+          include: { options: true, topic: true },
+          take: targetCount * 2,
+        });
       }
     } catch (e) {
-      console.warn('DB query in generateRemedialQuiz fallback:', e);
+      console.warn('DB query in generateRemedialQuiz failed:', e);
     }
 
     const selectedQuestions = approvedQuestions.slice(0, targetCount);
@@ -881,7 +638,7 @@ export const analytics = {
 
     const quizTitle =
       data.title ||
-      `Remedial Assessment: Target Mastery (${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
+      `Remedial Assessment (${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
 
     let createdQuiz: any = null;
 
@@ -917,32 +674,25 @@ export const analytics = {
         });
       }
     } catch (e) {
-      console.warn('Prisma quiz creation in remedial fallback:', e);
+      console.warn('Prisma quiz creation in remedial assessment:', e);
     }
 
     if (!createdQuiz) {
-      createdQuiz = {
-        id: `remedial_${Date.now()}`,
-        title: quizTitle,
-        type: 'REMEDIAL',
-        status: 'ACTIVE',
-        duration: data.duration || 20,
-        sectionId,
-        sectionName: '5th Sem - Section A',
-        subjectName: 'Data Structures & Algorithms',
-        questionCount: Math.max(selectedIds.length, targetCount),
-        assignedStudentsCount: 48,
-        weakTopicsCovered: targetTopicIds,
-        createdAt: new Date().toISOString(),
+      return {
+        success: false,
+        message: 'Unable to create remedial quiz. Please ensure approved questions and valid subject/section exist.',
+        quiz: null,
+        targetTopicIds,
+        pulledQuestionsCount: 0,
       };
     }
 
     return {
       success: true,
-      message: `Remedial Quiz "${quizTitle}" created and assigned to Section ${sectionRecord?.name || '5A'} with ${createdQuiz.questionCount || selectedIds.length || targetCount} APPROVED questions.`,
+      message: `Remedial Quiz "${quizTitle}" created and assigned to Section ${sectionRecord?.name || ''} with ${selectedIds.length} APPROVED questions.`,
       quiz: createdQuiz,
       targetTopicIds,
-      pulledQuestionsCount: createdQuiz.questionCount || selectedIds.length || targetCount,
+      pulledQuestionsCount: selectedIds.length,
     };
   },
 };

@@ -124,7 +124,7 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
             _count: { id: true },
           });
 
-          const avgScore = attempts._avg.score ? Math.round(attempts._avg.score) : 72 + (index % 3) * 4;
+          const avgScore = attempts._avg.score ? Math.round(attempts._avg.score) : 0;
 
           return {
             id: a.id,
@@ -132,7 +132,7 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
             subjectId: a.subjectId,
             subject: a.subject.name,
             subjectCode: a.subject.code,
-            semester: `Sem ${a.subject.semester || a.section.semester}`,
+            semester: `Sem ${(a.subject as any).semester || a.section.semester}`,
             section: `${a.section.semester}${a.section.name}`,
             sectionName: `Section ${a.section.name}`,
             studentsCount: a.section._count.students,
@@ -140,19 +140,9 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
             activeQuizCount,
             pendingReviewCount: 0,
             lastQuizDate: new Date().toISOString().split('T')[0],
-            trend: (index % 2 === 0 ? 'improving' : 'stable') as 'improving' | 'stable' | 'declining',
-            weeklyPerformance: [
-              { label: 'Wk 1', score: 62 },
-              { label: 'Wk 2', score: 66 },
-              { label: 'Wk 3', score: 69 },
-              { label: 'Wk 4', score: 71 },
-              { label: 'Wk 5', score: avgScore },
-            ],
-            weakTopics: [
-              { topicName: 'Core Algorithms', score: 54 },
-              { topicName: 'Memory & Pointers', score: 62 },
-              { topicName: 'Asymptotic Analysis', score: 68 },
-            ],
+            trend: 'stable' as const,
+            weeklyPerformance: [],
+            weakTopics: [],
           };
         })
       );
@@ -169,7 +159,7 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
       orderBy: [{ semester: 'asc' }, { name: 'asc' }],
     });
 
-    const fallbackClasses = allSections.map((sec, idx) => ({
+    const fallbackClasses = allSections.map((sec) => ({
       id: sec.id,
       sectionId: sec.id,
       subjectId: 'default',
@@ -179,19 +169,13 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
       section: `${sec.semester}${sec.name}`,
       sectionName: `Section ${sec.name}`,
       studentsCount: sec._count.students,
-      avgScore: 70 + idx * 3,
+      avgScore: 0,
       activeQuizCount: 0,
       pendingReviewCount: 0,
       lastQuizDate: new Date().toISOString().split('T')[0],
-      trend: 'improving' as const,
-      weeklyPerformance: [
-        { label: 'Wk 1', score: 60 },
-        { label: 'Wk 2', score: 65 },
-        { label: 'Wk 3', score: 70 },
-      ],
-      weakTopics: [
-        { topicName: 'Foundations', score: 58 },
-      ],
+      trend: 'stable' as const,
+      weeklyPerformance: [],
+      weakTopics: [],
     }));
 
     return res.json(fallbackClasses);

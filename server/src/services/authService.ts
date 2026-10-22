@@ -30,20 +30,20 @@ export const authService = {
         role: data.role,
         ...(data.role === 'STUDENT' && data.rollNo && data.sectionId
           ? {
-              student: {
-                create: {
-                  rollNo: data.rollNo,
-                  sectionId: data.sectionId,
-                },
+            student: {
+              create: {
+                rollNo: data.rollNo,
+                sectionId: data.sectionId,
               },
-            }
+            },
+          }
           : {}),
         ...(data.role === 'FACULTY'
           ? {
-              faculty: {
-                create: {},
-              },
-            }
+            faculty: {
+              create: {},
+            },
+          }
           : {}),
       },
       include: {
@@ -72,66 +72,13 @@ export const authService = {
   },
 
   async login(email: string, password: string, role?: string) {
-    let user: any = null;
-
-    try {
-      user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          student: true,
-          faculty: true,
-        },
-      });
-    } catch (dbErr) {
-      console.warn('DB login failed, trying fallback credentials:', dbErr);
-    }
-
-    // Fallback accounts for development if DB is unreachable
-    if (!user) {
-      const fallbackAccounts: Record<string, any> = {
-        'chaman@cs.college.edu': {
-          id: 'cmv6w18t70001x004odq1zgav',
-          email: 'chaman@cs.college.edu',
-          name: 'Chaman',
-          role: 'STUDENT',
-          password: 'student123',
-          student: { id: 'cmv6w18t70003x004kuswh51c', rollNo: '21CS045', sectionId: 'section-5a' },
-          faculty: null,
-        },
-        'rehan@cs.college.edu': {
-          id: 'stu_rehan',
-          email: 'rehan@cs.college.edu',
-          name: 'Rehan Patel',
-          role: 'STUDENT',
-          password: 'rehan123',
-          student: { id: 'stu_rehan_id', rollNo: '21CS001', sectionId: 'section-5a' },
-          faculty: null,
-        },
-        'faculty@cs.college.edu': {
-          id: 'fac_ramesh',
-          email: 'faculty@cs.college.edu',
-          name: 'Dr. Ramesh Kumar',
-          role: 'FACULTY',
-          password: 'faculty123',
-          student: null,
-          faculty: { id: 'fac_ramesh_id' },
-        },
-        'soumya@cs.college.edu': {
-          id: 'fac_soumya',
-          email: 'soumya@cs.college.edu',
-          name: 'Soumya',
-          role: 'FACULTY',
-          password: 'soumya123',
-          student: null,
-          faculty: { id: 'fac_soumya_id' },
-        },
-      };
-
-      const matched = fallbackAccounts[email];
-      if (matched && matched.password === password) {
-        user = matched;
-      }
-    }
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        student: true,
+        faculty: true,
+      },
+    });
 
     if (!user) {
       throw new Error('Invalid email or password');

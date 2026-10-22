@@ -9,15 +9,9 @@ import { Card, CardHeader } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { facultyClasses, type FacultyClass } from '../../data/facultyClasses';
+import type { FacultyClass } from '../../data/facultyClasses';
 import api from '../../lib/apiClient';
-import {
-  classWeeklyPerformance,
-  classTopicPerformance,
-  recentActivities,
-  difficultQuestions,
-} from '../../data/analytics';
-import type { DifficultQuestion } from '../../types/analytics';
+import type { DifficultQuestion, RecentActivity } from '../../types/analytics';
 
 // ─── Subject colour accents ───────────────────────────────────────────────────
 const ACCENT_MAP: Record<string, string> = {
@@ -31,14 +25,15 @@ export const ClassDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { classId } = useParams<{ classId: string }>();
 
-  const [cls, setCls] = useState<FacultyClass | null>(() => {
-    return facultyClasses.find(c => c.id === classId || c.sectionId === classId) || null;
-  });
-  const [loading, setLoading] = useState<boolean>(!cls);
+  const [cls, setCls] = useState<FacultyClass | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [difficultQuestions] = useState<DifficultQuestion[]>([]);
+  const [recentActivities] = useState<RecentActivity[]>([]);
 
   useEffect(() => {
     let isMounted = true;
     const fetchClass = async () => {
+      setLoading(true);
       try {
         const res = await api.get('/sections/faculty-classes');
         if (res.data && Array.isArray(res.data)) {
@@ -54,11 +49,7 @@ export const ClassDashboard: React.FC = () => {
       }
     };
 
-    if (!cls) {
-      fetchClass();
-    } else {
-      setLoading(false);
-    }
+    fetchClass();
     return () => { isMounted = false; };
   }, [classId]);
 
@@ -208,10 +199,7 @@ export const ClassDashboard: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <PerformanceChart
             title={`Performance — ${cls.section}`}
-            weekData={classWeeklyPerformance.map(d => ({
-              ...d,
-              score: Math.min(100, d.score + classModifier * 2),
-            }))}
+            weekData={cls.weeklyPerformance && cls.weeklyPerformance.length > 0 ? cls.weeklyPerformance : []}
             monthData={[]}
             semesterData={[]}
             showClassAverage={false}
@@ -226,6 +214,7 @@ export const ClassDashboard: React.FC = () => {
               columns={difficultColumns}
               data={difficultQuestions}
               keyField="questionId"
+              emptyMessage="No question difficulty data available for this class yet."
             />
           </Card>
         </div>
@@ -245,72 +234,77 @@ export const ClassDashboard: React.FC = () => {
               }
             />
             <div className="space-y-3">
-              {(cls.weakTopics && cls.weakTopics.length > 0 ? cls.weakTopics : [
-                { topicName: 'Foundations & Concepts', score: 62 },
-                { topicName: 'Practical Application', score: 58 },
-                { topicName: 'Analysis & Evaluation', score: 71 },
-              ]).map((t, i) => (
-                <div key={i}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-[var(--color-text-primary)]">{t.topicName}</span>
-                    <span
-                      className="text-xs font-bold"
-                      style={{
-                        color: t.score < 55 ? '#ef4444' : t.score < 70 ? '#f59e0b' : '#059669',
-                      }}
-                    >
-                      {t.score}%
-                    </span>
+              {(cls.weakTopics && cls.weakTopics.length > 0) ? (
+                cls.weakTopics.map((t, i) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-[var(--color-text-primary)]">{t.topicName}</span>
+                      <span
+                        className="text-xs font-bold"
+                        style={{
+                          color: t.score < 55 ? '#ef4444' : t.score < 70 ? '#f59e0b' : '#059669',
+                        }}
+                      >
+                        {t.score}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--color-muted)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${t.score}%`,
+                          background:
+                            t.score < 55 ? '#ef4444' : t.score < 70 ? '#f59e0b' : '#059669',
+                          transition: 'width 0.5s ease',
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-[var(--color-muted)] overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${t.score}%`,
-                        background:
-                          t.score < 55 ? '#ef4444' : t.score < 70 ? '#f59e0b' : '#059669',
-                        transition: 'width 0.5s ease',
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                  No learning gaps identified for this section yet.
+                </p>
+              )}
             </div>
           </Card>
 
           <Card>
             <CardHeader title="Recent Activity" />
             <div className="space-y-4">
-              {recentActivities.slice(0, 4).map(activity => (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div
-                    className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                      activity.type === 'quiz_submitted'
-                        ? 'bg-[var(--color-success)]'
-                        : activity.type === 'quiz_created'
-                        ? 'bg-[var(--color-accent)]'
-                        : 'bg-[var(--color-warning)]'
-                    }`}
-                  />
-                  <div>
-                    <p className="text-sm text-[var(--color-text-primary)]">
-                      {activity.type === 'quiz_submitted'
-                        ? `A student from Section ${cls.section} submitted a quiz.`
-                        : activity.description}
-                    </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                      {new Date(activity.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
+              {recentActivities.length > 0 ? (
+                recentActivities.slice(0, 4).map(activity => (
+                  <div key={activity.id} className="flex items-start gap-3">
+                    <div
+                      className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                        activity.type === 'quiz_submitted'
+                          ? 'bg-[var(--color-success)]'
+                          : activity.type === 'quiz_created'
+                          ? 'bg-[var(--color-accent)]'
+                          : 'bg-[var(--color-warning)]'
+                      }`}
+                    />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-primary)]">
+                        {activity.type === 'quiz_submitted'
+                          ? `A student from Section ${cls.section} submitted a quiz.`
+                          : activity.description}
+                      </p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {new Date(activity.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                  No recent activity recorded for this section.
+                </p>
+              )}
             </div>
-            <Button variant="outline" fullWidth className="mt-4">
-              View All Activity
-            </Button>
           </Card>
         </div>
       </div>

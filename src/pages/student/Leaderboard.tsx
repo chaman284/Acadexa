@@ -1,26 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { LeaderboardTable } from '../../components/leaderboard/LeaderboardTable';
 import { ControlledTabs } from '../../components/ui/Tabs';
-import { Card, CardHeader } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { mockLeaderboard } from '../../data/students';
+import { Card } from '../../components/ui/Card';
 import { Trophy, TrendingUp } from 'lucide-react';
-
-const mostImprovedData: { rank: number; studentId: string; studentName: string; score: number; change: 'up' | 'down' | 'same'; changeValue: number }[] = [];
+import api from '../../lib/apiClient';
+import { useAuth } from '../../context/AuthContext';
+import type { LeaderboardEntry } from '../../types/student';
 
 export const Leaderboard: React.FC = () => {
+  const { user } = useAuth();
   const [tab, setTab] = useState('weekly');
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const tabs = [
     { id: 'weekly', label: 'Weekly' },
     { id: 'monthly', label: 'Monthly' },
     { id: 'overall', label: 'Overall' },
-    { id: 'improved', label: 'Most Improved' },
   ];
 
-  const data = tab === 'improved' ? mostImprovedData : mockLeaderboard;
-  const myEntry = mockLeaderboard.find(e => e.studentId === 'stu001');
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      try {
+        const meRes = await api.get('/auth/me');
+        const sectionId = meRes.data?.student?.sectionId || meRes.data?.student?.section?.id || 'section-5a';
+        const res = await api.get(`/analytics/leaderboard/${sectionId}`);
+        if (Array.isArray(res.data)) {
+          const mapped: LeaderboardEntry[] = res.data.map((item: any, idx: number) => ({
+            rank: idx + 1,
+            studentId: item.studentId || item.id,
+            studentName: item.name,
+            score: Math.round(item.averageScore || 0),
+            change: 'same' as const,
+            changeValue: 0,
+            avatarUrl: item.avatarUrl,
+          }));
+          setEntries(mapped);
+        }
+      } catch (e) {
+        console.warn('Failed to load leaderboard from API:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaderboard();
+  }, []);
+
+  const myEntry = entries.find(e => e.studentId === user?.id || e.studentName === user?.name);
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -42,14 +70,14 @@ export const Leaderboard: React.FC = () => {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[var(--color-accent)]">Your Current Ranking</p>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              You're ranked <strong>#{myEntry.rank}</strong> out of 62 students this week
+              You're ranked <strong>#{myEntry.rank}</strong> out of {entries.length} students
             </p>
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-2xl font-black text-[var(--color-accent)]">#{myEntry.rank}</p>
             <div className="flex items-center gap-1 text-xs text-[var(--color-success)] justify-end">
               <TrendingUp className="w-3 h-3" />
-              <span>+{myEntry.changeValue} this week</span>
+              <span>Score: {myEntry.score}%</span>
             </div>
           </div>
         </div>
@@ -62,12 +90,11 @@ export const Leaderboard: React.FC = () => {
           <ControlledTabs tabs={tabs} activeTab={tab} onChange={setTab} />
         </div>
         <LeaderboardTable
-          entries={data}
-          currentStudentId="stu001"
+          entries={entries}
+          currentStudentId={user?.id || ''}
         />
       </Card>
 
-      {/* Note about privacy */}
       <p className="text-xs text-[var(--color-text-muted)] text-center">
         Leaderboard shows aggregated quiz scores. Individual topic performance data is private.
       </p>
