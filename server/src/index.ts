@@ -51,3 +51,4 @@ app.use(errorHandler);
 app.listen(config.port, () => {
   console.log(`🚀 Acadexa Backend running on http://localhost:${config.port}`);
 });
+

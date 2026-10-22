@@ -19,7 +19,10 @@ router.post('/login', async (req, res, next) => {
     const result = await authService.login(email, password, role);
     res.json(result);
   } catch (error: any) {
-    res.status(401).json({ message: error.message });
+    const isAuthError =
+      error.message?.includes('Invalid email or password') ||
+      error.message?.includes('Invalid role');
+    res.status(isAuthError ? 401 : 500).json({ message: error.message });
   }
 });
 
