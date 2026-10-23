@@ -324,10 +324,10 @@ export const QuizManagement: React.FC = () => {
           </button>
           <div className="h-4 w-px bg-[var(--color-border)]" />
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[var(--color-accent)] rounded-md flex items-center justify-center">
-              <GraduationCap className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 bg-oxblood rounded-lg flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-base text-[var(--color-text-primary)]">Quiz Management</span>
+            <span className="font-serif font-bold text-lg text-[var(--color-text-primary)]">Quiz Management</span>
           </div>
         </div>
 
@@ -364,11 +364,11 @@ export const QuizManagement: React.FC = () => {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setClassFilter('all')}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
               style={{
-                background: classFilter === 'all' ? 'var(--color-accent)' : 'var(--color-muted)',
+                background: classFilter === 'all' ? 'var(--color-oxblood)' : 'var(--color-muted)',
                 color: classFilter === 'all' ? '#fff' : 'var(--color-text-secondary)',
-                border: classFilter === 'all' ? '1.5px solid var(--color-accent)' : '1.5px solid var(--color-border)',
+                border: classFilter === 'all' ? '1px solid var(--color-oxblood)' : '1px solid var(--color-border)',
               }}
             >
               All Classes ({quizzes.length})
@@ -381,11 +381,11 @@ export const QuizManagement: React.FC = () => {
                 <button
                   key={cls.id}
                   onClick={() => setClassFilter(cls.id)}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                   style={{
-                    background: classFilter === cls.id ? 'var(--color-accent)' : 'var(--color-muted)',
+                    background: classFilter === cls.id ? 'var(--color-oxblood)' : 'var(--color-muted)',
                     color: classFilter === cls.id ? '#fff' : 'var(--color-text-secondary)',
-                    border: classFilter === cls.id ? '1.5px solid var(--color-accent)' : '1.5px solid var(--color-border)',
+                    border: classFilter === cls.id ? '1px solid var(--color-oxblood)' : '1px solid var(--color-border)',
                   }}
                 >
                   Sem {cls.semester} · Sec {cls.name}
@@ -393,7 +393,7 @@ export const QuizManagement: React.FC = () => {
                     <span
                       className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold"
                       style={{
-                        background: classFilter === cls.id ? 'rgba(255,255,255,0.3)' : 'var(--color-accent)',
+                        background: classFilter === cls.id ? 'rgba(255,255,255,0.3)' : 'var(--color-oxblood)',
                         color: '#fff',
                       }}
                     >
@@ -412,10 +412,10 @@ export const QuizManagement: React.FC = () => {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px"
+              className="px-4 py-2 text-sm font-semibold transition-all border-b-2 -mb-px cursor-pointer"
               style={{
-                borderColor: tab === t.id ? 'var(--color-accent)' : 'transparent',
-                color: tab === t.id ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                borderColor: tab === t.id ? 'var(--color-oxblood)' : 'transparent',
+                color: tab === t.id ? 'var(--color-oxblood)' : 'var(--color-text-muted)',
               }}
             >
               {t.label}
@@ -472,7 +472,7 @@ export const QuizManagement: React.FC = () => {
                       </div>
 
                       {/* Quiz Title & Course */}
-                      <h4 className="font-bold text-base text-[var(--color-text-primary)] line-clamp-1 mb-1">
+                      <h4 className="font-serif font-bold text-lg text-[var(--color-text-primary)] line-clamp-1 mb-1">
                         {q.title}
                       </h4>
                       <p className="text-xs text-[var(--color-text-muted)] font-medium mb-3">

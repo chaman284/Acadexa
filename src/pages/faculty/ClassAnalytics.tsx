@@ -49,7 +49,7 @@ export const ClassAnalytics: React.FC = () => {
     {
       key: 'actions', header: 'Actions',
       render: () => (
-        <Button variant="ghost" size="sm" className="!text-[var(--color-accent)] hover:!bg-[var(--color-accent-light)]">
+        <Button variant="ghost" size="sm" className="!text-oxblood hover:!bg-oxblood/10 font-medium">
           Assign Practice
         </Button>
       ),

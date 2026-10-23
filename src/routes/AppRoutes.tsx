@@ -24,6 +24,7 @@ import { StudentSettingsPage } from '../pages/student/StudentSettings';
 
 // Faculty Pages
 import { FacultyDashboard } from '../pages/faculty/FacultyDashboard';
+import { ClassSelection } from '../pages/faculty/ClassSelection';
 import { ClassAnalytics } from '../pages/faculty/ClassAnalytics';
 import { QuestionBankManagement } from '../pages/faculty/QuestionBankManagement';
 import { QuestionPaperBank } from '../pages/faculty/QuestionPaperBank';
@@ -44,14 +45,13 @@ import { AdminNotifications } from '../pages/admin/AdminNotifications';
 import { AdminProfile } from '../pages/admin/AdminProfile';
 import { AdminSettings } from '../pages/admin/AdminSettings';
 
+
 // Guard wrapper — reads from AuthContext
 const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' | 'admin' }) => {
   const { user, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  // Auth resolves synchronously from localStorage — isLoading is briefly true on mount only.
+  // Render nothing (no loader flash) since splash screen already covered this window.
+  if (isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== role) return <Navigate to={`/${user.role}`} replace />;
   return <DashboardLayout role={role} user={user}>{children}</DashboardLayout>;
@@ -68,11 +68,7 @@ const CommonAuthRoute = ({
   adminChild: React.ReactNode;
 }) => {
   const { user, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
   return (
     <DashboardLayout role={user.role} user={user}>
@@ -84,11 +80,7 @@ const CommonAuthRoute = ({
 // Standalone guard wrapper — full window without sidebar/dashboard layout
 const StandaloneRoute = ({ children, role }: { children: React.ReactNode; role: 'student' | 'faculty' }) => {
   const { user, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== role) return <Navigate to={`/${user.role}`} replace />;
   return <>{children}</>;
@@ -116,7 +108,8 @@ export const AppRoutes = () => {
       <Route path="/student/settings" element={<PrivateRoute role="student"><StudentSettingsPage /></PrivateRoute>} />
 
       {/* Faculty Routes */}
-      <Route path="/faculty" element={<PrivateRoute role="faculty"><FacultyDashboard /></PrivateRoute>} />
+      <Route path="/faculty" element={<Navigate to="/faculty/select-class" replace />} />
+      <Route path="/faculty/select-class" element={<StandaloneRoute role="faculty"><ClassSelection /></StandaloneRoute>} />
       <Route path="/faculty/class/:classId" element={<PrivateRoute role="faculty"><ClassDashboard /></PrivateRoute>} />
       <Route path="/faculty/class/:classId/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilder /></StandaloneRoute>} />

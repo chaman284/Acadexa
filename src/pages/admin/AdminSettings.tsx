@@ -104,18 +104,19 @@ export const AdminSettings: React.FC = () => {
 
       {feedback && (
         <div
-          className={`p-4 rounded-xl flex items-center gap-3 border shadow-sm transition-all ${
+          className={`p-4 rounded-[10px] border-2 border-[#171717] flex items-center gap-3 transition-all ${
             feedback.type === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border-rose-200 text-rose-800'
+              ? 'bg-[#E0FAF8] text-[#171717]'
+              : 'bg-[#FFE8E8] text-[#171717]'
           }`}
+          style={{ boxShadow: '3px 3px 0px #171717' }}
         >
           {feedback.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-[#0e6b64]" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-[#FF666B]" />
           )}
-          <span className="text-sm font-medium">{feedback.message}</span>
+          <span className="text-sm font-bold">{feedback.message}</span>
         </div>
       )}
 
@@ -125,13 +126,13 @@ export const AdminSettings: React.FC = () => {
           title="Administrative Alert Preferences"
           subtitle="Choose what events trigger administrative notifications and emails"
         />
-        <div className="divide-y divide-[var(--color-border)] mt-4">
+        <div className="divide-y divide-[#e5d8c7] mt-4">
           <div className="py-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+              <span className="text-sm font-black text-[#171717]">
                 Student Enrollment Alerts
               </span>
-              <p className="text-xs text-[var(--color-text-secondary)]">
+              <p className="text-xs text-[#696969] font-medium">
                 Receive notifications when new students are enrolled or assigned sections
               </p>
             </div>
@@ -142,16 +143,16 @@ export const AdminSettings: React.FC = () => {
                 onChange={() => handleToggle('emailAlertsOnEnrollment')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]" />
+              <div className="w-12 h-6 bg-white border-2 border-[#171717] rounded-full peer peer-checked:after:translate-x-6 peer-checked:bg-[#FFE66D] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#171717] after:rounded-full after:h-5 after:w-5 after:transition-all" style={{ boxShadow: '1.5px 1.5px 0px #171717' }} />
             </label>
           </div>
 
           <div className="py-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+              <span className="text-sm font-black text-[#171717]">
                 System Maintenance & Database Alerts
               </span>
-              <p className="text-xs text-[var(--color-text-secondary)]">
+              <p className="text-xs text-[#696969] font-medium">
                 Receive alerts on schema synchronizations and system status changes
               </p>
             </div>
@@ -162,16 +163,16 @@ export const AdminSettings: React.FC = () => {
                 onChange={() => handleToggle('systemMaintenanceAlerts')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]" />
+              <div className="w-12 h-6 bg-white border-2 border-[#171717] rounded-full peer peer-checked:after:translate-x-6 peer-checked:bg-[#FFE66D] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#171717] after:rounded-full after:h-5 after:w-5 after:transition-all" style={{ boxShadow: '1.5px 1.5px 0px #171717' }} />
             </label>
           </div>
 
           <div className="py-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+              <span className="text-sm font-black text-[#171717]">
                 Academic Year Auto-Mapping
               </span>
-              <p className="text-xs text-[var(--color-text-secondary)]">
+              <p className="text-xs text-[#696969] font-medium">
                 Automatically map semester cohorts (1-2 Year 1, 3-4 Year 2, etc.) for analytics
               </p>
             </div>
@@ -182,7 +183,7 @@ export const AdminSettings: React.FC = () => {
                 onChange={() => handleToggle('autoSyncAcademicYears')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]" />
+              <div className="w-12 h-6 bg-white border-2 border-[#171717] rounded-full peer peer-checked:after:translate-x-6 peer-checked:bg-[#FFE66D] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#171717] after:rounded-full after:h-5 after:w-5 after:transition-all" style={{ boxShadow: '1.5px 1.5px 0px #171717' }} />
             </label>
           </div>
         </div>
@@ -195,23 +196,23 @@ export const AdminSettings: React.FC = () => {
           subtitle="Preferred file format when exporting institutional reports"
         />
         <div className="mt-4 flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-[var(--color-text-primary)]">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-[#171717]">
             <input
               type="radio"
               name="exportFormat"
               checked={settings.exportFormat === 'csv'}
               onChange={() => setSettings(s => ({ ...s, exportFormat: 'csv' }))}
-              className="text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+              className="accent-[#FF666B] w-4 h-4 cursor-pointer"
             />
             CSV (Spreadsheets / Excel)
           </label>
-          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-[var(--color-text-primary)]">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-[#171717]">
             <input
               type="radio"
               name="exportFormat"
               checked={settings.exportFormat === 'json'}
               onChange={() => setSettings(s => ({ ...s, exportFormat: 'json' }))}
-              className="text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+              className="accent-[#FF666B] w-4 h-4 cursor-pointer"
             />
             JSON (Raw Data Archive)
           </label>

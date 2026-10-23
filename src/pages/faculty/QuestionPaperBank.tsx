@@ -20,9 +20,9 @@ const EXAM_TYPE_LABEL: Record<PreviousYearPaper['examType'], string> = {
   'internal': 'Internal',
 };
 
-const EXAM_TYPE_COLOR: Record<PreviousYearPaper['examType'], 'indigo' | 'amber' | 'gray'> = {
-  'end-sem': 'indigo',
-  'mid-sem': 'amber',
+const EXAM_TYPE_COLOR: Record<PreviousYearPaper['examType'], 'oxblood' | 'brass' | 'gray'> = {
+  'end-sem': 'oxblood',
+  'mid-sem': 'brass',
   'internal': 'gray',
 };
 

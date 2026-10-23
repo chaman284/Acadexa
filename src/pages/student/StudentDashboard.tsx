@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Mascot } from 'page-mascot';
 import {
   BookOpen, ClipboardList, TrendingUp, Flame,
   Calendar
@@ -204,21 +205,39 @@ export const StudentDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in-up">
-      {/* Header Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
-            Welcome back{student?.name ? `, ${student.name.split(' ')[0]}` : ''}! 👋
-          </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {student?.department
-              ? `${student.department} · ${student.semester ? `${student.semester}th Semester` : ''} ${student.section ? `(${student.section}) · ` : ''}Academic Overview`
-              : 'Academic Overview'}
-          </p>
+      {/* Header Greeting with Mascot */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div
+            className="flex-shrink-0 select-none cursor-pointer transition-transform hover:scale-105"
+            title="Acadexa Cap Mascot - Poke me!"
+          >
+            <Mascot
+              directions="/mascots/cap-directions.webp"
+              reactions="/mascots/cap-reactions.webp"
+              size={100}
+            />
+          </div>
+          <div>
+            <h1
+              className="text-[26px] font-normal text-[#302A2B] tracking-tight leading-tight"
+              style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
+            >
+              Welcome back{student?.name ? `, ${student.name.split(' ')[0]}` : ''}
+            </h1>
+            <p className="text-sm text-[#79666A] font-medium mt-1">
+              {student?.department
+                ? `${student.department} · ${student.semester ? `${student.semester}th Semester` : ''} ${student.section ? `(${student.section}) · ` : ''}Academic Overview`
+                : 'Academic Overview'}
+            </p>
+          </div>
         </div>
 
-        <div className="text-xs text-[var(--color-text-secondary)] bg-white px-3.5 py-1.5 rounded-xl border border-[var(--color-border)] shadow-2xs flex items-center gap-2 self-start sm:self-auto">
-          <Calendar className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+        <div
+          className="text-xs font-medium text-[#79666A] bg-white px-3.5 py-1.5 rounded-[9px] flex items-center gap-2 self-start sm:self-auto"
+          style={{ border: '1px solid #E1D4CA', boxShadow: '0 1px 4px rgba(84,37,54,0.07)' }}
+        >
+          <Calendar className="w-3.5 h-3.5 text-[#542536]" />
           <span>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</span>
         </div>
       </div>
@@ -259,23 +278,29 @@ export const StudentDashboard: React.FC = () => {
 
       {/* Quick Assessment CTA */}
       {nextQuiz && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-300 flex-shrink-0">
-              <ClipboardList className="w-5 h-5" />
+        <div
+          className="p-5 rounded-[14px] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          style={{ background: 'rgba(84,37,54,0.05)', border: '1px solid rgba(84,37,54,0.16)', boxShadow: '0 4px 14px rgba(84,37,54,0.09)' }}
+        >
+          <div className="flex items-start gap-3.5">
+            <div
+              className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[#542536] flex-shrink-0"
+              style={{ background: 'rgba(84,37,54,0.10)', border: '1px solid rgba(84,37,54,0.18)' }}
+            >
+              <ClipboardList className="w-4.5 h-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <Badge
-                  color={nextQuiz.status === 'active' ? 'green' : 'amber'}
+                  color={nextQuiz.status === 'active' ? 'forest' : 'brass'}
                   className="text-[10px] py-0"
                 >
                   {nextQuiz.status === 'active' ? 'Active' : 'Upcoming'}
                 </Badge>
-                <span className="text-xs text-indigo-200">{nextQuiz.courseName}</span>
+                <span className="text-xs font-medium text-[#79666A]">{nextQuiz.courseName}</span>
               </div>
-              <h4 className="font-bold text-sm text-white mt-0.5">{nextQuiz.title}</h4>
-              <p className="text-xs text-white/60">
+              <h4 className="font-semibold text-[14px] text-[#302A2B] mt-0.5">{nextQuiz.title}</h4>
+              <p className="text-xs font-medium text-[#79666A]">
                 Duration: {nextQuiz.duration} mins · {nextQuiz.questionCount} Questions
                 {nextQuiz.status === 'upcoming' && nextQuiz.scheduledAt && (
                   <>
@@ -289,7 +314,7 @@ export const StudentDashboard: React.FC = () => {
           <Button
             size="sm"
             onClick={() => navigate('/student/quiz')}
-            className="!bg-[var(--color-accent)] hover:!bg-[var(--color-accent-dark)] !text-white flex-shrink-0"
+            className="flex-shrink-0"
           >
             Go to Quiz
           </Button>
@@ -306,7 +331,7 @@ export const StudentDashboard: React.FC = () => {
             action={
               <button
                 onClick={() => navigate('/student/department')}
-                className="text-xs text-[var(--color-accent)] hover:underline"
+                className="text-xs font-semibold text-[#542536] hover:underline"
               >
                 View all
               </button>
@@ -315,27 +340,36 @@ export const StudentDashboard: React.FC = () => {
           <div className="space-y-2.5">
             {recentEvents.length > 0 ? (
               recentEvents.map(ev => (
-                <div key={ev.id} className="p-3 rounded-xl border border-[var(--color-border)] flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    ev.category === 'exam' ? 'bg-rose-50 text-rose-600' : ev.category === 'deadline' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
-                  }`}>
-                    <Calendar className="w-4 h-4" />
+                <div
+                  key={ev.id}
+                  className="p-3.5 rounded-[11px] flex items-start gap-3"
+                  style={{ background: '#F7F1E8', border: '1px solid #E1D4CA' }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: ev.category === 'exam' ? 'rgba(139,44,53,0.10)' : ev.category === 'deadline' ? 'rgba(84,37,54,0.08)' : 'rgba(182,154,105,0.12)',
+                      color: ev.category === 'exam' ? '#8b2c35' : ev.category === 'deadline' ? '#542536' : '#7a6200',
+                      border: '1px solid rgba(84,37,54,0.12)',
+                    }}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">{ev.title}</span>
-                      <Badge color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'indigo' : 'amber'} className="text-[9px] py-0 px-1 capitalize">
+                      <span className="text-xs font-semibold text-[#302A2B] truncate">{ev.title}</span>
+                      <Badge color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'oxblood' : 'brass'} className="text-[9px] py-0 px-1 capitalize">
                         {ev.category}
                       </Badge>
                     </div>
-                    <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                    <p className="text-[11px] font-medium text-[#79666A] mt-0.5">
                       {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {ev.time}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="py-8 text-center text-xs text-[var(--color-text-muted)]">
+              <div className="py-8 text-center text-xs font-medium text-[#79666A]">
                 No upcoming exams or department events scheduled.
               </div>
             )}
@@ -343,15 +377,17 @@ export const StudentDashboard: React.FC = () => {
         </Card>
 
         {/* Class Leaderboard */}
-        <Card padding="none" className="h-fit">
-          <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between flex-wrap gap-3">
-            <h3 className="font-semibold text-[var(--color-text-primary)]">Class Leaderboard</h3>
+        <Card padding="none" className="h-fit overflow-hidden">
+          <div className="p-4 border-b border-[#E1D4CA] bg-[#F7F1E8] flex items-center justify-between flex-wrap gap-3">
+            <h3 className="font-semibold text-[#302A2B] text-[14px]">Class Leaderboard</h3>
             <ControlledTabs tabs={leaderboardTabs} activeTab={leaderboardTab} onChange={setLeaderboardTab} />
           </div>
-          <LeaderboardTable
-            entries={leaderboardData}
-            currentStudentId={student?.id || ''}
-          />
+          <div className="p-4">
+            <LeaderboardTable
+              entries={leaderboardData}
+              currentStudentId={student?.id || ''}
+            />
+          </div>
         </Card>
       </div>
     </div>

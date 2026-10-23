@@ -16,38 +16,41 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, compact = false 
 
   return (
     <div
-      className="card p-4 card-hover cursor-pointer"
+      className="card p-5 card-hover cursor-pointer"
       onClick={() => navigate(`/student/courses`)}
     >
-      {/* Color accent top strip */}
+      {/* Accent top bar using course color */}
       <div
-        className="h-1 w-full rounded-full mb-4"
-        style={{ background: course.color || 'var(--color-accent)' }}
+        className="h-1 w-full rounded-full mb-4 opacity-70"
+        style={{ background: course.color || '#542536' }}
       />
 
       <div className="flex items-start justify-between mb-3">
         <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: `${course.color}18` || 'var(--color-accent-light)' }}
+          className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0"
+          style={{ background: 'rgba(84,37,54,0.08)', border: '1px solid rgba(84,37,54,0.14)' }}
         >
-          <BookOpen className="w-4 h-4" style={{ color: course.color || 'var(--color-accent)' }} />
+          <BookOpen className="w-4.5 h-4.5 text-[#542536]" />
         </div>
-        <Badge color="gray">{course.code}</Badge>
+        <Badge color="brass">{course.code}</Badge>
       </div>
 
-      <h4 className="font-semibold text-[var(--color-text-primary)] text-sm mb-1 leading-snug">
+      <h4 className="font-semibold text-[#302A2B] text-[14px] mb-1 leading-snug">
         {course.name}
       </h4>
-      <p className="text-xs text-[var(--color-text-muted)] mb-3">{course.facultyName}</p>
+      <p className="text-xs font-medium text-[#79666A] mb-3">{course.facultyName}</p>
 
-      <ProgressBar value={course.progress} height="xs" showLabel className="mb-3" />
+      <ProgressBar value={course.progress} height="sm" showLabel className="mb-3" />
 
       {!compact && course.nextQuizDate && (
-        <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] bg-[var(--color-muted)] rounded-lg px-2.5 py-1.5">
-          <Calendar className="w-3 h-3" />
+        <div
+          className="flex items-center gap-1.5 text-xs font-medium text-[#302A2B] rounded-[8px] px-2.5 py-1.5"
+          style={{ background: '#F7F1E8', border: '1px solid #E1D4CA' }}
+        >
+          <Calendar className="w-3.5 h-3.5 text-[#542536]" />
           <span>Next quiz: {new Date(course.nextQuizDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-          <span className="mx-1">·</span>
-          <span>{course.nextQuizTopic}</span>
+          <span className="mx-1 text-[#a08a8e]">·</span>
+          <span className="font-semibold">{course.nextQuizTopic}</span>
         </div>
       )}
     </div>
@@ -77,64 +80,64 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   onStart,
   type = 'weekly',
 }) => {
-  const difficultyColor: Record<string, 'green' | 'amber' | 'red'> = {
-    easy: 'green', medium: 'amber', hard: 'red',
+  const difficultyColor: Record<string, 'forest' | 'brass' | 'red'> = {
+    easy: 'forest', medium: 'brass', hard: 'red',
   };
-  const statusColor: Record<string, 'indigo' | 'green' | 'gray' | 'amber'> = {
-    upcoming: 'indigo', active: 'green', completed: 'gray', scheduled: 'amber',
+  const statusColor: Record<string, 'oxblood' | 'forest' | 'pale-rose' | 'brass'> = {
+    upcoming: 'oxblood', active: 'forest', completed: 'pale-rose', scheduled: 'brass',
   };
 
   return (
-    <div className="card p-4">
+    <div className="card p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge color={statusColor[status] || 'gray'} dot>{status}</Badge>
-            {type === 'remedial' && <Badge color="amber">Remedial</Badge>}
+          <div className="flex items-center gap-2 mb-1.5">
+            <Badge color={statusColor[status] || 'pale-rose'} dot>{status}</Badge>
+            {type === 'remedial' && <Badge color="brass">Remedial</Badge>}
           </div>
-          <h4 className="font-semibold text-[var(--color-text-primary)] text-sm">{title}</h4>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{courseName}</p>
+          <h4 className="font-semibold text-[#302A2B] text-[14px]">{title}</h4>
+          <p className="text-xs font-medium text-[#79666A] mt-0.5">{courseName}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap mb-4">
-        <div className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-          <BookOpen className="w-3.5 h-3.5" />
+      <div className="flex items-center gap-2.5 flex-wrap mb-4">
+        <div className="flex items-center gap-1 text-xs font-medium text-[#79666A] px-2 py-1 rounded-[6px]" style={{ background: '#F7F1E8', border: '1px solid #E1D4CA' }}>
+          <BookOpen className="w-3.5 h-3.5 text-[#79666A]" />
           <span>{questionCount} questions</span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-          <Clock className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1 text-xs font-medium text-[#79666A] px-2 py-1 rounded-[6px]" style={{ background: '#F7F1E8', border: '1px solid #E1D4CA' }}>
+          <Clock className="w-3.5 h-3.5 text-[#79666A]" />
           <span>{duration} min</span>
         </div>
-        <Badge color={difficultyColor[difficulty] || 'gray'} className="capitalize">
+        <Badge color={difficultyColor[difficulty] || 'pale-rose'} className="capitalize">
           {difficulty}
         </Badge>
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--color-text-muted)]">
+      <div className="flex items-center justify-between pt-3 border-t border-[#E1D4CA]">
+        <span className="text-xs font-medium text-[#79666A]">
           {status === 'completed' ? 'Submitted' : 'Due'}: {new Date(scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
         </span>
         {status !== 'completed' && (
           <button
             onClick={onStart}
             className={clsx(
-              'flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors',
+              'flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-[8px] border transition-all',
               status === 'active'
-                ? 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-dark)]'
-                : 'bg-[var(--color-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
+                ? 'bg-[#542536] text-white border-[#321923] hover:bg-[#321923]'
+                : 'bg-[#F7F1E8] text-[#302A2B] border-[#E1D4CA] hover:bg-[#EEE3E0]'
             )}
           >
             {status === 'active' ? 'Start Quiz' : 'View'}
-            <ArrowRight className="w-3 h-3" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         )}
         {status === 'completed' && (
           <button
             onClick={onStart}
-            className="flex items-center gap-1 text-xs font-semibold text-[var(--color-accent)] hover:underline"
+            className="flex items-center gap-1 text-xs font-semibold text-[#542536] hover:underline"
           >
-            View Result <ArrowRight className="w-3 h-3" />
+            View Result <ArrowRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

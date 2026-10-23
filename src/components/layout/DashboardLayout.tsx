@@ -15,7 +15,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role, user, ch
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)]">
+    <div
+      className="min-h-screen bg-[#FFF5EA]"
+      style={{
+        '--current-sidebar-width': isCollapsed ? '72px' : '256px',
+      } as React.CSSProperties}
+    >
       <Sidebar
         role={role}
         isCollapsed={isCollapsed}

@@ -188,7 +188,7 @@ export const FacultyProfile: React.FC = () => {
               name={profile.name}
               src={formData.avatarUrl || profile.avatarUrl}
               size="lg"
-              className="w-24 h-24 ring-4 ring-indigo-50 shadow-md text-2xl"
+              className="w-24 h-24 ring-4 ring-brass/30 shadow-card text-2xl"
             />
             {isEditing && (
               <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -199,10 +199,10 @@ export const FacultyProfile: React.FC = () => {
 
           <div className="flex-1 text-center md:text-left space-y-2 min-w-0">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-              <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+              <h2 className="text-2xl font-serif font-bold text-[var(--color-text-primary)]">
                 {profile.name}
               </h2>
-              <Badge color="indigo" className="text-xs font-semibold px-2.5 py-0.5">
+              <Badge color="oxblood" className="text-xs font-semibold px-2.5 py-0.5">
                 {profile.designation}
               </Badge>
               <Badge color="gray" className="text-xs font-semibold px-2.5 py-0.5">

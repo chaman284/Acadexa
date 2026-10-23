@@ -52,7 +52,10 @@ export const AcademicChatbot: React.FC = () => {
         breadcrumbs={[{ label: 'Overview' }, { label: 'AI Tutor' }]}
       />
 
-      <div className="card overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
+      <div
+        className="bg-white rounded-[14px] border border-[#E1D4CA] overflow-hidden shadow-xs"
+        style={{ height: 'calc(100vh - 220px)', minHeight: '520px' }}
+      >
         <ChatWindow
           messages={messages}
           onSendMessage={handleSend}

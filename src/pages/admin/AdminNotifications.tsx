@@ -7,7 +7,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { adminService } from '../../services/adminService';
 import {
-  Bell, Send, Plus, CheckCircle2,
+  Bell, Send, CheckCircle2,
   AlertCircle, RefreshCw, Sparkles, BookOpen
 } from 'lucide-react';
 
@@ -73,7 +73,7 @@ export const AdminNotifications: React.FC = () => {
         subtitle="Review automated course assignment alerts and broadcast institution-wide announcements"
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Notifications' }]}
         action={
-          <Button onClick={() => setIsModalOpen(true)} size="sm" className="gap-2 shadow-sm">
+          <Button onClick={() => setIsModalOpen(true)} size="sm" className="gap-2 shadow-xs">
             <Send className="w-4 h-4" />
             Send Announcement
           </Button>
@@ -83,78 +83,82 @@ export const AdminNotifications: React.FC = () => {
       {/* Action feedback */}
       {actionMessage && (
         <div
-          className={`p-4 rounded-xl text-sm flex items-center gap-2 ${
+          className={`p-3.5 rounded-[12px] border text-xs font-medium flex items-center gap-2.5 transition-all shadow-xs ${
             actionMessage.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border border-rose-200 text-rose-800'
+              ? 'bg-[#F0F4EF] border-[#D5DFD4] text-[#34483A]'
+              : 'bg-[#FAF0F2] border-[#EAD5D9] text-[#542536]'
           }`}
         >
           {actionMessage.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+            <CheckCircle2 className="w-4.5 h-4.5 flex-shrink-0 text-[#34483A]" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
+            <AlertCircle className="w-4.5 h-4.5 flex-shrink-0 text-[#542536]" />
           )}
           <span>{actionMessage.text}</span>
         </div>
       )}
 
       {/* Notifications list */}
-      <Card className="border border-[var(--color-border)] overflow-hidden">
-        <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between bg-slate-50/50">
+      <Card className="p-0 overflow-hidden border border-[#E1D4CA] shadow-xs">
+        <div className="p-4 border-b border-[#E1D4CA] flex items-center justify-between bg-[#F7F1E8]">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-indigo-600" />
-            <span className="font-semibold text-xs text-slate-800 uppercase tracking-wider">
+            <Bell className="w-4 h-4 text-[#542536]" />
+            <span className="font-semibold text-xs text-[#302A2B] uppercase tracking-wider">
               Recent System & Course Assignment Notices
             </span>
           </div>
 
           <button
             onClick={loadNotifications}
-            className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-[#79666A] hover:text-[#542536] bg-white hover:bg-[#F7F1E8] rounded-[8px] border border-[#E1D4CA] transition-colors shadow-xs cursor-pointer"
             title="Refresh"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
         {isLoading ? (
-          <div className="p-12 text-center text-[var(--color-text-muted)]">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
-            <p className="text-sm">Loading notifications log...</p>
+          <div className="p-12 text-center text-[#79666A]">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#542536]" />
+            <p className="text-sm font-medium">Loading notifications log...</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center">
-            <Bell className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="font-semibold text-sm text-[var(--color-text-primary)]">No notifications recorded yet</p>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
+            <div className="w-12 h-12 rounded-[12px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center mx-auto mb-3 text-[#79666A]">
+              <Bell className="w-5 h-5" />
+            </div>
+            <p className="font-semibold text-sm text-[#302A2B]">No notifications recorded yet</p>
+            <p className="text-xs text-[#79666A] font-normal mt-1">
               Course allocations and announcements will appear here.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[var(--color-border)]">
+          <div className="divide-y divide-[#E1D4CA]/60">
             {notifications.map(item => (
-              <div key={item.id} className="p-4 flex items-start gap-3.5 hover:bg-slate-50/70 transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 border border-indigo-100">
-                  {item.type === 'course' ? <BookOpen className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+              <div key={item.id} className="p-4 flex items-start gap-3.5 hover:bg-[#F7F1E8]/50 transition-colors">
+                <div
+                  className="w-9 h-9 rounded-[10px] bg-[#F7F1E8] text-[#542536] flex items-center justify-center flex-shrink-0 mt-0.5 border border-[#E1D4CA]"
+                >
+                  {item.type === 'course' ? <BookOpen className="w-4 h-4 text-[#687B62]" /> : <Sparkles className="w-4 h-4 text-[#542536]" />}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <p className="font-semibold text-sm text-[var(--color-text-primary)]">{item.title}</p>
-                    <span className="text-xs text-[var(--color-text-muted)] flex-shrink-0">
-                      {new Date(item.createdAt).toLocaleString()}
+                    <p className="font-semibold text-sm text-[#302A2B]">{item.title}</p>
+                    <span className="text-xs text-[#79666A] font-normal flex-shrink-0">
+                      {new Date(item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed">{item.message}</p>
+                  <p className="text-xs text-[#79666A] font-normal leading-relaxed">{item.message}</p>
 
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge color={item.role === 'FACULTY' ? 'indigo' : item.role === 'STUDENT' ? 'green' : 'purple'} className="text-[10px]">
+                    <Badge color={item.role === 'FACULTY' ? 'forest' : item.role === 'STUDENT' ? 'rose' : 'oxblood'} className="text-[10px]">
                       Target: {item.role || 'ALL'}
                     </Badge>
                     {item.user && (
-                      <span className="text-[11px] text-slate-500">
-                        Recipient: <strong className="text-slate-700">{item.user.name}</strong> ({item.user.email})
+                      <span className="text-[11px] text-[#79666A] font-normal">
+                        Recipient: <strong className="text-[#302A2B] font-semibold">{item.user.name}</strong> ({item.user.email})
                       </span>
                     )}
                   </div>
@@ -182,7 +186,7 @@ export const AdminNotifications: React.FC = () => {
           />
 
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+            <label className="block text-xs font-semibold text-[#302A2B] mb-1">
               Message Content
             </label>
             <textarea
@@ -190,19 +194,19 @@ export const AdminNotifications: React.FC = () => {
               value={message}
               onChange={e => setMessage(e.target.value)}
               placeholder="Enter announcement details..."
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)] resize-none"
+              className="w-full text-sm font-normal bg-white border border-[#E1D4CA] rounded-[10px] p-3 text-[#302A2B] placeholder:text-[#79666A]/70 focus:border-[#542536] focus:outline-none focus:ring-2 focus:ring-[#542536]/10 transition-all resize-none shadow-xs"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+            <label className="block text-xs font-semibold text-[#302A2B] mb-1">
               Target Audience
             </label>
             <select
               value={targetRole}
               onChange={e => setTargetRole(e.target.value)}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="w-full text-sm font-medium bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2.5 text-[#302A2B] focus:border-[#542536] focus:outline-none focus:ring-2 focus:ring-[#542536]/10 transition-all shadow-xs"
             >
               <option value="ALL">Everyone (Faculty & Students)</option>
               <option value="FACULTY">Faculty Members Only</option>
@@ -210,7 +214,7 @@ export const AdminNotifications: React.FC = () => {
             </select>
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
+          <div className="pt-2 flex justify-end gap-2 border-t border-[#E1D4CA] mt-4">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>

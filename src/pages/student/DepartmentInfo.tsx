@@ -76,10 +76,10 @@ export const DepartmentInfo: React.FC = () => {
           <button
             key={item.id}
             onClick={() => setActiveSection(item.id as typeof activeSection)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-sm font-medium transition-all duration-150 ${
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer ${
               activeSection === item.id
-                ? 'bg-[var(--color-primary)] text-white'
-                : 'bg-white border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
+                ? 'bg-oxblood text-white shadow-btn'
+                : 'bg-white border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-oxblood hover:text-oxblood'
             }`}
           >
             <item.icon className="w-3.5 h-3.5" />
@@ -92,27 +92,23 @@ export const DepartmentInfo: React.FC = () => {
       {activeSection === 'announcements' && (
         <div className="space-y-3">
           {announcements.map(ann => (
-            <Card key={ann.id}>
-              <div className="flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  ann.category === 'exam' ? 'bg-[var(--color-danger-light)]' :
-                  ann.category === 'placement' ? 'bg-[var(--color-success-light)]' :
-                  'bg-[var(--color-accent-light)]'
+            <Card key={ann.id} className="shadow-card hover:shadow-card-hover transition-all">
+              <div className="flex items-start gap-3.5">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  ann.category === 'exam' ? 'bg-danger/10 text-danger' :
+                  ann.category === 'placement' ? 'bg-forest/10 text-forest' :
+                  'bg-oxblood/10 text-oxblood'
                 }`}>
-                  <Megaphone className={`w-4 h-4 ${
-                    ann.category === 'exam' ? 'text-[var(--color-danger)]' :
-                    ann.category === 'placement' ? 'text-[var(--color-success)]' :
-                    'text-[var(--color-accent)]'
-                  }`} />
+                  <Megaphone className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     {ann.isPinned && <Badge color="red" className="text-[10px]">📌 Pinned</Badge>}
-                    <Badge color={ann.category === 'exam' ? 'red' : ann.category === 'placement' ? 'green' : 'indigo'} className="capitalize text-[10px]">
+                    <Badge color={ann.category === 'exam' ? 'red' : ann.category === 'placement' ? 'green' : 'oxblood'} className="capitalize text-[10px]">
                       {ann.category}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-[var(--color-text-primary)] text-sm">{ann.title}</h3>
+                  <h3 className="font-serif font-bold text-[var(--color-text-primary)] text-base">{ann.title}</h3>
                   <p className="text-sm text-[var(--color-text-secondary)] mt-1 leading-relaxed">{ann.content}</p>
                   <p className="text-xs text-[var(--color-text-muted)] mt-2">
                     By {ann.postedBy} · {new Date(ann.postedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}

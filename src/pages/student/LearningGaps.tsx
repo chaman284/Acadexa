@@ -102,28 +102,28 @@ export const LearningGaps: React.FC = () => {
         <>
           {/* Summary cards */}
           <div className="grid sm:grid-cols-3 gap-4">
-            <div className="card p-4 border-l-4 border-l-[var(--color-success)] shadow-xs">
+            <div className="card p-5 border-l-4 border-l-forest bg-white shadow-card">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-4 h-4 text-[var(--color-success)]" />
+                <CheckCircle className="w-4 h-4 text-forest" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">Strong Topics</span>
               </div>
-              <p className="text-2xl font-bold text-[var(--color-success)]">{strong.length}</p>
+              <p className="text-3xl font-serif font-bold text-forest">{strong.length}</p>
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">High conceptual mastery (&ge;75%)</p>
             </div>
-            <div className="card p-4 border-l-4 border-l-[var(--color-danger)] shadow-xs">
+            <div className="card p-5 border-l-4 border-l-danger bg-white shadow-card">
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-[var(--color-danger)]" />
+                <AlertTriangle className="w-4 h-4 text-danger" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">Needs Attention</span>
               </div>
-              <p className="text-2xl font-bold text-[var(--color-danger)]">{needsPractice.length}</p>
+              <p className="text-3xl font-serif font-bold text-danger">{needsPractice.length}</p>
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Critical learning gaps requiring remediation</p>
             </div>
-            <div className="card p-4 border-l-4 border-l-[var(--color-warning)] shadow-xs">
+            <div className="card p-5 border-l-4 border-l-brass bg-white shadow-card">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-[var(--color-warning)]" />
+                <TrendingUp className="w-4 h-4 text-brass" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">Improving</span>
               </div>
-              <p className="text-2xl font-bold text-[var(--color-warning)]">{improving.length}</p>
+              <p className="text-3xl font-serif font-bold text-brass">{improving.length}</p>
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Developing proficiency (50%–74%)</p>
             </div>
           </div>
@@ -249,7 +249,7 @@ export const LearningGaps: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold text-[var(--color-text-primary)]">Targeted Remedial Practice</h2>
+                  <h2 className="font-serif font-bold text-lg text-[var(--color-text-primary)]">Targeted Remedial Practice</h2>
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Prioritized by Bayesian error rate & conceptual importance</p>
                 </div>
               </div>
@@ -260,7 +260,7 @@ export const LearningGaps: React.FC = () => {
                 </div>
               ) : (
                 recommendations.map(gap => (
-                  <div key={gap.topicId} className="card p-4 transition-all hover:shadow-md border border-slate-200/70">
+                  <div key={gap.topicId} className="card p-5 bg-white border border-[var(--color-border)] shadow-card hover:shadow-card-hover transition-all">
                     <div className="flex items-start justify-between mb-3 gap-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1.5">
@@ -276,39 +276,39 @@ export const LearningGaps: React.FC = () => {
                               : 'Low Priority'}
                           </Badge>
                         </div>
-                        <h3 className="font-bold text-slate-800 text-sm leading-snug">{gap.topicName}</h3>
+                        <h3 className="font-serif font-bold text-[var(--color-text-primary)] text-base leading-snug">{gap.topicName}</h3>
                         <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{gap.courseName}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-xs text-[var(--color-text-muted)]">Current Mastery</p>
-                        <p className={`font-extrabold text-base ${gap.currentScore < 50 ? 'text-[var(--color-danger)]' : 'text-[var(--color-warning)]'}`}>
+                        <p className={`font-serif font-bold text-lg ${gap.currentScore < 50 ? 'text-[var(--color-danger)]' : 'text-oxblood'}`}>
                           {gap.currentScore}%
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <ProgressBar
                         value={gap.currentScore}
                         max={100}
                         height="xs"
-                        color={gap.gapSeverity === 'high' ? 'red' : 'amber'}
+                        color={gap.gapSeverity === 'high' ? 'red' : 'oxblood'}
                         className="flex-1"
                       />
-                      <Target className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-slate-500 flex-shrink-0">
+                      <Target className="w-3.5 h-3.5 text-[var(--color-text-muted)] flex-shrink-0" />
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] flex-shrink-0">
                         {gap.targetScore}% Target
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between pt-2.5 border-t border-[var(--color-border)] mt-2">
                       <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                        <span className="font-medium text-slate-700">{gap.recommendedQuestions}</span> questions available
+                        <BookOpen className="w-3.5 h-3.5 text-oxblood" />
+                        <span className="font-medium text-[#302A2B]">{gap.recommendedQuestions}</span> questions available
                       </span>
                       <button
                         onClick={() => navigate(`/student/question-bank?topicId=${gap.topicId}&topicName=${encodeURIComponent(gap.topicName)}`)}
-                        className="text-xs text-[var(--color-accent)] font-semibold flex items-center gap-1 hover:underline cursor-pointer group"
+                        className="text-xs text-oxblood font-semibold flex items-center gap-1 hover:underline cursor-pointer group"
                       >
                         Practice Topic <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                       </button>
