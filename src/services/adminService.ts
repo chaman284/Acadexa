@@ -209,7 +209,17 @@ export const adminService = {
     return res.data;
   },
 
+  registerStudent: async (data: { name: string; email: string; rollNo: string; sectionId: string; password?: string }) => {
+    const res = await api.post('/admin/students', data);
+    return res.data;
+  },
+
   updateStudentSection: async (studentId: string, sectionId: string) => {
+    const res = await api.put(`/admin/students/${studentId}/section`, { sectionId });
+    return res.data;
+  },
+
+  reassignStudentSection: async (studentId: string, sectionId: string) => {
     const res = await api.put(`/admin/students/${studentId}/section`, { sectionId });
     return res.data;
   },
