@@ -121,7 +121,7 @@ export const StudentSettingsPage: React.FC = () => {
                 onChange={() => handleToggle('quizReminders')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
             </label>
           </div>
 
@@ -137,7 +137,7 @@ export const StudentSettingsPage: React.FC = () => {
                 onChange={() => handleToggle('announcementAlerts')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
             </label>
           </div>
 
@@ -153,7 +153,7 @@ export const StudentSettingsPage: React.FC = () => {
                 onChange={() => handleToggle('emailNotifications')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
             </label>
           </div>
 
@@ -169,7 +169,7 @@ export const StudentSettingsPage: React.FC = () => {
                 onChange={() => handleToggle('performanceReports')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
             </label>
           </div>
         </div>
@@ -180,7 +180,7 @@ export const StudentSettingsPage: React.FC = () => {
         <CardHeader
           title="Learning Experience"
           subtitle="Customize your interactive study interface"
-          action={<Volume2 className="w-4 h-4 text-[var(--color-accent)]" />}
+          action={<Volume2 className="w-4 h-4 text-oxblood" />}
         />
         <div className="divide-y divide-[var(--color-border)]">
           <div className="py-3.5 flex items-center justify-between gap-4">
@@ -195,7 +195,23 @@ export const StudentSettingsPage: React.FC = () => {
                 onChange={() => handleToggle('soundEffects')}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
+            </label>
+          </div>
+
+          <div className="py-3.5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">Auto-Save Topic Progress</p>
+              <p className="text-xs text-[var(--color-text-muted)]">Automatically save completed course syllabus units across sessions</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.autoSaveProgress}
+                onChange={() => handleToggle('autoSaveProgress')}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
             </label>
           </div>
 

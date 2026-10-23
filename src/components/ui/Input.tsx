@@ -26,40 +26,41 @@ export const Input: React.FC<InputProps> = ({
       {label && (
         <label
           htmlFor={inputId}
-          className="text-sm font-medium text-[var(--color-text-primary)]"
+          className="text-sm font-semibold text-[#302A2B]"
         >
           {label}
         </label>
       )}
       <div className="relative">
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#79666A]">
             {leftIcon}
           </div>
         )}
         <input
           id={inputId}
           className={clsx(
-            'w-full border rounded-[10px] bg-white text-[var(--color-text-primary)] text-sm',
-            'placeholder:text-[var(--color-text-muted)] outline-none transition-all duration-150',
+            'w-full bg-white text-[#302A2B] text-sm font-medium',
+            'placeholder:text-[#a08a8e] outline-none transition-all duration-200',
+            'border rounded-[10px]',
             'py-2.5',
             leftIcon ? 'pl-10 pr-4' : 'px-4',
             rightIcon ? 'pr-10' : '',
             error
-              ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-2 focus:ring-[var(--color-danger)]/20'
-              : 'border-[var(--color-border)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20',
+              ? 'border-[#8b2c35] shadow-[0_0_0_3px_rgba(139,44,53,0.15)]'
+              : 'border-[#E1D4CA] focus:border-[#542536] focus:shadow-[0_0_0_3px_rgba(84,37,54,0.15)]',
             className
           )}
           {...rest}
         />
         {rightIcon && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#79666A]">
             {rightIcon}
           </div>
         )}
       </div>
-      {hint && !error && <p className="text-xs text-[var(--color-text-muted)]">{hint}</p>}
-      {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
+      {hint && !error && <p className="text-xs text-[#79666A]">{hint}</p>}
+      {error && <p className="text-xs text-[#8b2c35] font-semibold">{error}</p>}
     </div>
   );
 };

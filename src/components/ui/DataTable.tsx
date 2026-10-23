@@ -24,8 +24,14 @@ export function DataTable<T extends object>({
   emptyMessage = 'No data available',
 }: DataTableProps<T>) {
   return (
-    <div className={clsx('overflow-x-auto', className)}>
-      <table className="data-table">
+    <div
+      className={clsx(
+        'overflow-x-auto rounded-[12px] border-2 border-[#171717] bg-white',
+        className
+      )}
+      style={{ boxShadow: '4px 4px 0px #171717' }}
+    >
+      <table className="data-table w-full">
         <thead>
           <tr>
             {columns.map(col => (
@@ -38,7 +44,7 @@ export function DataTable<T extends object>({
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="text-center py-10 text-[var(--color-text-muted)]">
+              <td colSpan={columns.length} className="text-center py-10 text-[#696969] font-medium">
                 {emptyMessage}
               </td>
             </tr>
@@ -46,7 +52,7 @@ export function DataTable<T extends object>({
             data.map(row => (
               <tr key={String(row[keyField])}>
                 {columns.map(col => (
-                  <td key={col.key as string} className={col.className}>
+                  <td key={col.key as string} className={clsx('border-b border-[#e5d8c7]', col.className)}>
                     {col.render
                       ? col.render(row)
                       : String((row as Record<string, unknown>)[col.key as string] ?? '')}

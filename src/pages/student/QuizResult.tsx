@@ -124,56 +124,67 @@ export const QuizResult: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0F172A] text-white flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-400 mb-3" />
-        <p className="text-sm text-indigo-200">Retrieving your assessment results...</p>
+      <div className="min-h-screen bg-cherry text-ivory flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-10 h-10 animate-spin text-brass mb-3" />
+        <p className="text-sm text-ivory/80">Retrieving your assessment results...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white flex flex-col items-center justify-center p-4 md:p-8 font-sans overflow-x-hidden relative">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/20 blur-[150px] rounded-full pointer-events-none" />
+    <div
+      className="min-h-screen text-ivory flex flex-col items-center justify-center p-4 md:p-8 font-sans overflow-x-hidden relative"
+      style={{ background: 'radial-gradient(ellipse at 50% 20%, #441d2b 0%, #321923 60%, #201016 100%)' }}
+    >
+      {/* Background warm ambient glows */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brass/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-oxblood/30 blur-[120px] rounded-full pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="w-full max-w-3xl space-y-6 relative z-10">
         {/* Score card */}
         <motion.div
           variants={itemVariants}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden"
+          className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden"
         >
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500" />
+          {/* Accent top luxury strip */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brass via-rose to-brass" />
 
           <div className="flex justify-center mb-6">
-            <Trophy className="w-12 h-12 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+            <Trophy className="w-12 h-12 text-brass drop-shadow-[0_0_15px_rgba(182,154,105,0.4)]" />
           </div>
 
           <div
-            className={`w-36 h-36 rounded-full mx-auto mb-6 flex flex-col items-center justify-center border-[6px] ${scoreBorder} bg-[#0F172A]`}
+            className={`w-36 h-36 rounded-full mx-auto mb-6 flex flex-col items-center justify-center border-4 ${
+              score >= 75 ? 'border-sage shadow-[0_0_30px_rgba(104,123,98,0.4)]' :
+              score >= 50 ? 'border-brass shadow-[0_0_20px_rgba(182,154,105,0.4)]' :
+              'border-rose shadow-[0_0_20px_rgba(197,141,152,0.4)]'
+            } bg-cherry`}
           >
-            <span className={`text-4xl font-black ${scoreColor} drop-shadow-md`}>{score}%</span>
+            <span className={`text-4xl font-serif font-bold ${
+              score >= 75 ? 'text-sage' : score >= 50 ? 'text-brass' : 'text-rose'
+            } drop-shadow-md`}>{score}%</span>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-black text-white mb-2 tracking-tight">{scoreMessage}</h1>
-          <p className="text-indigo-200 text-sm md:text-base mb-8 uppercase tracking-widest font-semibold">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-white mb-2 tracking-tight">{scoreMessage}</h1>
+          <p className="text-ivory/70 text-xs md:text-sm mb-8 uppercase tracking-widest font-semibold">
             {quizTitle}
           </p>
 
           <div className="grid grid-cols-3 gap-3 md:gap-6 mb-10 max-w-lg mx-auto">
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 transition-transform hover:scale-105">
-              <CheckCircle className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-              <p className="text-3xl font-black text-emerald-400">{correctCount}</p>
-              <p className="text-xs text-emerald-200/70 font-semibold uppercase tracking-wider">Correct</p>
+            <div className="bg-forest/20 border border-forest/40 rounded-2xl p-4 transition-transform hover:scale-105">
+              <CheckCircle className="w-6 h-6 text-sage mx-auto mb-2" />
+              <p className="text-3xl font-serif font-bold text-sage">{correctCount}</p>
+              <p className="text-xs text-sage/80 font-semibold uppercase tracking-wider">Correct</p>
             </div>
-            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 transition-transform hover:scale-105">
-              <XCircle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-              <p className="text-3xl font-black text-red-400">{incorrectCount}</p>
-              <p className="text-xs text-red-200/70 font-semibold uppercase tracking-wider">Incorrect</p>
+            <div className="bg-danger/20 border border-danger/40 rounded-2xl p-4 transition-transform hover:scale-105">
+              <XCircle className="w-6 h-6 text-rose mx-auto mb-2" />
+              <p className="text-3xl font-serif font-bold text-rose">{incorrectCount}</p>
+              <p className="text-xs text-rose/80 font-semibold uppercase tracking-wider">Incorrect</p>
             </div>
-            <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 transition-transform hover:scale-105">
-              <Clock className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
-              <p className="text-xl md:text-2xl font-black text-indigo-400 mt-1">{formatTime(timeTaken)}</p>
-              <p className="text-xs text-indigo-200/70 font-semibold uppercase tracking-wider mt-1">Time Taken</p>
+            <div className="bg-brass/20 border border-brass/40 rounded-2xl p-4 transition-transform hover:scale-105">
+              <Clock className="w-6 h-6 text-brass mx-auto mb-2" />
+              <p className="text-xl md:text-2xl font-serif font-bold text-brass mt-1">{formatTime(timeTaken)}</p>
+              <p className="text-xs text-brass/80 font-semibold uppercase tracking-wider mt-1">Time Taken</p>
             </div>
           </div>
 
@@ -181,14 +192,14 @@ export const QuizResult: React.FC = () => {
             <Button
               size="lg"
               onClick={() => navigate('/student/quiz')}
-              className="!bg-white/10 hover:!bg-white/20 !text-white border border-white/20"
+              className="!bg-white/10 hover:!bg-white/15 !text-white border border-white/20"
             >
               <RotateCcw className="w-4 h-4 mr-2" /> All Quizzes
             </Button>
             <Button
               size="lg"
               onClick={() => navigate('/student/learning-gaps')}
-              className="!bg-indigo-600 hover:!bg-indigo-500 !text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+              className="!bg-brass hover:!bg-[#a38858] !text-cherry font-bold shadow-btn"
             >
               <TrendingUp className="w-4 h-4 mr-2" /> Practice Weak Topics
             </Button>
@@ -197,16 +208,16 @@ export const QuizResult: React.FC = () => {
 
         {/* Topic Breakdown & Recommendations */}
         <div className="grid md:grid-cols-2 gap-6">
-          <motion.div variants={itemVariants} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6">
-            <h2 className="font-bold text-lg text-white mb-6 flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-400" />
+          <motion.div variants={itemVariants} className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-3xl p-6">
+            <h2 className="font-serif font-bold text-lg text-white mb-6 flex items-center gap-2">
+              <Star className="w-5 h-5 text-brass" />
               Topic Performance
             </h2>
             <div className="space-y-5">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-indigo-100">Curriculum Assessment Mastery</span>
-                  <span className="font-bold text-sm text-white">{score}%</span>
+                  <span className="text-sm font-medium text-ivory/80">Curriculum Assessment Mastery</span>
+                  <span className="font-serif font-bold text-base text-white">{score}%</span>
                 </div>
                 <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
                   <motion.div
@@ -214,7 +225,7 @@ export const QuizResult: React.FC = () => {
                     animate={{ width: `${score}%` }}
                     transition={{ duration: 1, delay: 0.5, type: 'spring' }}
                     className={`h-full ${
-                      score >= 75 ? 'bg-emerald-400' : score >= 50 ? 'bg-amber-400' : 'bg-red-400'
+                      score >= 75 ? 'bg-sage' : score >= 50 ? 'bg-brass' : 'bg-rose'
                     }`}
                   />
                 </div>
@@ -224,30 +235,30 @@ export const QuizResult: React.FC = () => {
 
           <motion.div variants={itemVariants} className="h-full">
             {score < 75 ? (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 h-full flex flex-col justify-between">
+              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-3xl p-6 h-full flex flex-col justify-between">
                 <div>
-                  <h2 className="font-bold text-lg text-white mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-400" />
+                  <h2 className="font-serif font-bold text-lg text-white mb-2 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-brass" />
                     Recommended Next Steps
                   </h2>
-                  <p className="text-sm text-indigo-200/80 mb-4">
+                  <p className="text-sm text-ivory/80 mb-4">
                     Review your answers with Acadexa AI tutor and strengthen your concept retention.
                   </p>
                 </div>
                 <Button
                   size="sm"
                   onClick={() => navigate('/student/tutor')}
-                  className="!bg-indigo-500 hover:!bg-indigo-600 !text-white"
+                  className="!bg-oxblood hover:!bg-cherry !text-white border border-white/20"
                 >
                   Ask AI Tutor <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </Button>
               </div>
             ) : (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-6 h-full flex flex-col items-center justify-center text-center">
-                <Trophy className="w-12 h-12 text-emerald-400 mb-3" />
-                <h2 className="text-xl font-bold text-emerald-400 mb-1">Excellent Mastery!</h2>
-                <p className="text-emerald-200/80 text-sm">
-                  You scored exceptionally well on this assessment. Keep up the great work!
+              <div className="bg-forest/20 border border-forest/30 rounded-3xl p-6 h-full flex flex-col items-center justify-center text-center">
+                <Trophy className="w-12 h-12 text-brass mb-3" />
+                <h2 className="text-xl font-serif font-bold text-sage mb-1">Excellent Mastery!</h2>
+                <p className="text-ivory/80 text-sm">
+                  You scored exceptionally well on this assessment. Keep up the high standard of scholarship!
                 </p>
               </div>
             )}
@@ -257,7 +268,7 @@ export const QuizResult: React.FC = () => {
         <motion.div variants={itemVariants} className="flex justify-center pt-4">
           <button
             onClick={() => navigate('/student')}
-            className="text-sm text-indigo-300 hover:text-white font-medium transition-colors bg-white/5 hover:bg-white/10 px-6 py-2 rounded-full border border-white/10"
+            className="text-sm text-ivory/80 hover:text-white font-medium transition-colors bg-white/5 hover:bg-white/10 px-6 py-2 rounded-full border border-white/10 cursor-pointer"
           >
             Back to Dashboard
           </button>

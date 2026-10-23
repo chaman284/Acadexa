@@ -33,21 +33,21 @@ export const Leaderboard: React.FC = () => {
       {/* My ranking banner */}
       {myEntry && (
         <div
-          className="card p-4 flex items-center gap-4"
-          style={{ background: 'linear-gradient(135deg, var(--color-accent-light) 0%, #e0e7ff 100%)', borderColor: 'var(--color-accent)' }}
+          className="card p-5 flex items-center gap-5 border border-oxblood/30 shadow-card relative overflow-hidden text-white"
+          style={{ background: 'linear-gradient(135deg, #321923 0%, #441d2b 50%, #542536 100%)' }}
         >
-          <div className="w-12 h-12 bg-[var(--color-accent)] rounded-xl flex items-center justify-center flex-shrink-0">
-            <Trophy className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 bg-brass/20 border border-brass/30 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Trophy className="w-6 h-6 text-brass" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-[var(--color-accent)]">Your Current Ranking</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              You're ranked <strong>#{myEntry.rank}</strong> out of 62 students this week
+            <p className="font-serif font-bold text-lg text-white">Your Current Ranking</p>
+            <p className="text-xs text-white/75 mt-0.5">
+              You're ranked <strong className="text-white">#{myEntry.rank}</strong> out of 62 students in your cohort this week
             </p>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-2xl font-black text-[var(--color-accent)]">#{myEntry.rank}</p>
-            <div className="flex items-center gap-1 text-xs text-[var(--color-success)] justify-end">
+            <p className="text-3xl font-serif font-bold text-brass">#{myEntry.rank}</p>
+            <div className="flex items-center gap-1 text-xs text-sage justify-end mt-0.5 font-medium">
               <TrendingUp className="w-3 h-3" />
               <span>+{myEntry.changeValue} this week</span>
             </div>

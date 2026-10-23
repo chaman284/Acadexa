@@ -28,32 +28,36 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   const rankBg = ['bg-yellow-50', 'bg-gray-50', 'bg-amber-50'];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="data-table">
+    <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-white shadow-xs">
+      <table className="data-table w-full">
         <thead>
           <tr>
-            <th>Rank</th>
-            <th>Student</th>
-            <th>Score</th>
-            {!compact && <th>Change</th>}
+            <th className="font-semibold text-xs text-[var(--color-text-secondary)]">Rank</th>
+            <th className="font-semibold text-xs text-[var(--color-text-secondary)]">Student</th>
+            <th className="font-semibold text-xs text-[var(--color-text-secondary)]">Score</th>
+            {!compact && <th className="font-semibold text-xs text-[var(--color-text-secondary)]">Change</th>}
           </tr>
         </thead>
         <tbody>
           {entries.map((entry) => {
             const isCurrentUser = entry.studentId === currentStudentId;
-            const rankColor = rankColors[entry.rank - 1] || 'text-[var(--color-text-muted)]';
-            const rankBgColor = rankBg[entry.rank - 1] || '';
 
             return (
               <tr
                 key={entry.studentId}
-                className={clsx(isCurrentUser && 'bg-[var(--color-accent-light)] !border-[var(--color-accent)]/20')}
+                className={clsx(
+                  'transition-colors',
+                  isCurrentUser ? 'bg-oxblood/5 font-semibold' : 'hover:bg-ivory/50'
+                )}
               >
                 <td>
                   <div
                     className={clsx(
-                      'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
-                      entry.rank <= 3 ? `${rankBgColor} ${rankColor}` : 'text-[var(--color-text-muted)]'
+                      'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all',
+                      entry.rank === 1 && 'bg-brass/20 text-brass font-serif font-bold border border-brass/30',
+                      entry.rank === 2 && 'bg-taupe/40 text-charcoal font-serif font-bold border border-border',
+                      entry.rank === 3 && 'bg-rose/20 text-oxblood font-serif font-bold border border-rose/30',
+                      entry.rank > 3 && 'text-[var(--color-text-muted)] font-mono text-[11px]'
                     )}
                   >
                     {entry.rank <= 3 ? (entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉') : `#${entry.rank}`}
@@ -61,29 +65,33 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 </td>
                 <td>
                   <div className="flex items-center gap-2.5">
-                    <Avatar name={entry.studentName} size="sm" />
+                    <Avatar name={entry.studentName} size="sm" className="ring-1 ring-border" />
                     <div>
-                      <p className="font-medium text-[var(--color-text-primary)] text-sm">
+                      <p className="font-medium text-charcoal text-sm">
                         {entry.studentName}
-                        {isCurrentUser && <span className="ml-2 text-[10px] text-[var(--color-accent)] font-semibold">(You)</span>}
+                        {isCurrentUser && (
+                          <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-oxblood text-white font-medium">
+                            You
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <span className="font-semibold text-[var(--color-text-primary)]">{entry.score}%</span>
+                  <span className="font-serif font-bold text-charcoal text-base">{entry.score}%</span>
                 </td>
                 {!compact && (
                   <td>
                     <div className={clsx(
                       'flex items-center gap-1 text-xs font-medium',
-                      entry.change === 'up' && 'text-[var(--color-success)]',
-                      entry.change === 'down' && 'text-[var(--color-danger)]',
+                      entry.change === 'up' && 'text-forest',
+                      entry.change === 'down' && 'text-danger',
                       entry.change === 'same' && 'text-[var(--color-text-muted)]',
                     )}>
-                      {entry.change === 'up' && <TrendingUp className="w-3 h-3" />}
-                      {entry.change === 'down' && <TrendingDown className="w-3 h-3" />}
-                      {entry.change === 'same' && <Minus className="w-3 h-3" />}
+                      {entry.change === 'up' && <TrendingUp className="w-3.5 h-3.5" />}
+                      {entry.change === 'down' && <TrendingDown className="w-3.5 h-3.5" />}
+                      {entry.change === 'same' && <Minus className="w-3.5 h-3.5" />}
                       <span>
                         {entry.change === 'same' ? '—' : `${entry.change === 'up' ? '+' : '-'}${entry.changeValue}`}
                       </span>

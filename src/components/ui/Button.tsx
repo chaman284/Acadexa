@@ -1,7 +1,7 @@
 import React from 'react';
 import { clsx } from 'clsx';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'forest' | 'brass' | 'rose' | 'sage';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,17 +14,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-dark)] shadow-sm',
-  secondary: 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-light)] shadow-sm',
-  ghost: 'bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-muted)] hover:text-[var(--color-text-primary)]',
-  danger: 'bg-[var(--color-danger)] text-white hover:opacity-90 shadow-sm',
-  outline: 'border border-[var(--color-border)] bg-white text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-light)]',
+  primary:   'bg-[#542536] text-[#F7F1E8] border-[#321923] shadow-[0_2px_6px_rgba(84,37,54,0.25)] hover:bg-[#321923] hover:shadow-[0_4px_14px_rgba(84,37,54,0.32)]',
+  secondary: 'bg-[#302A2B] text-[#F7F1E8] border-[#1a1416] shadow-[0_2px_6px_rgba(48,42,43,0.22)] hover:bg-[#1a1416]',
+  ghost:     'bg-transparent text-[#302A2B] border-transparent shadow-none hover:bg-[#EEE3E0] hover:!shadow-none hover:!translate-y-0',
+  danger:    'bg-[#8b2c35] text-white border-[#6b1f26] shadow-[0_2px_6px_rgba(139,44,53,0.25)] hover:bg-[#6b1f26]',
+  outline:   'bg-white text-[#542536] border-[#E1D4CA] shadow-[0_1px_3px_rgba(84,37,54,0.08)] hover:border-[#542536] hover:bg-[#EEE3E0]',
+  forest:    'bg-[#34483A] text-[#F7F1E8] border-[#243129] shadow-[0_2px_6px_rgba(52,72,58,0.25)] hover:bg-[#243129]',
+  brass:     'bg-[#B69A69] text-[#302A2B] border-[#9a7f52] shadow-[0_2px_6px_rgba(182,154,105,0.25)] hover:bg-[#9a7f52] hover:text-white',
+  rose:      'bg-[#EEE3E0] text-[#542536] border-[#E1D4CA] shadow-[0_1px_4px_rgba(84,37,54,0.10)] hover:bg-[#C58D98] hover:text-white hover:border-[#b07585]',
+  sage:      'bg-[#687B62] text-white border-[#50614b] shadow-[0_2px_6px_rgba(104,123,98,0.25)] hover:bg-[#50614b]',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-xs rounded-[8px] gap-1.5',
-  md: 'px-4 py-2 text-sm rounded-[10px] gap-2',
-  lg: 'px-6 py-2.5 text-sm rounded-[12px] gap-2',
+  sm: 'px-3.5 py-1.5 text-xs rounded-[8px] gap-1.5',
+  md: 'px-4.5 py-2.5 text-[13.5px] rounded-[10px] gap-2',
+  lg: 'px-6 py-3 text-sm rounded-[11px] gap-2',
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -42,8 +46,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={clsx(
-        'inline-flex items-center justify-center font-medium transition-all duration-150 cursor-pointer select-none',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
+        'nb-btn select-none',
         variantClasses[variant],
         sizeClasses[size],
         fullWidth && 'w-full',

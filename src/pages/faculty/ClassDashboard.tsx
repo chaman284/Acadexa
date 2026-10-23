@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ChevronLeft, Users, TrendingUp, FileText, AlertTriangle,
+  ChevronLeft, Users, TrendingUp, FileText, AlertTriangle, Calendar,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { PerformanceChart } from '../../components/dashboard/PerformanceChart';
 import { Card, CardHeader } from '../../components/ui/Card';
@@ -35,6 +36,37 @@ export const ClassDashboard: React.FC = () => {
     return facultyClasses.find(c => c.id === classId || c.sectionId === classId) || null;
   });
   const [loading, setLoading] = useState<boolean>(!cls);
+
+  // Typewriter effect for welcome back message
+  const { user } = useAuth();
+  const facultyFirstName = user?.name ? user.name.split(' ')[0] : 'Faculty';
+  const fullGreeting = `Welcome back, ${facultyFirstName}`;
+  const [displayedGreeting, setDisplayedGreeting] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    setDisplayedGreeting('');
+    setIsTyping(true);
+    setCursorVisible(true);
+
+    const startTimeout = setTimeout(() => {
+      let currentIndex = 0;
+      const interval = setInterval(() => {
+        currentIndex++;
+        setDisplayedGreeting(fullGreeting.slice(0, currentIndex));
+        if (currentIndex >= fullGreeting.length) {
+          clearInterval(interval);
+          setIsTyping(false);
+          setTimeout(() => setCursorVisible(false), 2500);
+        }
+      }, 65);
+
+      return () => clearInterval(interval);
+    }, 250);
+
+    return () => clearTimeout(startTimeout);
+  }, [fullGreeting]);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,9 +107,9 @@ export const ClassDashboard: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <p className="text-lg font-semibold text-[var(--color-text-primary)]">Class not found.</p>
-        <Button className="mt-4" variant="outline" onClick={() => navigate('/faculty')}
+        <Button className="mt-4" variant="outline" onClick={() => navigate('/faculty/select-class')}
           leftIcon={<ChevronLeft className="w-4 h-4" />}>
-          Back to My Classes
+          Back to Class Selector
         </Button>
       </div>
     );
@@ -119,55 +151,69 @@ export const ClassDashboard: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in-up">
 
-      {/* ── Back + Class Header ── */}
-      <div>
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 mb-4">
-          <button
-            onClick={() => navigate('/faculty')}
-            className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors group"
+      {/* ── Welcome Greeting with Typewriter Animation ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1
+            className="text-[26px] sm:text-[28px] font-normal text-[#302A2B] tracking-tight leading-tight flex items-center min-h-[36px]"
+            style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
           >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            My Classes
-          </button>
-          <span className="text-[var(--color-text-muted)]">/</span>
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-            {cls.section}
-          </span>
+            <span>{displayedGreeting}</span>
+            <span
+              className={`inline-block w-[2px] h-[0.85em] bg-[#542536] ml-1.5 align-middle transition-opacity duration-150 ${
+                isTyping ? 'opacity-100 animate-pulse' : cursorVisible ? 'opacity-70 animate-pulse' : 'opacity-0'
+              }`}
+            />
+          </h1>
+          <p className="text-sm text-[#79666A] font-medium mt-1">
+            Department of Computer Science · Teaching & Analytics Overview
+          </p>
         </div>
 
-        {/* Class title banner */}
         <div
-          className="rounded-2xl p-5 relative overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${accent}20 0%, ${accent}08 100%)`,
-            border: `1.5px solid ${accent}35`,
-          }}
+          className="text-xs font-medium text-[#79666A] bg-white px-3.5 py-1.5 rounded-[9px] flex items-center gap-2 self-start sm:self-auto flex-shrink-0"
+          style={{ border: '1px solid #E1D4CA', boxShadow: '0 1px 4px rgba(84,37,54,0.07)' }}
         >
-          <div
-            className="absolute top-0 right-0 w-36 h-36 rounded-full opacity-[0.06] pointer-events-none"
-            style={{ background: accent, transform: 'translate(30%, -30%)' }}
-          />
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-1"
-                style={{ color: accent }}>
-                {cls.subjectCode} · {cls.semester}
-              </p>
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-                {cls.section}
-              </h1>
-              <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{cls.subject}</p>
-            </div>
-            <Badge color={
-              cls.trend === 'improving' ? 'green' :
-              cls.trend === 'declining' ? 'red' : 'gray'
-            }>
-              {cls.trend === 'improving' ? '↑ Improving' :
-               cls.trend === 'declining' ? '↓ Declining' : '→ Stable'}
-            </Badge>
+          <Calendar className="w-3.5 h-3.5 text-[#542536]" />
+          <span>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        </div>
+      </div>
+
+      {/* ── Header: Switch Class + Class Name & Subject ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white/80 border border-[#E1D4CA] rounded-[14px] shadow-2xs">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/faculty/select-class')}
+            id="btn-switch-class"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#79666A] hover:text-[#542536] bg-[#F7F1E8] hover:bg-[#EFE7DE] border border-[#E1D4CA] rounded-[9px] transition-all shadow-2xs group cursor-pointer active:scale-95"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Switch Class
+          </button>
+          <div className="h-4 w-px bg-[#E1D4CA]" />
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-[7px] text-xs font-bold bg-[#542536] text-[#F7F1E8]">
+              {cls.section}
+            </span>
+            <span
+              className="text-base sm:text-lg font-normal text-[#302A2B] tracking-tight"
+              style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
+            >
+              {cls.subject}
+            </span>
+            <span className="text-xs text-[#79666A] font-medium hidden sm:inline">
+              ({cls.subjectCode} · {cls.semester})
+            </span>
           </div>
         </div>
+
+        <Badge color={
+          cls.trend === 'improving' ? 'green' :
+          cls.trend === 'declining' ? 'red' : 'gray'
+        }>
+          {cls.trend === 'improving' ? '↑ Improving' :
+           cls.trend === 'declining' ? '↓ Declining' : '→ Stable'}
+        </Badge>
       </div>
 
       {/* ── Stat Cards ── */}
@@ -176,7 +222,7 @@ export const ClassDashboard: React.FC = () => {
           title="Total Students"
           value={cls.studentsCount}
           icon={<Users className="w-5 h-5" />}
-          accent="navy"
+          accent="oxblood"
         />
         <StatCard
           title="Average Performance"
@@ -190,7 +236,7 @@ export const ClassDashboard: React.FC = () => {
           title="Active Quizzes"
           value={cls.activeQuizCount}
           icon={<FileText className="w-5 h-5" />}
-          accent="indigo"
+          accent="brass"
         />
         <StatCard
           title="Pending Reviews"

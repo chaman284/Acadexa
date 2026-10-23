@@ -22,20 +22,29 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ classes, selectedC
 
   if (!selected) {
     return (
-      <div className="bg-white border border-[var(--color-border)] rounded-xl p-4 text-center text-sm text-[var(--color-text-muted)] mb-6">
+      <div
+        className="bg-white border-2 border-[#171717] rounded-[12px] p-4 text-center text-sm font-bold text-[#696969] mb-6"
+        style={{ boxShadow: '4px 4px 0px #171717' }}
+      >
         No assigned classes found.
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-[var(--color-border)] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-4 justify-between shadow-sm mb-6">
+    <div
+      className="bg-white border-2 border-[#171717] rounded-[12px] p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-6"
+      style={{ boxShadow: '4px 4px 0px #171717' }}
+    >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-[var(--color-primary)]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-          <BookOpen className="w-5 h-5 text-[var(--color-primary)]" />
+        <div
+          className="w-11 h-11 bg-[#FFE66D] border-2 border-[#171717] rounded-[10px] flex items-center justify-center flex-shrink-0"
+          style={{ boxShadow: '2px 2px 0px #171717' }}
+        >
+          <BookOpen className="w-5 h-5 text-[#171717]" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+          <p className="text-[11px] font-black text-[#696969] uppercase tracking-wider">
             Currently Viewing
           </p>
           <div className="flex items-center gap-2 mt-0.5 relative group cursor-pointer">
@@ -50,18 +59,21 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({ classes, selectedC
                 </option>
               ))}
             </select>
-            <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
-              {selected.semester} · Section {selected.section} <span className="text-[var(--color-text-muted)] font-normal mx-1">|</span> {selected.subject}
-              <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
+            <h2 className="text-base font-black text-[#171717] flex items-center gap-1.5">
+              {selected.semester} · Section {selected.section} <span className="text-[#696969] font-normal mx-1">|</span> {selected.subject}
+              <ChevronDown className="w-4 h-4 text-[#171717] group-hover:translate-y-0.5 transition-transform" />
             </h2>
           </div>
         </div>
       </div>
       
-      <div className="flex items-center gap-4 sm:border-l border-[var(--color-border)] sm:pl-4">
-        <div className="flex items-center gap-1.5">
-          <Users className="w-4 h-4 text-[var(--color-text-muted)]" />
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{selected.studentsCount} Students</span>
+      <div className="flex items-center gap-4 sm:border-l-2 border-[#171717] sm:pl-4">
+        <div
+          className="flex items-center gap-2 bg-[#E0FAF8] border-2 border-[#171717] rounded-[8px] px-3 py-1.5"
+          style={{ boxShadow: '2px 2px 0px #171717' }}
+        >
+          <Users className="w-4 h-4 text-[#171717]" />
+          <span className="text-sm font-black text-[#171717]">{selected.studentsCount} Students</span>
         </div>
       </div>
     </div>

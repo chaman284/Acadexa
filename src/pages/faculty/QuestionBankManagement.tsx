@@ -92,13 +92,13 @@ export const QuestionBankManagement: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-primary)]">Course</label>
-              <select className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white outline-none focus:border-[var(--color-accent)]">
+              <select className="w-full border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-oxblood">
                 <option>Data Structures & Algorithms</option>
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-primary)]">Topic</label>
-              <select className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white outline-none focus:border-[var(--color-accent)]">
+              <select className="w-full border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-oxblood">
                 <option>Graphs - BFS & DFS</option>
               </select>
             </div>
@@ -106,14 +106,14 @@ export const QuestionBankManagement: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-primary)]">Difficulty</label>
-              <select className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-2 text-sm bg-white outline-none focus:border-[var(--color-accent)]">
+              <select className="w-full border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-oxblood">
                 <option>Mixed</option>
                 <option>Hard</option>
               </select>
             </div>
             <Input label="Number of Questions" type="number" defaultValue={5} min={1} max={20} />
           </div>
-          <Button fullWidth className="mt-2" onClick={() => setGenerateModalOpen(false)} leftIcon={<Sparkles className="w-4 h-4"/>}>
+          <Button fullWidth className="mt-2 !bg-oxblood hover:!bg-cherry !text-white" onClick={() => setGenerateModalOpen(false)} leftIcon={<Sparkles className="w-4 h-4"/>}>
             Generate Questions
           </Button>
         </div>

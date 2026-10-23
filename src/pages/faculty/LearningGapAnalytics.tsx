@@ -165,8 +165,8 @@ export const LearningGapAnalytics: React.FC = () => {
         <Button
           variant="ghost"
           size="sm"
-          leftIcon={<Target className="w-4 h-4" />}
-          className="!text-[var(--color-accent)] hover:!bg-[var(--color-accent-light)]"
+          leftIcon={<Target className="w-4 h-4 text-oxblood" />}
+          className="!text-oxblood hover:!bg-oxblood/10 font-medium"
           onClick={() => handleGenerateRemedial(t)}
         >
           Generate Remedial Quiz

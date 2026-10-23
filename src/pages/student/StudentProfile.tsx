@@ -175,47 +175,47 @@ export const StudentProfile: React.FC = () => {
       )}
 
       {/* Profile Overview Card */}
-      <Card className="overflow-hidden">
-        <div className="p-6 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex flex-col sm:flex-row items-center sm:items-start gap-5">
+      <Card className="overflow-hidden shadow-card">
+        <div className="p-7 bg-gradient-to-r from-cherry via-[#441d2b] to-oxblood text-white flex flex-col sm:flex-row items-center sm:items-start gap-6 border-b border-oxblood/30">
           <Avatar
             name={profile.name}
             src={profile.avatarUrl}
             size="xl"
-            className="ring-4 ring-white/20 shadow-md"
+            className="ring-4 ring-brass/30 shadow-md"
           />
           <div className="flex-1 text-center sm:text-left space-y-1.5">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <h2 className="text-xl font-bold">{profile.name}</h2>
-              <Badge color="indigo" className="bg-indigo-500/30 text-indigo-200 border-indigo-400/20">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+              <h2 className="text-2xl font-serif font-bold">{profile.name}</h2>
+              <Badge color="brass" className="text-xs font-semibold px-2.5 py-0.5">
                 Roll No: {profile.rollNumber}
               </Badge>
             </div>
-            <p className="text-xs text-white/70">
+            <p className="text-xs text-white/80 font-medium">
               {profile.department} · {profile.semester}th Semester ({profile.section || 'Sec A'})
             </p>
-            <p className="text-xs text-white/60 max-w-xl">
+            <p className="text-xs text-white/65 max-w-xl leading-relaxed">
               {profile.bio || 'Undergraduate student at Acadexa.'}
             </p>
           </div>
         </div>
 
         {/* Academic Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--color-border)] bg-[var(--color-muted)]/30 border-t border-b border-[var(--color-border)]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--color-border)] bg-ivory/40 border-t border-b border-[var(--color-border)]">
           <div className="p-4 text-center">
             <p className="text-xs text-[var(--color-text-muted)] font-medium">Quiz Average</p>
-            <p className="text-xl font-bold text-[var(--color-accent)] mt-0.5">{profile.quizAverage}%</p>
+            <p className="text-2xl font-serif font-bold text-oxblood mt-0.5">{profile.quizAverage}%</p>
           </div>
           <div className="p-4 text-center">
             <p className="text-xs text-[var(--color-text-muted)] font-medium">Learning Progress</p>
-            <p className="text-xl font-bold text-emerald-600 mt-0.5">+{profile.learningProgress}%</p>
+            <p className="text-2xl font-serif font-bold text-forest mt-0.5">+{profile.learningProgress}%</p>
           </div>
           <div className="p-4 text-center">
             <p className="text-xs text-[var(--color-text-muted)] font-medium">Study Streak</p>
-            <p className="text-xl font-bold text-amber-500 mt-0.5">{profile.streak} Days</p>
+            <p className="text-2xl font-serif font-bold text-brass mt-0.5">{profile.streak} Days</p>
           </div>
           <div className="p-4 text-center">
             <p className="text-xs text-[var(--color-text-muted)] font-medium">Courses Enrolled</p>
-            <p className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5">{coursesCount}</p>
+            <p className="text-2xl font-serif font-bold text-charcoal mt-0.5">{coursesCount}</p>
           </div>
         </div>
 

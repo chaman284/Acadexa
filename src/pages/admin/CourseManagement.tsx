@@ -28,7 +28,6 @@ export const CourseManagement: React.FC = () => {
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
 
-  // Course Add/Edit Modal
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseRecord | null>(null);
   const [courseFormName, setCourseFormName] = useState('');
@@ -36,13 +35,11 @@ export const CourseManagement: React.FC = () => {
   const [courseFormDeptId, setCourseFormDeptId] = useState('');
   const [courseFormSemester, setCourseFormSemester] = useState<number>(1);
 
-  // Quick Assign Faculty Modal
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [targetCourse, setTargetCourse] = useState<CourseRecord | null>(null);
   const [assignFacultyId, setAssignFacultyId] = useState('');
   const [assignSectionId, setAssignSectionId] = useState('');
 
-  // Remove Course Modal
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
   const [selectedRemoveCourseId, setSelectedRemoveCourseId] = useState('');
   const [removeFilterSemester, setRemoveFilterSemester] = useState('');
@@ -75,16 +72,10 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [selectedDept, selectedSemester]);
+  useEffect(() => { loadData(); }, [selectedDept, selectedSemester]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    loadData();
-  };
+  const handleSearchSubmit = (e: React.FormEvent) => { e.preventDefault(); loadData(); };
 
-  // Open Create Modal
   const handleOpenCreateModal = () => {
     setEditingCourse(null);
     setCourseFormName('');
@@ -95,7 +86,6 @@ export const CourseManagement: React.FC = () => {
     setActionMessage(null);
   };
 
-  // Open Edit Modal
   const handleOpenEditModal = (c: CourseRecord) => {
     setEditingCourse(c);
     setCourseFormName(c.name);
@@ -106,32 +96,25 @@ export const CourseManagement: React.FC = () => {
     setActionMessage(null);
   };
 
-  // Open Remove Course Modal
   const handleOpenRemoveModal = (preselectedCourseId?: string) => {
     setActionMessage(null);
     if (preselectedCourseId) {
-      const targetCourse = courses.find(c => c.id === preselectedCourseId);
-      setRemoveFilterSemester(targetCourse ? String(targetCourse.semester || 1) : '');
+      const tc = courses.find(c => c.id === preselectedCourseId);
+      setRemoveFilterSemester(tc ? String(tc.semester || 1) : '');
       setSelectedRemoveCourseId(preselectedCourseId);
     } else {
       setRemoveFilterSemester('');
-      if (courses.length > 0) {
-        setSelectedRemoveCourseId(courses[0].id);
-      } else {
-        setSelectedRemoveCourseId('');
-      }
+      setSelectedRemoveCourseId(courses.length > 0 ? courses[0].id : '');
     }
     setIsRemoveModalOpen(true);
   };
 
-  // Save Course (Create or Update)
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseFormName.trim() || !courseFormCode.trim() || !courseFormDeptId) {
       setActionMessage({ type: 'error', text: 'Course name, unique code, department, and semester are required.' });
       return;
     }
-
     setIsSubmitting(true);
     try {
       if (editingCourse) {
@@ -160,35 +143,25 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  // Handle Remove Course Submit
   const handleRemoveCourseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRemoveCourseId) return;
-
     const courseToDelete = courses.find(c => c.id === selectedRemoveCourseId);
     const courseLabel = courseToDelete ? `${courseToDelete.code} (${courseToDelete.name})` : 'Selected course';
-
     setIsSubmitting(true);
     try {
       await adminService.deleteCourse(selectedRemoveCourseId);
       setIsRemoveModalOpen(false);
       setSelectedRemoveCourseId('');
-      setActionMessage({
-        type: 'success',
-        text: `Course ${courseLabel} was successfully removed from curriculum.`,
-      });
+      setActionMessage({ type: 'success', text: `Course ${courseLabel} was successfully removed from curriculum.` });
       loadData();
     } catch (err: any) {
-      setActionMessage({
-        type: 'error',
-        text: err?.response?.data?.message || 'Failed to remove course.',
-      });
+      setActionMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to remove course.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Open Quick Assign Modal for a course
   const handleOpenAssignModal = (course: CourseRecord) => {
     setTargetCourse(course);
     setAssignFacultyId(facultyList.length > 0 ? facultyList[0].id : '');
@@ -196,11 +169,9 @@ export const CourseManagement: React.FC = () => {
     setIsAssignModalOpen(true);
   };
 
-  // Submit Quick Assignment
   const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetCourse || !assignFacultyId || !assignSectionId) return;
-
     setIsSubmitting(true);
     try {
       await adminService.assignFaculty({
@@ -218,16 +189,13 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  // Helper for currently selected course in remove modal
   const selectedCourseDetails = courses.find(c => c.id === selectedRemoveCourseId);
+  const coursesAvailableForRemoval = courses.filter(c =>
+    removeFilterSemester ? (c.semester || 1) === Number(removeFilterSemester) : true
+  );
 
-  // Filter registered courses for remove modal by semester
-  const coursesAvailableForRemoval = courses.filter(c => {
-    if (removeFilterSemester) {
-      return (c.semester || 1) === Number(removeFilterSemester);
-    }
-    return true;
-  });
+  // Shared select className for modals
+  const selectCls = "w-full text-sm bg-white border border-[#E1D4CA] rounded-xl px-3 py-2 text-[#302A2B] focus:ring-2 focus:ring-[#542536]/20 focus:border-[#542536] outline-none transition-all";
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -241,7 +209,7 @@ export const CourseManagement: React.FC = () => {
               onClick={() => handleOpenRemoveModal()}
               variant="outline"
               size="sm"
-              className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+              className="gap-2 text-[#8b2c35] border-[#E1D4CA] hover:bg-[#fbeaec] hover:border-[#C58D98]"
               disabled={courses.length === 0}
             >
               <Trash2 className="w-4 h-4" />
@@ -255,26 +223,24 @@ export const CourseManagement: React.FC = () => {
         }
       />
 
-      {/* Notifications / Alerts */}
+      {/* Feedback Banner */}
       {actionMessage && (
         <div
-          className={`p-4 rounded-xl text-sm flex items-center gap-2 ${
+          className={`p-3.5 rounded-[12px] border text-sm flex items-center gap-2.5 ${
             actionMessage.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border border-rose-200 text-rose-800'
+              ? 'bg-[#e8f0ea] border-[#34483A]/20 text-[#34483A]'
+              : 'bg-[#fbeaec] border-[#8b2c35]/20 text-[#8b2c35]'
           }`}
         >
-          {actionMessage.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
-          ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
-          )}
-          <span>{actionMessage.text}</span>
+          {actionMessage.type === 'success'
+            ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+          <span className="font-medium">{actionMessage.text}</span>
         </div>
       )}
 
       {/* Search and Filters */}
-      <Card className="p-4 border border-[var(--color-border)]">
+      <Card className="p-4">
         <form onSubmit={handleSearchSubmit} className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-[260px]">
             <Input
@@ -282,49 +248,38 @@ export const CourseManagement: React.FC = () => {
               placeholder="Search by course code or title..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />}
+              leftIcon={<Search className="w-4 h-4 text-[#79666A]" />}
             />
           </div>
 
           <select
             value={selectedDept}
             onChange={e => setSelectedDept(e.target.value)}
-            className="text-xs font-medium bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="text-xs font-medium bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2.5 text-[#302A2B] focus:ring-2 focus:ring-[#542536]/20 focus:border-[#542536] outline-none transition-all"
           >
             <option value="">All Departments</option>
             {departments.map(d => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.code})
-              </option>
+              <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
             ))}
           </select>
 
           <select
             value={selectedSemester}
             onChange={e => setSelectedSemester(e.target.value)}
-            className="text-xs font-medium bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="text-xs font-medium bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2.5 text-[#302A2B] focus:ring-2 focus:ring-[#542536]/20 focus:border-[#542536] outline-none transition-all"
           >
             <option value="">All Semesters</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
-              <option key={s} value={s}>
-                Semester {s}
-              </option>
+            {[1,2,3,4,5,6,7,8].map(s => (
+              <option key={s} value={s}>Semester {s}</option>
             ))}
           </select>
 
-          <Button type="submit" variant="secondary" size="sm">
-            Filter
-          </Button>
+          <Button type="submit" variant="secondary" size="sm">Filter</Button>
 
           <button
             type="button"
-            onClick={() => {
-              setSearch('');
-              setSelectedDept('');
-              setSelectedSemester('');
-              loadData();
-            }}
-            className="p-2 text-slate-500 hover:text-slate-800 border border-[var(--color-border)] rounded-xl hover:bg-slate-50 transition-colors"
+            onClick={() => { setSearch(''); setSelectedDept(''); setSelectedSemester(''); loadData(); }}
+            className="p-2 text-[#79666A] bg-white hover:bg-[#F7F1E8] border border-[#E1D4CA] rounded-[10px] transition-all hover:border-[#C58D98]"
             title="Reset Filters"
           >
             <RefreshCw className="w-4 h-4" />
@@ -333,23 +288,28 @@ export const CourseManagement: React.FC = () => {
       </Card>
 
       {/* Courses Table */}
-      <Card className="border border-[var(--color-border)] overflow-hidden">
+      <Card className="p-0 overflow-hidden">
         {isLoading ? (
-          <div className="p-12 text-center text-[var(--color-text-muted)]">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
-            <p className="text-sm">Loading curriculum courses...</p>
+          <div className="p-12 text-center text-[#79666A]">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-3 text-[#542536]" />
+            <p className="text-sm font-medium">Loading curriculum courses...</p>
           </div>
         ) : courses.length === 0 ? (
           <div className="p-12 text-center">
-            <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="font-semibold text-sm text-[var(--color-text-primary)]">No courses found</p>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">Get started by creating a new course above.</p>
+            <div className="w-14 h-14 rounded-full bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center mx-auto mb-3">
+              <BookOpen className="w-7 h-7 text-[#79666A]" />
+            </div>
+            <p className="font-semibold text-sm text-[#302A2B]">No courses found</p>
+            <p className="text-xs text-[#79666A] font-normal mt-1">Get started by creating a new course above.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+                <tr
+                  className="text-xs font-semibold text-[#79666A] uppercase tracking-wider"
+                  style={{ background: '#F7F1E8', borderBottom: '1px solid #E1D4CA' }}
+                >
                   <th className="py-3 px-4">Code</th>
                   <th className="py-3 px-4">Course Name</th>
                   <th className="py-3 px-4">Semester</th>
@@ -359,46 +319,41 @@ export const CourseManagement: React.FC = () => {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
+              <tbody className="divide-y divide-[#EEE3E0]">
                 {courses.map(course => (
-                  <tr key={course.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-xs text-indigo-600">
-                      {course.code}
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-[var(--color-text-primary)]">
-                      {course.name}
-                    </td>
+                  <tr key={course.id} className="hover:bg-[#FAF6F0] transition-colors">
                     <td className="py-3.5 px-4">
-                      <Badge color="indigo" className="text-[11px] font-semibold">
-                        Sem {course.semester || 1}
-                      </Badge>
+                      <span
+                        className="font-mono font-semibold text-xs px-2 py-1 rounded-[6px] text-[#542536]"
+                        style={{ background: '#EEE3E0', border: '1px solid #E1D4CA' }}
+                      >
+                        {course.code}
+                      </span>
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-600">
+                    <td className="py-3.5 px-4 font-medium text-[#302A2B]">{course.name}</td>
+                    <td className="py-3.5 px-4">
+                      <Badge color="purple" className="text-[11px]">Sem {course.semester || 1}</Badge>
+                    </td>
+                    <td className="py-3.5 px-4 text-xs font-medium text-[#302A2B]">
                       {course.departmentName} ({course.departmentCode})
                     </td>
                     <td className="py-3.5 px-4">
                       {course.status === 'Assigned' ? (
-                        <Badge color="green" className="text-[11px]">
-                          Assigned
-                        </Badge>
+                        <Badge color="green" className="text-[11px]">Assigned</Badge>
                       ) : (
-                        <Badge color="amber" className="text-[11px]">
-                          Awaiting Faculty
-                        </Badge>
+                        <Badge color="yellow" className="text-[11px]">Awaiting Faculty</Badge>
                       )}
                     </td>
                     <td className="py-3.5 px-4">
                       {course.assignments.length === 0 ? (
-                        <span className="text-xs text-slate-400 italic">No faculty assigned</span>
+                        <span className="text-xs text-[#79666A]/70 italic">No faculty assigned</span>
                       ) : (
-                        <div className="flex flex-col gap-1 max-w-sm">
+                        <div className="flex flex-col gap-1.5 max-w-sm">
                           {course.assignments.map(a => (
-                            <div key={a.id} className="text-xs text-slate-700 flex items-center gap-1.5">
-                              <span className="font-medium text-slate-900">{a.facultyName}</span>
-                              <span className="text-slate-400">→</span>
-                              <Badge color="gray" className="text-[10px] py-0 px-1.5">
-                                {a.sectionName}
-                              </Badge>
+                            <div key={a.id} className="text-xs text-[#302A2B] flex items-center gap-1.5">
+                              <span className="font-medium">{a.facultyName}</span>
+                              <span className="text-[#79666A]">→</span>
+                              <Badge color="gray" className="text-[10px] py-0 px-1.5">{a.sectionName}</Badge>
                             </div>
                           ))}
                         </div>
@@ -408,7 +363,7 @@ export const CourseManagement: React.FC = () => {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleOpenAssignModal(course)}
-                          className="px-2.5 py-1 text-xs font-medium rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 text-xs font-medium rounded-[8px] text-[#34483A] bg-[#e8f0ea] hover:bg-[#d5e5d8] border border-[#34483A]/20 transition-all flex items-center gap-1"
                           title="Assign Faculty to Course"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
@@ -416,7 +371,7 @@ export const CourseManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(course)}
-                          className="px-2.5 py-1 text-xs font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 text-xs font-medium rounded-[8px] text-[#542536] bg-[#EEE3E0] hover:bg-[#E1D4CA] border border-[#E1D4CA] transition-all flex items-center gap-1"
                           title="Edit Course"
                         >
                           <Edit className="w-3.5 h-3.5" />
@@ -424,7 +379,7 @@ export const CourseManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleOpenRemoveModal(course.id)}
-                          className="px-2.5 py-1 text-xs font-medium rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 text-xs font-medium rounded-[8px] text-[#8b2c35] bg-[#fbeaec] hover:bg-[#f5d5d8] border border-[#8b2c35]/20 transition-all flex items-center gap-1"
                           title="Remove Course"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -455,7 +410,6 @@ export const CourseManagement: React.FC = () => {
             onChange={e => setCourseFormCode(e.target.value.toUpperCase())}
             required
           />
-
           <Input
             id="course-name"
             label="Course / Subject Name"
@@ -464,99 +418,58 @@ export const CourseManagement: React.FC = () => {
             onChange={e => setCourseFormName(e.target.value)}
             required
           />
-
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Department
-            </label>
-            <select
-              value={courseFormDeptId}
-              onChange={e => setCourseFormDeptId(e.target.value)}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
-              required
-            >
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Department</label>
+            <select value={courseFormDeptId} onChange={e => setCourseFormDeptId(e.target.value)} className={selectCls} required>
               {departments.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.name} ({d.code})
-                </option>
+                <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Target Academic Semester (1 - 8)
-            </label>
-            <select
-              value={courseFormSemester}
-              onChange={e => setCourseFormSemester(Number(e.target.value))}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)] font-medium"
-              required
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                <option key={sem} value={sem}>
-                  Semester {sem} (Only Sem {sem} students can view & register)
-                </option>
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Target Academic Semester (1 - 8)</label>
+            <select value={courseFormSemester} onChange={e => setCourseFormSemester(Number(e.target.value))} className={selectCls} required>
+              {[1,2,3,4,5,6,7,8].map(sem => (
+                <option key={sem} value={sem}>Semester {sem} (Only Sem {sem} students can view & register)</option>
               ))}
             </select>
-            <p className="text-[11px] text-[var(--color-text-secondary)] mt-1">
-              Students will only be able to see courses registered for their respective semester.
-            </p>
+            <p className="text-[11px] text-[#79666A] mt-1">Students will only be able to see courses registered for their respective semester.</p>
           </div>
-
           <div className="pt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsCourseModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isSubmitting}>
-              {editingCourse ? 'Save Changes' : 'Create Course'}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => setIsCourseModalOpen(false)}>Cancel</Button>
+            <Button type="submit" isLoading={isSubmitting}>{editingCourse ? 'Save Changes' : 'Create Course'}</Button>
           </div>
         </form>
       </Modal>
 
       {/* ── Remove Course Modal ── */}
-      <Modal
-        isOpen={isRemoveModalOpen}
-        onClose={() => setIsRemoveModalOpen(false)}
-        title="Remove Registered Course"
-      >
+      <Modal isOpen={isRemoveModalOpen} onClose={() => setIsRemoveModalOpen(false)} title="Remove Registered Course">
         <form onSubmit={handleRemoveCourseSubmit} className="space-y-4">
-          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+          <p className="text-xs text-[#79666A] leading-relaxed">
             Choose from the registered courses below to remove it from the curriculum. Only currently registered courses can be removed.
           </p>
-
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Filter by Semester (Optional)
-            </label>
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Filter by Semester (Optional)</label>
             <select
               value={removeFilterSemester}
               onChange={e => {
                 const semVal = e.target.value;
                 setRemoveFilterSemester(semVal);
-                const matching = semVal
-                  ? courses.filter(c => (c.semester || 1) === Number(semVal))
-                  : courses;
+                const matching = semVal ? courses.filter(c => (c.semester || 1) === Number(semVal)) : courses;
                 setSelectedRemoveCourseId(matching.length > 0 ? matching[0].id : '');
               }}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+              className={selectCls}
             >
               <option value="">All Semesters (Show all registered courses)</option>
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
-                <option key={s} value={s}>
-                  Semester {s}
-                </option>
+              {[1,2,3,4,5,6,7,8].map(s => (
+                <option key={s} value={s}>Semester {s}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Registered Course to Remove
-            </label>
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Registered Course to Remove</label>
             {coursesAvailableForRemoval.length === 0 ? (
-              <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
+              <p className="text-xs text-[#B69A69] bg-[#f5ede0] p-3 rounded-xl border border-[#B69A69]/30">
                 {removeFilterSemester
                   ? `No courses registered for Semester ${removeFilterSemester} found to remove.`
                   : 'No courses are currently registered to remove.'}
@@ -566,54 +479,44 @@ export const CourseManagement: React.FC = () => {
                 id="remove-course-select"
                 value={selectedRemoveCourseId}
                 onChange={e => setSelectedRemoveCourseId(e.target.value)}
-                className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+                className={selectCls}
                 required
               >
                 <option value="">-- Select a registered course --</option>
                 {coursesAvailableForRemoval.map(c => (
-                  <option key={c.id} value={c.id}>
-                    [Sem {c.semester || 1}] {c.code} — {c.name} ({c.departmentCode || c.departmentName})
-                  </option>
+                  <option key={c.id} value={c.id}>[Sem {c.semester || 1}] {c.code} — {c.name} ({c.departmentCode || c.departmentName})</option>
                 ))}
               </select>
             )}
           </div>
 
-          {/* Details preview of the selected course */}
           {selectedCourseDetails && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs text-slate-700">
+            <div className="bg-[#F7F1E8] border border-[#E1D4CA] rounded-xl p-3.5 space-y-2 text-xs text-[#302A2B]">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-900">Selected Course:</span>
-                <Badge color="blue" className="text-[11px] font-mono">
-                  {selectedCourseDetails.code}
-                </Badge>
+                <span className="font-semibold">Selected Course:</span>
+                <Badge color="blue" className="text-[11px] font-mono">{selectedCourseDetails.code}</Badge>
               </div>
-              <div className="text-sm font-bold text-slate-800">{selectedCourseDetails.name}</div>
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80">
+              <div className="text-sm font-bold">{selectedCourseDetails.name}</div>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E1D4CA]/80">
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Department</span>
-                  <span className="font-medium text-slate-700">{selectedCourseDetails.departmentName}</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Department</span>
+                  <span className="font-medium">{selectedCourseDetails.departmentName}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Semester</span>
-                  <span className="font-semibold text-indigo-700">Semester {selectedCourseDetails.semester || 1}</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Semester</span>
+                  <span className="font-semibold text-[#542536]">Semester {selectedCourseDetails.semester || 1}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Status</span>
-                  <span className="font-medium text-slate-700">{selectedCourseDetails.status}</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Status</span>
+                  <span className="font-medium">{selectedCourseDetails.status}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Faculty Allocations</span>
-                  <span className="font-medium text-slate-700">{selectedCourseDetails.assignments.length} assigned</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Quizzes</span>
-                  <span className="font-medium text-slate-700">{selectedCourseDetails.quizzesCount || 0} quizzes</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Faculty Allocations</span>
+                  <span className="font-medium">{selectedCourseDetails.assignments.length} assigned</span>
                 </div>
               </div>
-
-              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 flex items-start gap-2 mt-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+              <div className="p-2.5 bg-[#fbeaec] border border-[#8b2c35]/20 rounded-lg text-[#8b2c35] flex items-start gap-2 mt-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span className="text-[11px] leading-tight">
                   Warning: Removing this registered course will clear its faculty assignments and related curriculum records.
                 </span>
@@ -621,22 +524,9 @@ export const CourseManagement: React.FC = () => {
             </div>
           )}
 
-          <div className="pt-2 flex justify-end gap-2 border-t border-[var(--color-border)] mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsRemoveModalOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="danger"
-              isLoading={isSubmitting}
-              disabled={!selectedRemoveCourseId || courses.length === 0}
-              className="gap-1.5"
-            >
+          <div className="pt-2 flex justify-end gap-2 border-t border-[#E1D4CA] mt-4">
+            <Button type="button" variant="outline" onClick={() => setIsRemoveModalOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" variant="danger" isLoading={isSubmitting} disabled={!selectedRemoveCourseId || courses.length === 0} className="gap-1.5">
               <Trash2 className="w-4 h-4" />
               Remove Course
             </Button>
@@ -652,52 +542,27 @@ export const CourseManagement: React.FC = () => {
       >
         <form onSubmit={handleAssignSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Faculty Member
-            </label>
-            <select
-              value={assignFacultyId}
-              onChange={e => setAssignFacultyId(e.target.value)}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
-              required
-            >
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Faculty Member</label>
+            <select value={assignFacultyId} onChange={e => setAssignFacultyId(e.target.value)} className={selectCls} required>
               {facultyList.map(f => (
-                <option key={f.id} value={f.id}>
-                  {f.name} ({f.email})
-                </option>
+                <option key={f.id} value={f.id}>{f.name} ({f.email})</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Class Section
-            </label>
-            <select
-              value={assignSectionId}
-              onChange={e => setAssignSectionId(e.target.value)}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
-              required
-            >
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Class Section</label>
+            <select value={assignSectionId} onChange={e => setAssignSectionId(e.target.value)} className={selectCls} required>
               {sections.map(s => (
-                <option key={s.id} value={s.id}>
-                  Semester {s.semester} — Section {s.name} ({s.departmentName})
-                </option>
+                <option key={s.id} value={s.id}>Semester {s.semester} — Section {s.name} ({s.departmentName})</option>
               ))}
             </select>
           </div>
-
           <div className="pt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsAssignModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isSubmitting}>
-              Confirm Allocation
-            </Button>
+            <Button type="button" variant="outline" onClick={() => setIsAssignModalOpen(false)}>Cancel</Button>
+            <Button type="submit" isLoading={isSubmitting}>Confirm Allocation</Button>
           </div>
         </form>
       </Modal>
     </div>
   );
 };
-

@@ -102,26 +102,20 @@ export const SectionManagement: React.FC = () => {
 
   const handleRemoveSectionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRemoveSectionId) return;
-
-    const sectionToDelete = sections.find(s => s.id === selectedRemoveSectionId);
-    const sectionLabel = sectionToDelete ? `Sem ${sectionToDelete.semester}-${sectionToDelete.name} (${sectionToDelete.departmentCode})` : 'Section';
+    if (!selectedRemoveSectionId) {
+      setActionMessage({ type: 'error', text: 'Please select a section to remove.' });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await adminService.deleteSection(selectedRemoveSectionId);
       setIsRemoveSectionModalOpen(false);
       setSelectedRemoveSectionId('');
-      setActionMessage({
-        type: 'success',
-        text: `Section ${sectionLabel} was successfully removed.`,
-      });
+      setActionMessage({ type: 'success', text: 'Section removed successfully!' });
       loadData();
     } catch (err: any) {
-      setActionMessage({
-        type: 'error',
-        text: err?.response?.data?.message || 'Failed to remove section.',
-      });
+      setActionMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to remove section.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -132,8 +126,8 @@ export const SectionManagement: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <PageHeader
-        title="Department & Section Organization"
-        subtitle="Manage academic class cohorts, semesters, years, and student section allocations"
+        title="Class Sections & Cohorts"
+        subtitle="Manage semester sections, academic year divisions, and enrolled cohorts"
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Sections' }]}
         action={
           <div className="flex items-center gap-2">
@@ -141,13 +135,13 @@ export const SectionManagement: React.FC = () => {
               onClick={() => handleOpenRemoveSectionModal()}
               variant="outline"
               size="sm"
-              className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+              className="gap-2 text-[#8b2c35] border-[#EAD5D9] hover:bg-[#FAF0F2] hover:border-[#8b2c35]"
               disabled={sections.length === 0}
             >
               <Trash2 className="w-4 h-4" />
               Remove Section
             </Button>
-            <Button onClick={handleOpenAddModal} size="sm" className="gap-2 shadow-sm">
+            <Button onClick={handleOpenAddModal} size="sm" className="gap-2 shadow-xs">
               <Plus className="w-4 h-4" />
               Add New Section
             </Button>
@@ -158,30 +152,30 @@ export const SectionManagement: React.FC = () => {
       {/* Action Feedback */}
       {actionMessage && (
         <div
-          className={`p-4 rounded-xl text-sm flex items-center gap-2 ${
+          className={`p-3.5 rounded-[12px] border text-xs font-medium flex items-center gap-2.5 transition-all shadow-xs ${
             actionMessage.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border border-rose-200 text-rose-800'
+              ? 'bg-[#F0F4EF] border-[#D5DFD4] text-[#34483A]'
+              : 'bg-[#FAF0F2] border-[#EAD5D9] text-[#542536]'
           }`}
         >
           {actionMessage.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+            <CheckCircle2 className="w-4.5 h-4.5 flex-shrink-0 text-[#34483A]" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
+            <AlertCircle className="w-4.5 h-4.5 flex-shrink-0 text-[#542536]" />
           )}
           <span>{actionMessage.text}</span>
         </div>
       )}
 
       {/* Department Filter Bar */}
-      <Card className="p-4 border border-[var(--color-border)] flex items-center justify-between gap-4">
+      <Card className="p-4 flex items-center justify-between gap-4 border border-[#E1D4CA] shadow-xs">
         <div className="flex items-center gap-3">
-          <Layers className="w-5 h-5 text-indigo-600" />
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">Filter by Department:</span>
+          <Layers className="w-4 h-4 text-[#542536]" />
+          <span className="text-xs font-semibold text-[#302A2B]">Filter by Department:</span>
           <select
             value={selectedDept}
             onChange={e => setSelectedDept(e.target.value)}
-            className="text-xs font-medium bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="text-xs font-medium bg-white border border-[#E1D4CA] rounded-[8px] px-3 py-1.5 text-[#302A2B] focus:border-[#542536] focus:outline-none focus:ring-1 focus:ring-[#542536]/20 transition-all shadow-xs"
           >
             <option value="">All Departments</option>
             {departments.map(d => (
@@ -194,89 +188,94 @@ export const SectionManagement: React.FC = () => {
 
         <button
           onClick={loadData}
-          className="p-2 text-slate-500 hover:text-slate-800 border border-[var(--color-border)] rounded-xl hover:bg-slate-50 transition-colors"
+          className="p-1.5 text-[#79666A] hover:text-[#542536] bg-white hover:bg-[#F7F1E8] border border-[#E1D4CA] rounded-[8px] transition-colors shadow-xs cursor-pointer"
           title="Refresh Sections"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-3.5 h-3.5" />
         </button>
       </Card>
 
       {/* Sections Grid */}
       {isLoading ? (
-        <div className="p-12 text-center text-[var(--color-text-muted)]">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
-          <p className="text-sm">Loading department sections...</p>
+        <div className="p-12 text-center text-[#79666A]">
+          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#542536]" />
+          <p className="text-sm font-medium">Loading department sections...</p>
         </div>
       ) : sections.length === 0 ? (
-        <Card className="p-12 text-center border border-[var(--color-border)]">
-          <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <p className="font-semibold text-sm text-[var(--color-text-primary)]">No class sections found</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">Create a section to organize classes and students.</p>
+        <Card className="p-12 text-center border border-[#E1D4CA] shadow-xs">
+          <div className="w-12 h-12 rounded-[12px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center mx-auto mb-3 text-[#79666A]">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <p className="font-semibold text-sm text-[#302A2B]">No class sections found</p>
+          <p className="text-xs text-[#79666A] font-normal mt-1">Create a section to organize classes and students.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {sections.map(section => (
-            <Card key={section.id} className="p-5 border border-[var(--color-border)] hover:border-indigo-200 transition-colors relative group">
+            <Card key={section.id} className="p-5 relative group border border-[#E1D4CA] shadow-xs hover:shadow-card transition-all">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-base text-[var(--color-text-primary)]">
+                    <span className="font-semibold text-base text-[#302A2B]">
                       Sem {section.semester} — Section {section.name}
                     </span>
-                    <Badge color="indigo" className="text-[10px]">
+                    <Badge color="oxblood" className="text-[10px]">
                       Year {section.year}
                     </Badge>
                   </div>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                  <p className="text-xs text-[#79666A] font-normal mt-0.5">
                     {section.departmentName} ({section.departmentCode})
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => handleOpenRemoveSectionModal(section.id)}
-                    className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
+                    className="w-7 h-7 rounded-[7px] bg-[#FAF0F2] text-[#8b2c35] hover:bg-[#8b2c35] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                     title="Remove Section"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                    <Building2 className="w-4 h-4" />
+                  <div className="w-7 h-7 rounded-[7px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center text-[#542536]">
+                    <Building2 className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 py-3 border-y border-[var(--color-border)] my-3">
+              <div className="grid grid-cols-2 gap-3 py-3 border-y border-[#E1D4CA]/70 my-3">
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-slate-400" />
+                  <Users className="w-4 h-4 text-[#542536]" />
                   <div>
-                    <span className="text-xs font-semibold text-slate-900 block leading-tight">
+                    <span className="text-xs font-semibold text-[#302A2B] block leading-tight">
                       {section.studentsCount} Students
                     </span>
-                    <span className="text-[10px] text-slate-400">Enrolled cohort</span>
+                    <span className="text-[10px] text-[#79666A] font-normal">Enrolled cohort</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-slate-400" />
+                  <BookOpen className="w-4 h-4 text-[#687B62]" />
                   <div>
-                    <span className="text-xs font-semibold text-slate-900 block leading-tight">
+                    <span className="text-xs font-semibold text-[#302A2B] block leading-tight">
                       {section.assignmentsCount} Courses
                     </span>
-                    <span className="text-[10px] text-slate-400">Teaching subjects</span>
+                    <span className="text-[10px] text-[#79666A] font-normal">Teaching subjects</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                <span className="text-[11px] font-semibold text-[#79666A] uppercase tracking-wider block mb-1.5">
                   Assigned Faculty
                 </span>
                 {section.faculty.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No faculty assigned to this section yet</p>
+                  <p className="text-xs text-[#79666A]/70 font-normal italic">No faculty assigned to this section yet</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {section.faculty.map(f => (
-                      <span key={f} className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
+                      <span
+                        key={f}
+                        className="text-xs px-2.5 py-0.5 rounded-[6px] bg-[#F7F1E8] text-[#542536] font-medium border border-[#E1D4CA]"
+                      >
                         {f}
                       </span>
                     ))}
@@ -296,13 +295,13 @@ export const SectionManagement: React.FC = () => {
       >
         <form onSubmit={handleAddSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+            <label className="block text-xs font-semibold text-[#302A2B] mb-1">
               Department
             </label>
             <select
               value={sectionDeptId}
               onChange={e => setSectionDeptId(e.target.value)}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="w-full text-sm bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2 text-[#302A2B] shadow-xs focus:ring-2 focus:ring-[#542536]/10 focus:border-[#542536] outline-none"
               required
             >
               {departments.map(d => (
@@ -314,13 +313,13 @@ export const SectionManagement: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+            <label className="block text-xs font-semibold text-[#302A2B] mb-1">
               Academic Semester
             </label>
             <select
               value={sectionSemester}
               onChange={e => setSectionSemester(Number(e.target.value))}
-              className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-[var(--color-accent)]"
+              className="w-full text-sm bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2 text-[#302A2B] shadow-xs focus:ring-2 focus:ring-[#542536]/10 focus:border-[#542536] outline-none"
               required
             >
               {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
@@ -341,7 +340,7 @@ export const SectionManagement: React.FC = () => {
             hint="Single character or code representing the class cohort."
           />
 
-          <div className="pt-2 flex justify-end gap-2">
+          <div className="pt-2 flex justify-end gap-2 border-t border-[#E1D4CA] mt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </Button>
@@ -359,16 +358,16 @@ export const SectionManagement: React.FC = () => {
         title="Remove Academic Section"
       >
         <form onSubmit={handleRemoveSectionSubmit} className="space-y-4">
-          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+          <p className="text-xs text-[#79666A] leading-relaxed font-normal">
             Choose from the registered class sections below to remove the cohort and clear its allocations.
           </p>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+            <label className="block text-xs font-semibold text-[#302A2B] mb-1">
               Registered Section
             </label>
             {sections.length === 0 ? (
-              <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
+              <p className="text-xs text-[#8b2c35] bg-[#FAF0F2] p-3 rounded-[10px] border border-[#EAD5D9]">
                 No sections are currently registered to remove.
               </p>
             ) : (
@@ -376,7 +375,7 @@ export const SectionManagement: React.FC = () => {
                 id="remove-section-select"
                 value={selectedRemoveSectionId}
                 onChange={e => setSelectedRemoveSectionId(e.target.value)}
-                className="w-full text-sm bg-white border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text-primary)] shadow-2xs focus:ring-2 focus:ring-rose-500 font-medium"
+                className="w-full text-sm bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2.5 text-[#302A2B] shadow-xs focus:ring-2 focus:ring-[#8b2c35]/15 focus:border-[#8b2c35] outline-none font-medium"
                 required
               >
                 <option value="">-- Select a registered section --</option>
@@ -391,46 +390,46 @@ export const SectionManagement: React.FC = () => {
 
           {/* Details preview of the selected section */}
           {selectedSectionDetails && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs text-slate-700">
+            <div className="bg-[#F7F1E8]/60 border border-[#E1D4CA] rounded-[12px] p-3.5 space-y-2 text-xs text-[#302A2B]">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-900">Selected Section:</span>
-                <Badge color="indigo" className="text-[11px]">
+                <span className="font-semibold text-[#302A2B]">Selected Section:</span>
+                <Badge color="oxblood" className="text-[11px]">
                   Sem {selectedSectionDetails.semester} — {selectedSectionDetails.name}
                 </Badge>
               </div>
-              <div className="text-sm font-bold text-slate-800">
+              <div className="text-sm font-semibold text-[#302A2B]">
                 {selectedSectionDetails.departmentName} ({selectedSectionDetails.departmentCode})
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/80">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E1D4CA]/80">
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Academic Year</span>
-                  <span className="font-medium text-slate-700">Year {selectedSectionDetails.year}</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Academic Year</span>
+                  <span className="font-medium text-[#302A2B]">Year {selectedSectionDetails.year}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Enrolled Students</span>
-                  <span className="font-medium text-slate-700">{selectedSectionDetails.studentsCount} students</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Enrolled Students</span>
+                  <span className="font-medium text-[#302A2B]">{selectedSectionDetails.studentsCount} students</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Active Courses</span>
-                  <span className="font-medium text-slate-700">{selectedSectionDetails.assignmentsCount} courses</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Active Courses</span>
+                  <span className="font-medium text-[#302A2B]">{selectedSectionDetails.assignmentsCount} courses</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Assigned Faculty</span>
-                  <span className="font-medium text-slate-700">{selectedSectionDetails.faculty.length} instructors</span>
+                  <span className="text-[#79666A] block text-[10px] uppercase font-semibold">Assigned Faculty</span>
+                  <span className="font-medium text-[#302A2B]">{selectedSectionDetails.faculty.length} instructors</span>
                 </div>
               </div>
 
-              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 flex items-start gap-2 mt-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
-                <span className="text-[11px] leading-tight">
+              <div className="p-2.5 bg-[#FAF0F2] border border-[#EAD5D9] rounded-[8px] text-[#8b2c35] flex items-start gap-2 mt-2">
+                <AlertCircle className="w-4 h-4 text-[#8b2c35] flex-shrink-0 mt-0.5" />
+                <span className="text-[11px] leading-tight font-normal">
                   Warning: Removing this section will permanently remove this class cohort, its student allocations, and faculty assignments.
                 </span>
               </div>
             </div>
           )}
 
-          <div className="pt-2 flex justify-end gap-2 border-t border-[var(--color-border)] mt-4">
+          <div className="pt-2 flex justify-end gap-2 border-t border-[#E1D4CA] mt-4">
             <Button
               type="button"
               variant="outline"
@@ -455,4 +454,3 @@ export const SectionManagement: React.FC = () => {
     </div>
   );
 };
-

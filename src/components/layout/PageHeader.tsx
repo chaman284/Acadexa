@@ -24,19 +24,19 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <div className="flex items-start justify-between mb-6">
       <div>
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <div className="flex items-center gap-1 mb-1.5">
+          <div className="flex items-center gap-1 mb-2">
             {breadcrumbs.map((crumb, i) => (
               <React.Fragment key={i}>
-                {i > 0 && <ChevronRight className="w-3 h-3 text-[var(--color-text-muted)]" />}
+                {i > 0 && <ChevronRight className="w-3 h-3 text-[#a08a8e]" />}
                 <span
                   onClick={() => {
-                    if (crumb.to) window.location.hash = ''; // or navigate
+                    if (crumb.to) window.location.hash = '';
                     if (crumb.href) window.location.href = crumb.href;
                   }}
                   className={
                     i === breadcrumbs.length - 1
-                      ? 'text-xs text-[var(--color-text-muted)]'
-                      : 'text-xs text-[var(--color-accent)] hover:underline cursor-pointer'
+                      ? 'text-xs font-medium text-[#a08a8e]'
+                      : 'text-xs font-semibold text-[#542536] hover:underline cursor-pointer'
                   }
                 >
                   {crumb.label}
@@ -45,9 +45,14 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             ))}
           </div>
         )}
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{title}</h1>
+        <h1
+          className="text-[22px] font-normal text-[#302A2B] tracking-tight leading-snug"
+          style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
+        >
+          {title}
+        </h1>
         {subtitle && (
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">{subtitle}</p>
+          <p className="text-sm text-[#79666A] font-medium mt-1">{subtitle}</p>
         )}
       </div>
       {action && <div className="flex-shrink-0 ml-4">{action}</div>}

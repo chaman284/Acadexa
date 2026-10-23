@@ -78,15 +78,15 @@ export const facultyService = {
           const hasOldMockSubjects = Array.isArray(localData.subjectsTaught) &&
             localData.subjectsTaught.some(s => s.includes('CS3101') || s.includes('CS7201'));
 
-          const realSubjects = assignments.length > 0
-            ? Array.from(new Set(assignments.map((a: any) => `${a.subject?.name} (${a.subject?.code})`)))
+          const realSubjects: string[] = assignments.length > 0
+            ? Array.from(new Set<string>(assignments.map((a: any) => `${a.subject?.name} (${a.subject?.code})`)))
             : hasOldMockSubjects ? defaultFacultyProfile.subjectsTaught : localData.subjectsTaught;
 
           const hasOldMockClasses = Array.isArray(localData.assignedClasses) &&
             localData.assignedClasses.some(c => c.includes('5B') || c.includes('7C'));
 
-          const realClasses = assignments.length > 0
-            ? Array.from(new Set(assignments.map((a: any) => `Semester ${a.section?.semester} · Section ${a.section?.name}`)))
+          const realClasses: string[] = assignments.length > 0
+            ? Array.from(new Set<string>(assignments.map((a: any) => `Semester ${a.section?.semester} · Section ${a.section?.name}`)))
             : hasOldMockClasses ? defaultFacultyProfile.assignedClasses : localData.assignedClasses;
 
           const realDepartment = assignments[0]?.subject?.department?.name ||

@@ -204,7 +204,7 @@ export const Courses: React.FC = () => {
                         course.enrollmentStatus === 'Enrolled'
                           ? 'green'
                           : course.enrollmentStatus === 'Available'
-                          ? 'blue'
+                          ? 'oxblood'
                           : 'gray'
                       }
                       className="text-[10px] font-semibold"
@@ -215,7 +215,7 @@ export const Courses: React.FC = () => {
                   </div>
                 </div>
 
-                <h3 className="font-bold text-[var(--color-text-primary)] text-sm mb-1 leading-snug group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
+                <h3 className="font-serif font-bold text-[var(--color-text-primary)] text-base mb-1 leading-snug group-hover:text-oxblood transition-colors line-clamp-1">
                   {course.name}
                 </h3>
                 <p className="text-xs text-[var(--color-text-muted)] mb-4 line-clamp-1">
@@ -225,14 +225,14 @@ export const Courses: React.FC = () => {
                 <div className="space-y-1.5 mb-4">
                   <div className="flex justify-between text-xs font-semibold">
                     <span className="text-[var(--color-text-muted)] font-normal">Syllabus Progress</span>
-                    <span className="text-[var(--color-text-primary)]">{course.progress}%</span>
+                    <span className="text-[var(--color-text-primary)] font-serif font-bold">{course.progress}%</span>
                   </div>
-                  <ProgressBar value={course.progress} height="xs" />
+                  <ProgressBar value={course.progress} height="xs" color="oxblood" />
                 </div>
 
                 <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
                   <span>{course.units?.length || 0} Units</span>
-                  <span className="text-[var(--color-accent)] font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-oxblood font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     View Syllabus →
                   </span>
                 </div>
@@ -241,7 +241,7 @@ export const Courses: React.FC = () => {
             {filteredCourses.length === 0 && (
               <div className="col-span-full py-12 text-center bg-white rounded-2xl border border-[var(--color-border)] p-8">
                 <BookOpen className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-3 opacity-40" />
-                <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">No Courses Available</h3>
+                <h3 className="font-serif font-semibold text-base text-[var(--color-text-primary)]">No Courses Available</h3>
                 <p className="text-xs text-[var(--color-text-muted)] mt-1">
                   {courseSearch
                     ? 'No courses matched your search query.'
@@ -260,30 +260,30 @@ export const Courses: React.FC = () => {
           <div className="flex items-center justify-between">
             <button
               onClick={handleBackToCourses}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-accent)] hover:underline cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-2xs hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-oxblood hover:underline cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-xs hover:bg-[var(--color-ivory)] transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>← Back to My Courses</span>
             </button>
             <span className="text-xs text-[var(--color-text-muted)]">
-              Showing syllabus for <strong>{selectedCourse.name}</strong> only
+              Showing syllabus for <strong className="text-charcoal">{selectedCourse.name}</strong> only
             </span>
           </div>
 
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden shadow-card">
             {/* Header of Selected Syllabus */}
-            <div className="p-6 border-b border-[var(--color-border)] bg-gradient-to-r from-slate-50 to-indigo-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="p-6 border-b border-[var(--color-border)] bg-gradient-to-r from-ivory via-taupe/20 to-white flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-xs"
-                  style={{ background: `${selectedCourse.color}20` }}
+                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-xs border border-oxblood/10"
+                  style={{ background: `${selectedCourse.color || '#542536'}18` }}
                 >
-                  <BookOpen className="w-6 h-6" style={{ color: selectedCourse.color }} />
+                  <BookOpen className="w-6 h-6" style={{ color: selectedCourse.color || 'var(--color-oxblood)' }} />
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{selectedCourse.name}</h2>
-                    <Badge color="indigo">{selectedCourse.code}</Badge>
+                    <h2 className="text-xl font-serif font-bold text-[var(--color-text-primary)]">{selectedCourse.name}</h2>
+                    <Badge color="oxblood">{selectedCourse.code}</Badge>
                     <span className="text-xs text-[var(--color-text-muted)]">Credits: {selectedCourse.creditHours || 4}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-muted)] mt-1">
@@ -297,7 +297,7 @@ export const Courses: React.FC = () => {
                 <div className="text-right">
                   <p className="text-xs text-[var(--color-text-muted)] font-medium">Overall Progress</p>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-2xl font-bold text-[var(--color-accent)]">{selectedCourse.progress}%</span>
+                    <span className="text-2xl font-serif font-bold text-oxblood">{selectedCourse.progress}%</span>
                   </div>
                 </div>
 
@@ -305,11 +305,11 @@ export const Courses: React.FC = () => {
 
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-[var(--color-text-secondary)]">{completedUnits} Completed Units</span>
+                    <span className="w-2 h-2 rounded-full bg-forest" />
+                    <span className="text-[var(--color-text-secondary)] font-medium">{completedUnits} Completed Units</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-300" />
+                    <span className="w-2 h-2 rounded-full bg-taupe" />
                     <span className="text-[var(--color-text-muted)]">{remainingUnits} Remaining Units</span>
                   </div>
                 </div>
@@ -349,16 +349,16 @@ export const Courses: React.FC = () => {
                     <div
                       key={unit.id}
                       className={clsx(
-                        'border rounded-2xl transition-all duration-150 overflow-hidden',
+                        'border rounded-xl transition-all duration-150 overflow-hidden',
                         unit.isCompleted
-                          ? 'border-emerald-200 bg-emerald-50/15'
+                          ? 'border-forest/30 bg-forest/5'
                           : 'border-[var(--color-border)] bg-white'
                       )}
                     >
                       {/* Unit Header Bar */}
                       <div
                         onClick={() => toggleUnitExpand(unit.id)}
-                        className="p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 transition-colors select-none"
+                        className="p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-ivory/50 transition-colors select-none"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Checkbox for entire unit */}
@@ -368,8 +368,8 @@ export const Courses: React.FC = () => {
                             className={clsx(
                               'w-6 h-6 rounded-lg flex items-center justify-center transition-colors flex-shrink-0',
                               unit.isCompleted
-                                ? 'bg-emerald-500 text-white shadow-xs'
-                                : 'border-2 border-[var(--color-border)] hover:border-emerald-400 text-transparent'
+                                ? 'bg-forest text-white shadow-xs'
+                                : 'border-2 border-[var(--color-border)] hover:border-forest text-transparent'
                             )}
                             title={unit.isCompleted ? 'Mark Unit as Pending' : 'Mark Entire Unit Complete'}
                           >
@@ -381,7 +381,7 @@ export const Courses: React.FC = () => {
                               <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                                 Unit {unit.unitNumber}
                               </span>
-                              <span className="font-bold text-sm text-[var(--color-text-primary)] truncate">
+                              <span className="font-serif font-bold text-base text-[var(--color-text-primary)] truncate">
                                 {unit.name}
                               </span>
                               <Badge color={unit.isCompleted ? 'green' : 'gray'} className="text-[10px]">
@@ -397,7 +397,7 @@ export const Courses: React.FC = () => {
                         {/* Progress bar and toggle arrow */}
                         <div className="flex items-center gap-4 flex-shrink-0">
                           <div className="hidden sm:block w-28">
-                            <ProgressBar value={unitPercent} height="xs" color={unit.isCompleted ? 'green' : 'indigo'} />
+                            <ProgressBar value={unitPercent} height="xs" color={unit.isCompleted ? 'green' : 'oxblood'} />
                           </div>
                           <div className="text-[var(--color-text-muted)]">
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -407,7 +407,7 @@ export const Courses: React.FC = () => {
 
                       {/* Topics Checklist (Collapsible) */}
                       {isExpanded && (
-                        <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border)]/60 bg-slate-50/50">
+                        <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border)]/60 bg-ivory/30">
                           <div className="space-y-2 mt-2">
                             <p className="text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
                               Unit Topics ({unit.topics?.length || 0})
@@ -419,8 +419,8 @@ export const Courses: React.FC = () => {
                                 className={clsx(
                                   'flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors cursor-pointer select-none',
                                   topic.isCompleted
-                                    ? 'bg-white border-emerald-200 text-slate-800'
-                                    : 'bg-white border-[var(--color-border)] hover:border-[var(--color-accent)] text-slate-700'
+                                    ? 'bg-white border-forest/30 text-charcoal'
+                                    : 'bg-white border-[var(--color-border)] hover:border-oxblood text-charcoal'
                                 )}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
@@ -428,13 +428,13 @@ export const Courses: React.FC = () => {
                                     className={clsx(
                                       'w-4 h-4 rounded flex items-center justify-center transition-colors flex-shrink-0',
                                       topic.isCompleted
-                                        ? 'bg-emerald-500 text-white'
+                                        ? 'bg-forest text-white'
                                         : 'border border-[var(--color-border)]'
                                     )}
                                   >
                                     {topic.isCompleted && <Check className="w-3 h-3 stroke-[3]" />}
                                   </div>
-                                  <span className={clsx('font-medium truncate', topic.isCompleted && 'line-through text-slate-400')}>
+                                  <span className={clsx('font-medium truncate', topic.isCompleted && 'line-through text-secondary/60')}>
                                     {topic.name}
                                   </span>
                                 </div>
@@ -449,7 +449,7 @@ export const Courses: React.FC = () => {
                                   >
                                     {topic.difficulty}
                                   </Badge>
-                                  <span className={clsx('text-[11px] font-semibold', topic.isCompleted ? 'text-emerald-600' : 'text-slate-400')}>
+                                  <span className={clsx('text-[11px] font-semibold', topic.isCompleted ? 'text-forest' : 'text-[var(--color-text-muted)]')}>
                                     {topic.isCompleted ? 'Done' : 'To do'}
                                   </span>
                                 </div>

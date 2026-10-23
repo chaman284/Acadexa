@@ -20,8 +20,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onSendMessage,
   isLoading = false,
   suggestedPrompts = [],
-  type,
-  botName = 'AI Tutor',
+  botName = 'Academic Tutor',
   botSubtitle = 'Ask me anything academic',
 }) => {
   const { user } = useAuth();
@@ -46,56 +45,51 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const accentColor = type === 'tutor' ? 'var(--color-accent)' : '#0ea5e9';
-
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#FDFBF9]">
       {/* Bot header */}
-      <div
-        className="px-5 py-4 border-b border-[var(--color-border)] flex items-center gap-3"
-        style={{ background: `${accentColor}08` }}
-      >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: accentColor }}
-        >
-          <Sparkles className="w-5 h-5 text-white" />
+      <div className="px-5 py-3.5 border-b border-[#E1D4CA] bg-white flex items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-[10px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center flex-shrink-0 text-[#542536]">
+            <Sparkles className="w-4.5 h-4.5" />
+          </div>
+          <div>
+            <p className="font-semibold text-[#302A2B] text-sm leading-tight">{botName}</p>
+            <p className="text-xs text-[#79666A] font-normal mt-0.5">{botSubtitle}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold text-[var(--color-text-primary)] text-sm">{botName}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">{botSubtitle}</p>
-        </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-[var(--color-success)]" />
-          <span className="text-xs text-[var(--color-text-muted)]">Online</span>
+
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F0F4EF] border border-[#D5DFD4]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#34483A] animate-pulse" />
+          <span className="text-[11px] font-medium text-[#34483A] tracking-wider uppercase">Active</span>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+      {/* Messages viewport */}
+      <div className="flex-1 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-10">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: `${accentColor}15` }}
-            >
-              <Sparkles className="w-8 h-8" style={{ color: accentColor }} />
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-12 my-auto">
+            <div className="w-14 h-14 rounded-[14px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center text-[#542536] shadow-xs">
+              <Sparkles className="w-6 h-6" />
             </div>
-            <div>
-              <p className="font-semibold text-[var(--color-text-primary)] mb-1">
-                How can I help you today?
+            <div className="max-w-md">
+              <p
+                className="text-lg font-normal text-[#302A2B] mb-1.5"
+                style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
+              >
+                How can I assist your studies today?
               </p>
-              <p className="text-sm text-[var(--color-text-muted)]">
-                Choose a suggested question or type your own.
+              <p className="text-xs text-[#79666A] font-normal leading-relaxed">
+                Select a recommended question below or type your inquiry to get step-by-step academic explanations.
               </p>
             </div>
             {suggestedPrompts.length > 0 && (
-              <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+              <div className="flex flex-wrap gap-2 justify-center max-w-lg mt-2">
                 {suggestedPrompts.map((prompt, i) => (
                   <button
                     key={i}
                     onClick={() => onSendMessage(prompt)}
-                    className="text-xs px-3 py-2 rounded-[10px] border border-[var(--color-border)] bg-white hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-light)] hover:text-[var(--color-accent)] text-[var(--color-text-secondary)] transition-all duration-150"
+                    className="text-xs font-medium px-3.5 py-2 rounded-[8px] border border-[#E1D4CA] bg-white hover:bg-[#F7F1E8] text-[#542536] transition-all shadow-xs cursor-pointer text-left hover:border-[#C58D98]"
                   >
                     {prompt}
                   </button>
@@ -109,24 +103,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           <div
             key={msg.id}
             className={clsx(
-              'flex gap-3 animate-fade-in-up',
+              'flex gap-3 animate-fade-in-up items-start',
               msg.role === 'user' && 'flex-row-reverse'
             )}
           >
             {msg.role === 'assistant' ? (
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1"
-                style={{ background: accentColor }}
-              >
-                <Sparkles className="w-4 h-4 text-white" />
+              <div className="w-7 h-7 rounded-[8px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center flex-shrink-0 mt-0.5 text-[#542536]">
+                <Sparkles className="w-3.5 h-3.5" />
               </div>
             ) : (
-              <Avatar name={user?.name || 'You'} size="sm" className="mt-1 flex-shrink-0" />
+              <Avatar name={user?.name || 'You'} size="xs" className="mt-0.5 flex-shrink-0" />
             )}
             <div
               className={clsx(
-                'max-w-[75%] text-sm leading-relaxed',
-                msg.role === 'user' ? 'chat-bubble-user px-4 py-2.5' : 'chat-bubble-bot px-4 py-2.5'
+                'max-w-[78%] text-sm leading-relaxed rounded-[14px] px-4 py-2.5 shadow-xs whitespace-pre-wrap',
+                msg.role === 'user'
+                  ? 'bg-[#542536] text-white rounded-tr-xs font-normal'
+                  : 'bg-white border border-[#E1D4CA] text-[#302A2B] rounded-tl-xs font-normal'
               )}
             >
               {msg.content}
@@ -135,17 +128,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         ))}
 
         {isLoading && (
-          <div className="flex gap-3 animate-fade-in">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: accentColor }}
-            >
-              <Loader2 className="w-4 h-4 text-white animate-spin" />
+          <div className="flex gap-3 animate-fade-in items-start">
+            <div className="w-7 h-7 rounded-[8px] bg-[#F7F1E8] border border-[#E1D4CA] flex items-center justify-center flex-shrink-0 mt-0.5 text-[#542536]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             </div>
-            <div className="chat-bubble-bot px-4 py-2.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-[var(--color-text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-[var(--color-text-muted)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-[var(--color-text-muted)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="bg-white border border-[#E1D4CA] rounded-[14px] rounded-tl-xs px-4 py-2.5 shadow-xs flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-[#542536] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-[#542536] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-[#542536] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         )}
@@ -153,14 +143,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested prompts when there are messages */}
+      {/* Suggested prompts strip when conversation has messages */}
       {messages.length > 0 && suggestedPrompts.length > 0 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto">
+        <div className="px-5 py-2 flex gap-2 overflow-x-auto bg-[#F7F1E8]/50 border-t border-[#E1D4CA]/50">
           {suggestedPrompts.slice(0, 3).map((prompt, i) => (
             <button
               key={i}
               onClick={() => onSendMessage(prompt)}
-              className="text-xs px-3 py-1.5 rounded-[8px] border border-[var(--color-border)] bg-white hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] text-[var(--color-text-muted)] transition-all duration-150 flex-shrink-0"
+              className="text-[11px] font-medium px-3 py-1.5 rounded-[7px] border border-[#E1D4CA] bg-white hover:bg-[#F7F1E8] text-[#542536] transition-all flex-shrink-0 cursor-pointer shadow-xs hover:border-[#C58D98]"
             >
               {prompt}
             </button>
@@ -168,29 +158,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
 
-      {/* Input */}
-      <div className="p-4 border-t border-[var(--color-border)]">
-        <div className="flex items-end gap-2 bg-[var(--color-muted)] rounded-[12px] p-1.5">
+      {/* Input container */}
+      <div className="p-4 border-t border-[#E1D4CA] bg-white">
+        <div
+          className="flex items-end gap-2 bg-[#F7F1E8]/40 focus-within:bg-white rounded-[12px] p-2 border border-[#E1D4CA] focus-within:border-[#542536] focus-within:ring-2 focus-within:ring-[#542536]/10 transition-all shadow-xs"
+        >
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder="Ask a question about your courses, quizzes, or concepts..."
             rows={1}
-            className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none resize-none px-2 py-1.5 max-h-32"
-            style={{ lineHeight: '1.4' }}
+            className="flex-1 bg-transparent text-sm text-[#302A2B] placeholder:text-[#79666A]/70 outline-none resize-none px-2 py-1 max-h-32 leading-relaxed"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-all duration-150 flex-shrink-0 disabled:opacity-40"
-            style={{ background: accentColor }}
+            className="w-9 h-9 rounded-[8px] bg-[#542536] hover:bg-[#321923] text-white flex items-center justify-center transition-all flex-shrink-0 disabled:opacity-40 cursor-pointer shadow-xs active:scale-95"
+            aria-label="Send message"
           >
-            <Send className="w-3.5 h-3.5 text-white" />
+            <Send className="w-4 h-4 text-white" />
           </button>
         </div>
-        <p className="text-[10px] text-[var(--color-text-muted)] text-center mt-2">
-          Press Enter to send · Shift+Enter for new line
+        <p className="text-[11px] text-[#79666A] text-center mt-2 font-normal">
+          Press <kbd className="px-1.5 py-0.5 rounded bg-[#F7F1E8] border border-[#E1D4CA] text-[10px]">Enter</kbd> to send · <kbd className="px-1.5 py-0.5 rounded bg-[#F7F1E8] border border-[#E1D4CA] text-[10px]">Shift+Enter</kbd> for new line
         </p>
       </div>
     </div>

@@ -25,29 +25,29 @@ export const LearningGaps: React.FC = () => {
 
       {/* Summary cards */}
       <div className="grid sm:grid-cols-3 gap-4">
-        <div className="card p-4 border-l-4 border-l-[var(--color-success)]">
+        <div className="card p-5 border-l-4 border-l-forest bg-white shadow-card">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-4 h-4 text-[var(--color-success)]" />
+            <CheckCircle className="w-4 h-4 text-forest" />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">Strong Topics</span>
           </div>
-          <p className="text-2xl font-bold text-[var(--color-success)]">{strong.length}</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Performing well</p>
+          <p className="text-3xl font-serif font-bold text-forest">{strong.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Performing with mastery</p>
         </div>
-        <div className="card p-4 border-l-4 border-l-[var(--color-danger)]">
+        <div className="card p-5 border-l-4 border-l-danger bg-white shadow-card">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-4 h-4 text-[var(--color-danger)]" />
+            <AlertTriangle className="w-4 h-4 text-danger" />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">Needs Practice</span>
           </div>
-          <p className="text-2xl font-bold text-[var(--color-danger)]">{needsPractice.length}</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Focus on these</p>
+          <p className="text-3xl font-serif font-bold text-danger">{needsPractice.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Focus areas flagged for review</p>
         </div>
-        <div className="card p-4 border-l-4 border-l-[var(--color-warning)]">
+        <div className="card p-5 border-l-4 border-l-brass bg-white shadow-card">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-[var(--color-warning)]" />
+            <TrendingUp className="w-4 h-4 text-brass" />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">Improving</span>
           </div>
-          <p className="text-2xl font-bold text-[var(--color-warning)]">{improving.length}</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Making progress</p>
+          <p className="text-3xl font-serif font-bold text-brass">{improving.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Active progress identified</p>
         </div>
       </div>
 
@@ -121,41 +121,41 @@ export const LearningGaps: React.FC = () => {
 
         {/* Right Column: Recommendations */}
         <div className="space-y-4">
-          <h2 className="font-semibold text-[var(--color-text-primary)]">Recommended Practice</h2>
+          <h2 className="font-serif font-bold text-lg text-[var(--color-text-primary)]">Recommended Academic Practice</h2>
           {studentLearningGaps.map(gap => (
-            <div key={gap.topicId} className="card p-4">
+            <div key={gap.topicId} className="card p-5 bg-white border border-[var(--color-border)] shadow-card hover:shadow-card-hover transition-all">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <Badge color={gap.gapSeverity === 'high' ? 'red' : gap.gapSeverity === 'medium' ? 'amber' : 'green'}>
                       {gap.gapSeverity === 'high' ? 'High Priority' : gap.gapSeverity === 'medium' ? 'Medium Priority' : 'Low Priority'}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-[var(--color-text-primary)] text-sm">{gap.topicName}</h3>
-                  <p className="text-xs text-[var(--color-text-muted)]">{gap.courseName}</p>
+                  <h3 className="font-serif font-bold text-[var(--color-text-primary)] text-base">{gap.topicName}</h3>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{gap.courseName}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-[var(--color-text-muted)]">Current</p>
-                  <p className="font-bold text-[var(--color-text-primary)]">{gap.currentScore}%</p>
+                  <p className="font-serif font-bold text-lg text-[var(--color-text-primary)]">{gap.currentScore}%</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 mb-3">
-                <ProgressBar value={gap.currentScore} max={100} height="xs" className="flex-1" />
+                <ProgressBar value={gap.currentScore} max={100} height="xs" color={gap.gapSeverity === 'high' ? 'red' : 'oxblood'} className="flex-1" />
                 <Target className="w-3.5 h-3.5 text-[var(--color-text-muted)] flex-shrink-0" />
-                <span className="text-xs text-[var(--color-text-muted)] flex-shrink-0">{gap.targetScore}%</span>
+                <span className="text-xs font-semibold text-[var(--color-text-secondary)] flex-shrink-0">{gap.targetScore}%</span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
-                  <BookOpen className="w-3 h-3" />
-                  {gap.recommendedQuestions} practice questions
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border)]">
+                <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-oxblood" />
+                  {gap.recommendedQuestions} practice questions available
                 </span>
                 <button
                   onClick={() => navigate('/student/question-bank')}
-                  className="text-xs text-[var(--color-accent)] font-semibold flex items-center gap-1 hover:underline"
+                  className="text-xs text-oxblood font-semibold flex items-center gap-1 hover:underline cursor-pointer"
                 >
-                  Start Practice <ArrowRight className="w-3 h-3" />
+                  Start Practice <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

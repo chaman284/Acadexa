@@ -115,7 +115,7 @@ export const FacultySettings: React.FC = () => {
             <button
               onClick={() => handleToggle('emailNotifications')}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.emailNotifications ? 'bg-[var(--color-accent)]' : 'bg-gray-300'
+                settings.emailNotifications ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
               <div
@@ -129,7 +129,7 @@ export const FacultySettings: React.FC = () => {
           <div className="py-3.5 flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-indigo-500" />
+                <Bell className="w-4 h-4 text-oxblood" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Quiz Submission Alerts
                 </span>
@@ -141,7 +141,7 @@ export const FacultySettings: React.FC = () => {
             <button
               onClick={() => handleToggle('submissionAlerts')}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.submissionAlerts ? 'bg-[var(--color-accent)]' : 'bg-gray-300'
+                settings.submissionAlerts ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
               <div
@@ -155,7 +155,7 @@ export const FacultySettings: React.FC = () => {
           <div className="py-3.5 flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <AlertCircle className="w-4 h-4 text-brass" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Low Performance & Learning Gap Alerts
                 </span>
@@ -167,7 +167,7 @@ export const FacultySettings: React.FC = () => {
             <button
               onClick={() => handleToggle('lowPerformanceAlerts')}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.lowPerformanceAlerts ? 'bg-[var(--color-accent)]' : 'bg-gray-300'
+                settings.lowPerformanceAlerts ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
               <div
@@ -181,7 +181,7 @@ export const FacultySettings: React.FC = () => {
           <div className="py-3.5 flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-purple-500" />
+                <Bell className="w-4 h-4 text-oxblood" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Departmental Announcements
                 </span>
@@ -193,7 +193,7 @@ export const FacultySettings: React.FC = () => {
             <button
               onClick={() => handleToggle('departmentAnnouncements')}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.departmentAnnouncements ? 'bg-[var(--color-accent)]' : 'bg-gray-300'
+                settings.departmentAnnouncements ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
               <div
@@ -207,7 +207,7 @@ export const FacultySettings: React.FC = () => {
           <div className="py-3.5 flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                <FileSpreadsheet className="w-4 h-4 text-forest" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Weekly Analytics Digest
                 </span>
@@ -219,7 +219,7 @@ export const FacultySettings: React.FC = () => {
             <button
               onClick={() => handleToggle('weeklyReportDigest')}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.weeklyReportDigest ? 'bg-[var(--color-accent)]' : 'bg-gray-300'
+                settings.weeklyReportDigest ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
               <div
@@ -295,7 +295,7 @@ export const FacultySettings: React.FC = () => {
             <button
               onClick={() => handleToggle('soundEffects')}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.soundEffects ? 'bg-[var(--color-accent)]' : 'bg-gray-300'
+                settings.soundEffects ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
               <div
@@ -314,13 +314,13 @@ export const FacultySettings: React.FC = () => {
         <div className="space-y-3 text-xs">
           <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
             <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Role Verification
+              <ShieldCheck className="w-4 h-4 text-forest" /> Role Verification
             </span>
-            <Badge color="indigo">Faculty Access Validated</Badge>
+            <Badge color="oxblood">Faculty Access Validated</Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-indigo-500" /> Local Storage Sync
+              <Database className="w-4 h-4 text-oxblood" /> Local Storage Sync
             </span>
             <span className="text-[var(--color-text-secondary)] font-medium">Auto-synced</span>
           </div>
