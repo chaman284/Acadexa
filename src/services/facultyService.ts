@@ -18,24 +18,21 @@ export const defaultFacultySettings: FacultySettings = {
 };
 
 export const defaultFacultyProfile: FacultyProfile = {
-  id: 'cmvclxnlc0007x24jc9dot6ua',
-  name: 'Demo Faculty',
-  email: 'faculty@college.edu',
-  phone: '+91 98451 23456',
-  designation: 'Associate Professor',
+  id: '',
+  name: 'Faculty',
+  email: '',
+  phone: '',
+  designation: 'Faculty Member',
   department: 'Computer Science',
-  employeeId: 'FAC-CS-1042',
-  joiningYear: '2018',
-  officeLocation: 'Academic Complex Block 3, 2nd Floor',
-  cabinNumber: 'Room 208-B',
-  qualifications: 'Ph.D. in Computer Science (IIT Bombay), M.Tech (CS)',
-  bio: 'Associate Professor specializing in Advanced Algorithms, Distributed Systems, and Database Architectures.',
-  officeHours: 'Mon, Wed, Fri: 2:00 PM – 4:00 PM',
-  subjectsTaught: [
-    'CV (BAI501)',
-    'Data Structures and Application (BAI303P)',
-  ],
-  assignedClasses: ['Semester 5 · Section A', 'Semester 3 · Section A'],
+  employeeId: '',
+  joiningYear: '',
+  officeLocation: '',
+  cabinNumber: '',
+  qualifications: '',
+  bio: '',
+  officeHours: '',
+  subjectsTaught: [],
+  assignedClasses: [],
 };
 
 export const facultyService = {
@@ -75,19 +72,13 @@ export const facultyService = {
           const assignments = u.faculty?.assignments || [];
 
           // Derive real subjects and classes if assignments exist
-          const hasOldMockSubjects = Array.isArray(localData.subjectsTaught) &&
-            localData.subjectsTaught.some(s => s.includes('CS3101') || s.includes('CS7201'));
-
           const realSubjects: string[] = assignments.length > 0
             ? Array.from(new Set<string>(assignments.map((a: any) => `${a.subject?.name} (${a.subject?.code})`)))
-            : hasOldMockSubjects ? defaultFacultyProfile.subjectsTaught : localData.subjectsTaught;
-
-          const hasOldMockClasses = Array.isArray(localData.assignedClasses) &&
-            localData.assignedClasses.some(c => c.includes('5B') || c.includes('7C'));
+            : localData.subjectsTaught;
 
           const realClasses: string[] = assignments.length > 0
             ? Array.from(new Set<string>(assignments.map((a: any) => `Semester ${a.section?.semester} · Section ${a.section?.name}`)))
-            : hasOldMockClasses ? defaultFacultyProfile.assignedClasses : localData.assignedClasses;
+            : localData.assignedClasses;
 
           const realDepartment = assignments[0]?.subject?.department?.name ||
             assignments[0]?.section?.department?.name ||

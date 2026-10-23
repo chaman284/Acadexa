@@ -1,15 +1,15 @@
 # 🎓 Acadexa
 
 > **Assess. Identify. Improve.**  
-> An enterprise-grade, department-level Academic Intelligence, Gamified Assessment, and Learning Gap Remediation platform engineered for higher education institutions.
+> An enterprise-grade, department-level Academic Intelligence, Adaptive Assessment, and Learning Gap Remediation platform engineered for higher education institutions.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React 19](https://img.shields.io/badge/React-19.2-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Express 5](https://img.shields.io/badge/Express-5.2-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
-[![Prisma ORM](https://img.shields.io/badge/Prisma-5.22-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%208-61dafb?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript%205.x-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express%205-339933?logo=node.js)](https://expressjs.com/)
+[![Prisma](https://img.shields.io/badge/ORM-Prisma%205.22-2d3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/Database-Supabase%20%2F%20PostgreSQL-336791?logo=postgresql)](https://supabase.com/)
+[![Google Gemini](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-4285f4?logo=google)](https://ai.google.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
 [![Oxlint](https://img.shields.io/badge/Linter-Oxlint-orange?style=flat-square)](https://oxc.rs/)
 
 ---
@@ -43,11 +43,18 @@ If you are an **AI coding agent** analyzing or modifying this repository, review
 - [Overview & Core Value](#-overview--core-value)
 - [Key Highlights](#-key-highlights)
 - [System Architecture](#-system-architecture)
+- [Main Topics & Curriculum Coverage](#-main-topics--curriculum-coverage)
+- [Core Feature Modules](#-core-feature-modules)
+  - [1. Knowledge Tracing & Learning Gaps Engine](#1-knowledge-tracing--learning-gaps-engine)
+  - [2. Question Bank & Human-in-the-Loop AIG Workflow](#2-question-bank--human-in-the-loop-aig-workflow)
+  - [3. Dual AI Chatbot Ecosystem](#3-dual-ai-chatbot-ecosystem)
+  - [4. Interactive Weekly Quiz Engine](#4-interactive-weekly-quiz-engine)
+  - [5. Faculty & Department Intelligence Portal](#5-faculty--department-intelligence-portal)
 - [Role-Based Feature Matrix](#-role-based-feature-matrix)
   - [1. Student Experience](#1-student-experience)
   - [2. Faculty Experience](#2-faculty-experience)
   - [3. Administrator Experience](#3-administrator-experience)
-  - [4. Cross-Cutting Systems (AI Tutor & Notifications)](#4-cross-cutting-systems)
+  - [4. Cross-Cutting Systems](#4-cross-cutting-systems)
 - [Tech Stack Details](#-tech-stack-details)
 - [Database Schema & ERD (Prisma)](#-database-schema--erd-prisma)
 - [Comprehensive REST API Reference](#-comprehensive-rest-api-reference)
@@ -55,14 +62,15 @@ If you are an **AI coding agent** analyzing or modifying this repository, review
 - [Getting Started & Local Setup](#-getting-started--local-setup)
   - [Prerequisites](#prerequisites)
   - [1. Clone Repository](#1-clone-repository)
-  - [2. Backend Setup](#2-backend-setup)
-  - [3. Frontend Setup](#3-frontend-setup)
+  - [2. Backend Setup & Supabase Connection](#2-backend-setup--supabase-connection)
+  - [3. Database Migration & Seed](#3-database-migration--seed)
+  - [4. Frontend Setup](#4-frontend-setup)
 - [Default Demo Accounts](#-default-demo-accounts)
-- [Environment Variables](#-environment-variables)
+- [Environment Variables Guide](#-environment-variables-guide)
 - [Available Scripts](#-available-scripts)
 - [Design System & UI Conventions](#-design-system--ui-conventions)
 - [Future Roadmap](#-future-roadmap)
-- [License](#-license)
+- [Contributing & License](#-contributing--license)
 
 ---
 
@@ -70,30 +78,35 @@ If you are an **AI coding agent** analyzing or modifying this repository, review
 
 Traditional academic learning environments face a recurring structural problem: examinations and test results evaluate performance after the teaching cycle has already concluded. Faculty receive letter grades rather than diagnostic insights, and students move on to advanced coursework with undetected prerequisite learning gaps.
 
-**Acadexa** bridges this gap through a high-frequency, telemetry-driven assessment loop:
+**Acadexa** transforms classroom evaluation into an automated, actionable feedback cycle:
 
 ```mermaid
 flowchart LR
-    A["1. ASSESS"] -->|Scheduled Quizzes & Practice Tests| B["2. IDENTIFY"]
-    B -->|Topic Failure Telemetry & Gap Matrix| C["3. IMPROVE"]
-    C -->|Targeted Remedial Quizzes & AI Mentoring| A
+    A["1. ASSESS<br/>Weekly Micro-Quizzes & Timed Tests"] -->|Item-Level Telemetry| B["2. IDENTIFY<br/>Knowledge Tracing & Bloom Mapping"]
+    B -->|Flagged Gaps & Weakness Matrix| C["3. IMPROVE<br/>Remedial Quizzes & AI Mentoring"]
+    C -->|Targeted Interventions| A
 ```
 
 - **Assess**: Weekly micro-quizzes and practice sets run on an engaging, Kahoot-style proctored test engine.
-- **Identify**: Student responses map directly to curricular topics, generating live learning gap matrices for students, sections, and department heads.
+- **Identify**: Student responses map directly to curricular topics, generating live learning gap matrices for students, sections, and department heads based on Bayesian knowledge tracing.
 - **Improve**: Faculty dispatch single-click remedial quizzes targeting specific weak syllabus topics, while students utilize the integrated Google Gemini AI Academic Tutor for pedagogical assistance.
 
 ---
 
 ## ⚡ Key Highlights
 
+- **🧠 Continuous Knowledge Tracing Engine**: Tracks item-level telemetry across quiz submissions. Aggregates historical accuracy grouped by **Topic** and **Bloom's Cognitive Level**.
+- **🎯 Automated Learning Gap Flagging**: If a student's topic mastery drops below **60%**, Acadexa automatically flags it as a **"Learning Gap"** (`CRITICAL`, `HIGH`, or `MODERATE` severity) and generates targeted remedial recommendations.
+- **✨ Automated Item Generation (AIG) with Human-in-the-Loop**: Faculty generate curriculum-aligned MCQs using **Google Gemini 1.5 Flash** mapped to Bloom's Taxonomy. Questions enter a `PENDING_APPROVAL` queue where faculty can verify, edit, or reject them before they enter active quizzes.
+- **🤖 Dual AI Chatbot Ecosystem**:
+  1. **Academic AI Tutor**: Pedagogical conversational partner guiding students through coding and algorithmic problems with Socratic hints.
+  2. **Department Information Chatbot**: Instant answers to departmental queries—exam schedules, symposiums, faculty office hours, and academic calendars grounded in departmental data.
 - **🎮 High-Engagement Quiz Engine**: Fullscreen proctored assessment screen featuring Web Audio API synthesized tones (chords for correct answers, low buzzers for incorrect), streak multipliers, countdown timers, four-color Kahoot-style options, and celebratory Canvas Confetti.
-- **🧠 Curricular Learning Gap Diagnostics**: Automatic mapping of failed quiz items to fine-grained syllabus topics (e.g., *Arrays*, *Binary Search Trees*, *Normalization*), classifying student proficiency into **Mastered**, **Moderate**, and **Needs Attention**.
+- **📊 Multi-Modal Mastery Visualizations**: Interactive **Radar Charts**, **Bloom's Cognitive Level Bar Charts**, and a **Heatmap Grid Matrix** (cross-tabulating topics × Bloom's levels) powered by **Recharts**.
 - **👩‍🏫 Dual-Stage Faculty Workspace**: Class switcher allowing faculty to seamlessly toggle between assigned semesters and sections (e.g., *CS 5th Sem - Section A*), access aggregated grade distributions, and initiate remedial interventions.
 - **🏛️ Institutional Admin Console**: Complete management of departments, semesters, sections, faculty course assignments, student enrollments, course catalogs, and campus-wide notifications.
 - **📄 Instant Academic PDF Generator**: Built-in client-side engine to export cleanly formatted academic question papers with answer keys directly to print/PDF from the question bank.
-- **🤖 Contextual AI Academic Tutor**: Powered by **Google Gemini 1.5 Flash**, offering conversational guidance, hints, and Socratic breakdowns without giving away quiz answers.
-- **🔔 Real-Time Notification System**: Popover notification hub delivering alerts for new quizzes, course updates, remedial assignments, and administrative notices.
+- **🛡️ Hybrid Database & Resilient Offline Fallback**: Native support for **Supabase Cloud PostgreSQL** and local PostgreSQL, with resilient mock fallbacks for zero-friction evaluations.
 
 ---
 
@@ -118,22 +131,126 @@ graph TD
     end
 
     subgraph Storage ["Data & External Services"]
-        Postgres[("PostgreSQL Database (Supabase / Local)")]
+        DB[("PostgreSQL Database (Supabase)")]
         GeminiAPI["Google Gemini 1.5 Flash API"]
     end
 
     UI --> Router
-    Router --> AuthCtx
-    AuthCtx --> Services
+    Router --> Services
     Services --> Axios
-    Services -.->|Fallback on network error| Fallback
-    Axios -->|HTTP Requests + Bearer Token| API
+    Services -.-> Fallback
+    Axios -->|HTTP Requests + Bearer JWT| API
     API --> JWTMiddleware
     JWTMiddleware --> Controllers
     Controllers --> PrismaORM
-    PrismaORM --> Postgres
-    Controllers -->|AI Inquiries| GeminiAPI
+    PrismaORM --> DB
+    Controllers -->|AI Generation & Tutoring| GeminiAPI
 ```
+
+---
+
+## 📚 Main Topics & Curriculum Coverage
+
+Acadexa is initialized with a robust computer science curriculum (Data Structures & Algorithms — `CS-201`) evaluated against **Bloom's Revised Taxonomy**:
+
+### 1. Core Syllabus Topics
+- **Arrays**: Time complexities, sequential access, two-pointer techniques, Kadane's maximum subarray sum, and in-place manipulations. *(Baseline mastery: ~92%)*
+- **Binary Trees & BST**: Tree traversals (Inorder, Preorder, Postorder, Level-order), AVL tree balancing factors, worst-case search complexities in skewed BSTs, and binary heap invariants. *(Baseline mastery: ~45% — Flagged Learning Gap)*
+- **Stacks & Queues**: LIFO/FIFO principles, monotonic stack patterns (Next Greater Element), infix-to-postfix conversion, and circular queue buffer management. *(Baseline mastery: ~80%)*
+- **Graph Algorithms**: BFS/DFS traversal orderings, cycle detection, Dijkstra's single-source shortest path, and Prim's/Kruskal's Minimum Spanning Tree (MST). *(Baseline mastery: ~55% — Flagged Learning Gap)*
+- **Dynamic Programming & Recursion**: Optimal substructure, overlapping subproblems, memoization vs. tabulation, and Knapsack problem states. *(Baseline mastery: ~38% — Flagged Learning Gap)*
+
+### 2. Bloom's Taxonomy Cognitive Levels
+Every question and attempt in Acadexa is cataloged with an explicit cognitive level:
+- **`CL1_REMEMBER`**: Recall facts, syntax, definitions, and standard asymptotic bounds (e.g., array index lookup complexity $O(1)$).
+- **`CL2_UNDERSTAND`**: Explain algorithm behavior, traversal outputs, and conceptual differences (e.g., why inorder traversal of a BST yields sorted order).
+- **`CL3_APPLY`**: Implement techniques in specific algorithmic scenarios (e.g., using Kadane's algorithm or monotonic stacks).
+- **`CL4_ANALYZE`**: Deconstruct efficiency, contrast algorithms, and analyze worst-case degradation (e.g., analyzing $O(n)$ search in unbalanced BSTs).
+- **`CL5_EVALUATE`**: Validate invariants, critique algorithm choices, and assess boundary constraints.
+- **`CL6_CREATE`**: Formulate novel solutions, design composite data structures, and synthesize hybrid algorithmic routines.
+
+---
+
+## 🧩 Core Feature Modules
+
+### 1. Knowledge Tracing & Learning Gaps Engine
+
+Located in `server/src/services/analytics.ts` & `server/src/services/analyticsService.ts`:
+
+- **Historical Accuracy Aggregation**: When a student completes any quiz, the engine queries all their historical `QuizAttempt` and `AttemptAnswer` records, grouping answers by `topic` and `cognitiveLevel`.
+- **Automatic 60% Passing Threshold**:
+  $$\text{Mastery Score} = \left(\frac{\text{Correct Answers in Topic}}{\text{Total Attempts in Topic}}\right) \times 100$$
+  - If $\text{Mastery Score} < 60\%$, the topic is immediately flagged:
+    - **`CRITICAL` Severity**: Mastery $< 45%$ (e.g., Dynamic Programming: $38\%$, Trees: $45\%$).
+    - **`HIGH` Severity**: Mastery $45\% - 59\%$ (e.g., Graph Algorithms: $55\%$).
+    - **`MODERATE` Severity**: Mastery $60\% - 74\%$.
+    - **`MASTERED`**: Mastery $\ge 75\%$ (e.g., Arrays: $92\%$, Stacks: $80\%$).
+- **Multi-Modal Visualizations** on `src/pages/student/LearningGaps.tsx` & `src/pages/student/Dashboard.tsx`:
+  - **Radar Chart**: Displays the student's mastery polygon overlaying the dashed red 60% passing benchmark.
+  - **Heatmap Grid**: Cross-tabulation table displaying accuracy percentages across Bloom's levels with color-coded heat badges.
+  - **Bloom's Cognitive Bar Chart**: Aggregated proficiency bar chart across all six cognitive tiers.
+- **Actionable "Recommended Practice"**:
+  - Each flagged weak topic displays a dedicated **"Recommended Practice"** button.
+  - Clicking launches a targeted Remedial Practice modal with tailored MCQs, instant validation, explanation feedback, and live score updates.
+
+---
+
+### 2. Question Bank & Human-in-the-Loop AIG Workflow
+
+Located in `server/src/routes/questions.ts` and `src/pages/faculty/QuestionBank.tsx`:
+
+- **Automated Item Generation (AIG) via Gemini 1.5 Flash**:
+  - Faculty specify: `Subject`, `Topic`, `Difficulty` (`EASY`, `MEDIUM`, `HARD`), and `Bloom's Cognitive Level` (`CL1_REMEMBER` to `CL6_CREATE`).
+  - Calls Gemini 1.5 Flash with structured prompt engineering to generate questions with 4 distinct options, exactly 1 correct answer, and an in-depth pedagogical explanation.
+- **Human-in-the-Loop Approval Queue**:
+  - Newly generated questions enter the database with status `PENDING_APPROVAL`.
+  - Faculty review the generated item on their dashboard to **Approve**, **Edit**, or **Reject** questions.
+- **Question Paper Bank**:
+  - Institutional repository of past university and mid-term exam papers.
+  - Includes PDF generation capabilities via `questionPdfGenerator.ts` for offline test printing.
+
+---
+
+### 3. Dual AI Chatbot Ecosystem
+
+Acadexa features two distinct conversational agents tailored for different needs:
+
+#### A. Academic AI Study Tutor
+- **UI Location**: `src/pages/student/AcademicChatbot.tsx` + Floating Global Widget (`NexusFloatingWidget.tsx`).
+- **Backend Route**: `POST /api/chatbot` (powered by Google Gemini 1.5 Flash).
+- **Pedagogical Persona**: Acts as an academic tutor. Uses Socratic guidance, analogies, and conceptual hints rather than directly outputting homework solutions.
+
+#### B. Department Information & Campus Assistant
+- **UI Location**: `src/pages/student/DepartmentInfo.tsx`.
+- **Backend Route**: Grounded in Prisma models `DeptInformation` and `SyllabusDocument`.
+- **Capabilities**:
+  - **Examinations**: Official schedules, timetable slots, and room allocations.
+  - **Events & Symposiums**: Department symposiums, hackathons, and tech seminars.
+  - **Faculty Directory**: Room numbers, office hours, and subject assignments.
+  - **Academic Policies**: Attendance rules, grading rubrics, and holiday calendars.
+
+---
+
+### 4. Interactive Weekly Quiz Engine
+
+Located in `src/pages/student/QuizScreen.tsx` and `src/pages/student/QuizResult.tsx`:
+
+- **Proctored Fullscreen Experience**: Automatic fullscreen prompt to minimize external distractions.
+- **High-Contrast Option Tiles**: Clean, distinct, accessibility-tested color tiles (Olive, Purple, Orange, Teal) with clear A-B-C-D letter badges and instant visual feedback.
+- **Web Audio API Sound Synthesis**: Polyphonic synthesized chords for correct answers, low buzzers for incorrect answers, and transition audio.
+- **Combo Multiplier & Confetti**: Streak bonuses ($100 + \text{combo} \times 20$ points) and celebratory canvas confetti.
+- **Telemetry Recording**: Evaluates attempts, calculates time-taken, and immediately triggers Knowledge Tracing updates.
+
+---
+
+### 5. Faculty & Department Intelligence Portal
+
+Located in `src/pages/faculty/`:
+
+- **Class Selector & Section Switching**: Switch between assigned semesters and sections (e.g., *CS 5th Sem - Section A*).
+- **Class Analytics Dashboard**: Aggregate score distributions, average performance metrics, participation rates, and difficult question heatmaps.
+- **3-Step Quiz Builder**: Create weekly or remedial quizzes by selecting topics, choosing approved question bank items, and scheduling target dates.
+- **Remedial Assignment Dispatch**: One-click dispatch of remedial quizzes targeted at students identified as having learning gaps.
 
 ---
 
@@ -166,6 +283,7 @@ graph TD
 | **Quiz Management** | `/faculty/quizzes` | Complete assessment lifecycle management (Draft, Active, Completed) with one-click remedial quiz creation. |
 | **Learning Gap Diagnostics**| `/faculty/learning-gaps` | Cohort-wide topic weakness identification highlighting concepts needing lecture re-teaching. |
 | **Question Paper Bank** | `/faculty/paper-bank` | Repository of institutional past mid-term and semester exam papers, reference answers, and syllabus documents. |
+| **Question Bank & AI** | `/faculty/question-bank` | Review AI-generated questions, approve items for active quizzes, or author new MCQs. |
 | **Faculty Profile & Settings**| `/faculty/profile`, `/faculty/settings` | Faculty credentials, subject designations, and portal configurations. |
 
 ### 3. Administrator Experience
@@ -177,328 +295,202 @@ graph TD
 | **Course Catalog Management**| `/admin/courses` | Creation, modification, and deletion of subjects, course codes, credits, and semester associations. |
 | **Student Management** | `/admin/students` | Student records, roll number assignment, section transfers, and academic status monitoring. |
 | **Section Management** | `/admin/sections` | Department section provisioning (e.g., Year 3, Semester 5, Section A/B/C) with student roster counts. |
-| **Notifications Hub** | `/admin/notifications` | Campus broadcast creation: dispatch targeted alerts to all users, specific roles, or individual accounts. |
-| **Admin Profile & Settings** | `/admin/profile`, `/admin/settings` | Administrative credentials, institutional metadata, and system preferences. |
+| **Broadcast Notifications** | `/admin/notifications` | Creation and dispatch of institutional announcements across students, faculty, or all campus users. |
+| **Admin Profile & Settings** | `/admin/profile`, `/admin/settings` | Institution settings, admin credentials, and platform maintenance toggles. |
 
 ### 4. Cross-Cutting Systems
 
-- **Interactive Notification Center**: Reusable popover component (`NotificationPopover.tsx`) in the dashboard navbar showing real-time notifications categorized by type (`quiz`, `course`, `learning_gap`, `announcement`, `system`).
-- **Syllabus & Document Management**: Institutional storage of curriculum documents linked to subjects and topics.
-- **Client-Side PDF Generation**: `src/services/questionPdfGenerator.ts` compiles question sets into clean, printable academic question papers with formatted keys.
+- **Global Notification Hub**: Topbar dropdown fetching live user notifications from `/api/notifications` with real-time unread badges and one-click mark-as-read.
+- **Persistent AI Chatbot Drawer**: Floating Nexus widget available across student screens for instant academic Q&A.
+- **Client-Side PDF Document Compiler**: Generates print-ready examination question papers directly in the browser via `questionPdfGenerator.ts`.
 
 ---
 
 ## 🛠 Tech Stack Details
 
-### Frontend Application
-- **Core Framework**: [React 19](https://react.dev/) + [Vite 8](https://vitejs.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Routing**: [React Router 7](https://reactrouter.com/) (Browser router with role-gated private routes)
-- **Styling**: [Tailwind CSS 3.4](https://tailwindcss.com/) + CSS Custom Variables Design System
-- **Animations**: [Framer Motion 13](https://www.framer.com/motion/)
-- **Data Visualization**: [Recharts 3](https://recharts.org/)
+### Frontend Architecture
+- **Framework**: [React 19](https://react.dev/) + [Vite 8](https://vitejs.dev/)
+- **Language**: [TypeScript 5.x](https://www.typescriptlang.org/)
+- **Routing**: [React Router 7](https://reactrouter.com/)
+- **Styling**: [Tailwind CSS 3.4](https://tailwindcss.com/) + CSS Custom Properties (Theme tokens)
+- **Component Primitives**: Custom design system (`Button`, `Card`, `Badge`, `Tabs`, `Modal`, `Dropdown`, `ProgressBar`, etc.)
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **Audio & Visual FX**: HTML5 Web Audio API (real-time synthesizer) + [Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)
-- **HTTP Client**: [Axios](https://axios-http.com/) (with JWT interceptors)
-- **BaaS Client**: [Supabase JS Client](https://supabase.com/docs/reference/javascript/introduction) (`@supabase/supabase-js`)
-- **Code Linter**: [Oxlint](https://oxc.rs/)
+- **Charts & Visualizations**: [Recharts 2.x](https://recharts.org/)
+- **Micro-Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Celebration Effects**: [Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)
+- **HTTP Client**: [Axios](https://axios-http.com/)
 
-### Backend Application
+### Backend Architecture
 - **Runtime**: [Node.js](https://nodejs.org/) (v18+)
 - **Server Framework**: [Express 5](https://expressjs.com/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/) (executed via `ts-node-dev` for live reloading)
-- **ORM**: [Prisma 5.22](https://www.prisma.io/)
-- **Database**: [PostgreSQL (Hosted on Supabase or Local)](https://supabase.com/)
-- **Authentication**: [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) + [bcryptjs](https://github.com/dcodeIO/bcrypt.js)
-- **Server Auth Utilities**: [@supabase/server](https://www.npmjs.com/package/@supabase/server)
-- **AI Integration**: [Google Gemini 1.5 Flash API](https://ai.google.dev/) via REST proxy
-- **CORS & Utilities**: [cors](https://expressjs.com/en/resources/middleware/cors.html) + [dotenv](https://github.com/motdotla/dotenv)
+- **Development Tooling**: [ts-node-dev](https://www.npmjs.com/package/ts-node-dev)
+- **Database & ORM**: [Prisma ORM 5.22](https://www.prisma.io/) with [PostgreSQL](https://www.postgresql.org/) (hosted on [Supabase](https://supabase.com/))
+- **Security & Authentication**: [JSON Web Tokens (jsonwebtoken)](https://jwt.io/) + [bcryptjs](https://www.npmjs.com/package/bcryptjs) password hashing
+- **Artificial Intelligence**: [Google Generative AI SDK](https://ai.google.dev/) (`@google/generative-ai` / Gemini 1.5 Flash)
 
 ---
 
 ## 🗄 Database Schema & ERD (Prisma)
 
-The application relational database is configured via Prisma (`server/prisma/schema.prisma`):
+The schema is defined in `server/prisma/schema.prisma`:
 
 ```mermaid
 erDiagram
-    User ||--o| Student : "has profile"
-    User ||--o| Faculty : "has profile"
+    User ||--o| Student : "has student profile"
+    User ||--o| Faculty : "has faculty profile"
     User ||--o{ Notification : "receives"
     
     Department ||--o{ Section : "contains"
-    Department ||--o{ Subject : "offers"
+    Department ||--o{ Subject : "curates"
     
     Section ||--o{ Student : "enrolls"
-    Section ||--o{ Quiz : "targets"
-    Section ||--o{ FacultySubject : "assigned to"
+    Section ||--o{ FacultyAssignment : "hosts"
+    Section ||--o{ Quiz : "scheduled for"
     
-    Subject ||--o{ FacultySubject : "taught by"
-    Subject ||--o{ Quiz : "evaluates"
     Subject ||--o{ Topic : "contains"
-    Subject ||--o{ SyllabusDocument : "has"
+    Subject ||--o{ FacultyAssignment : "assigned to"
+    Subject ||--o{ Quiz : "tested in"
+    Subject ||--o{ QuestionPaper : "archives"
     
-    Faculty ||--o{ FacultySubject : "teaches"
+    Faculty ||--o{ FacultyAssignment : "teaches"
     
-    Topic ||--o{ Question : "contains"
-    Topic ||--o{ SyllabusDocument : "covers"
+    Topic ||--o{ Question : "categorizes"
     
-    Question ||--o{ Option : "has"
+    Question ||--o{ Option : "provides"
     Question ||--o{ QuizQuestion : "included in"
-    Question ||--o{ AttemptAnswer : "answered in"
+    Question ||--o{ AttemptAnswer : "answered as"
     
-    Quiz ||--o{ QuizQuestion : "contains"
-    Quiz ||--o{ QuizAttempt : "receives"
+    Quiz ||--o{ QuizQuestion : "comprises"
+    Quiz ||--o{ QuizAttempt : "completed in"
     
     Student ||--o{ QuizAttempt : "submits"
-    QuizAttempt ||--o{ AttemptAnswer : "records"
+    QuizAttempt ||--o{ AttemptAnswer : "contains"
 ```
-
-### Models Reference
-
-| Model | Key Fields | Purpose |
-|---|---|---|
-| **`User`** | `id`, `email`, `passwordHash`, `name`, `role`, `avatarUrl`, `createdAt` | Core authentication entity. `role` is an enum: `STUDENT`, `FACULTY`, `ADMIN`. |
-| **`Student`** | `id`, `userId`, `rollNo`, `sectionId` | Student profile linked to a specific class `Section`. |
-| **`Faculty`** | `id`, `userId` | Faculty profile linked to course teaching assignments. |
-| **`Department`** | `id`, `name`, `code` (e.g., `CS`) | Academic departments offering subjects and housing sections. |
-| **`Section`** | `id`, `semester` (1–8), `name` (A, B, C), `departmentId` | Specific cohort within a semester. |
-| **`Subject`** | `id`, `name`, `code`, `semester`, `departmentId` | Academic courses in the curriculum. |
-| **`FacultySubject`**| `id`, `facultyId`, `subjectId`, `sectionId` | Mapping linking faculty members to the subjects and sections they teach. |
-| **`Topic`** | `id`, `name`, `subjectId` | Granular curricular units used for learning gap telemetry. |
-| **`Question`** | `id`, `text`, `type`, `difficulty`, `cognitiveLevel`, `status`, `explanation`, `topicId` | Question bank repository. Includes Bloom's taxonomy cognitive levels (`CL1_REMEMBER` through `CL6_CREATE`). |
-| **`Option`** | `id`, `text`, `isCorrect`, `questionId` | Multiple choice options associated with a question. |
-| **`Quiz`** | `id`, `title`, `type`, `status`, `duration`, `scheduledAt`, `subjectId`, `sectionId` | Assessment instances (`WEEKLY`, `REMEDIAL`, `PRACTICE`) with statuses (`DRAFT`, `ACTIVE`, `COMPLETED`). |
-| **`QuizQuestion`** | `id`, `quizId`, `questionId`, `order` | Ordered many-to-many junction between quizzes and questions. |
-| **`QuizAttempt`** | `id`, `studentId`, `quizId`, `score`, `timeTaken`, `submittedAt` | Submission record capturing student assessment performance. |
-| **`AttemptAnswer`**| `id`, `attemptId`, `questionId`, `optionId`, `isCorrect` | Detailed item-level audit trail for every answered question. |
-| **`SyllabusDocument`**| `id`, `subject`, `topic`, `content`, `subjectId`, `topicId` | Reference syllabus outlines and learning materials. |
-| **`DeptInformation`**| `id`, `type`, `title`, `date`, `description`, `targetDept` | Departmental notices, holidays, events, and achievements. |
-| **`Notification`** | `id`, `userId`, `title`, `message`, `type`, `isRead`, `actionUrl`, `role` | In-app notification messages delivered to individual users or broadcast by role. |
 
 ---
 
 ## 📡 Comprehensive REST API Reference
 
-Base Server URL: `http://localhost:3001/api`
+Base URL: `http://localhost:3001/api`
 
 ### 1. Authentication (`/api/auth`)
-| Method | Route | Access | Description |
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `POST` | `/auth/login` | Public | Authenticates credentials and returns a signed JWT token and user profile. |
-| `POST` | `/auth/register` | Public | Registers a new account. |
-| `POST` | `/auth/logout` | Authenticated | Clears user session. |
-| `GET` | `/auth/me` | Authenticated | Returns profile of the active token holder. |
+| `POST` | `/auth/login` | Public | Authenticates credentials and returns JWT token & user payload |
+| `POST` | `/auth/register` | Public | Registers a new student account |
+| `GET` | `/auth/me` | Authenticated | Retrieves current user profile with role-specific student/faculty relations |
 
-### 2. User Accounts & Profiles (`/api/users`)
-| Method | Route | Access | Description |
+### 2. Department Information (`/api/dept`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/users` | Admin | Lists all user accounts with nested student/faculty relations. |
-| `POST` | `/users/student` | Admin | Creates a student account with assigned roll number and section. |
-| `POST` | `/users/faculty` | Admin | Creates a faculty profile. |
-| `PUT` | `/users/:id` | Authenticated | Updates account name or avatar URL. |
+| `GET` | `/dept/info` | Authenticated | Retrieves official notices, academic calendar, achievements, and events |
+| `GET` | `/dept/syllabus/:subjectId` | Authenticated | Fetches complete syllabus curriculum for RAG context |
 
-### 3. Quizzes & Assessments (`/api/quizzes`)
-| Method | Route | Access | Description |
+### 3. Institutional Administration (`/api/admin`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/quizzes` | Authenticated | Retrieves quizzes filtered by section, subject, or status (students auto-filter to their enrolled section). |
-| `POST` | `/quizzes` | Faculty / Admin | Creates a new quiz assessment with question associations. |
-| `GET` | `/quizzes/:id` | Authenticated | Returns full quiz details with questions and options. |
-| `POST` | `/quizzes/:id/attempt`| Student | Evaluates quiz submission, logs score, and records attempt answers. |
-| `GET` | `/quizzes/:id/attempts`| Authenticated | Retrieves attempt history and submissions for a quiz. |
+| `GET` | `/admin/overview` | Admin | Retrieves campus KPIs (total students, faculty, courses, sections, pass rate) |
+| `GET` | `/admin/faculty` | Admin | Lists all faculty members with department & assigned teaching sections |
+| `POST` | `/admin/faculty` | Admin | Creates a faculty account & assigns initial courses |
+| `PUT` | `/admin/faculty/:id` | Admin | Updates faculty personal details & workload assignments |
+| `DELETE` | `/admin/faculty/:id` | Admin | Deactivates or removes a faculty record |
+| `GET` | `/admin/courses` | Admin | Catalogs all institutional subjects by department and semester |
+| `POST` | `/admin/courses` | Admin | Adds a new course to the curriculum |
+| `PUT` | `/admin/courses/:id` | Admin | Modifies course code, title, credits, or semester |
+| `DELETE` | `/admin/courses/:id` | Admin | Deletes an unassigned course record |
+| `GET` | `/admin/students` | Admin | Lists student roster with search, section filter, and academic status |
+| `POST` | `/admin/students` | Admin | Registers a student into a designated department section |
+| `PUT` | `/admin/students/:id` | Admin | Modifies student enrollment, section assignment, or status |
+| `DELETE` | `/admin/students/:id` | Admin | Removes student registration |
+| `GET` | `/admin/sections` | Admin | Lists all department sections with real enrolled student counts |
+| `POST` | `/admin/sections` | Admin | Creates a new academic section (e.g. Sem 5, Sec C) |
+| `PUT` | `/admin/sections/:id` | Admin | Edits section capacity or descriptor |
+| `DELETE` | `/admin/sections/:id` | Admin | Removes an empty section |
+| `POST` | `/admin/notifications`| Admin | Broadcasts an institutional notification to students, faculty, or all users |
 
-### 4. Question Bank (`/api/questions`)
-| Method | Route | Access | Description |
+### 4. Quizzes & Assessments (`/api/quizzes`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/questions` | Authenticated | Queries question items with optional filters (`topicId`, `difficulty`, `type`). |
-| `POST` | `/questions` | Faculty / Admin | Adds a new question item with multiple options. |
-| `GET` | `/questions/topics` | Authenticated | Returns list of all curriculum topics. |
+| `GET` | `/quizzes` | Authenticated | Retrieves available quizzes for the student's enrolled section or faculty's classes |
+| `GET` | `/quizzes/:id` | Authenticated | Retrieves quiz details, questions, options, and duration |
+| `POST` | `/quizzes` | Faculty / Admin | Creates a new weekly or remedial quiz with selected question bank items |
+| `POST` | `/quizzes/:id/attempt` | Student | Submits completed quiz answers, computes score, and logs topic telemetry |
+| `GET` | `/quizzes/:id/my-attempt`| Student | Fetches student's recorded attempt, accuracy percentage, and answer keys |
 
-### 5. Academic Analytics & Bayesian Skill Gaps (`/api/analytics` & `/api/skill-gaps`)
-| Method | Route | Access | Description |
+### 5. Questions & AIG Generation (`/api/questions`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/analytics/student/overview` | Student | Returns student score averages, streaks, and weakness breakdown. |
-| `GET` | `/analytics/faculty/overview` | Faculty / Admin | Aggregated metrics across all sections taught by faculty. |
-| `GET` | `/analytics/faculty/class/:sectionId` | Faculty / Admin | Section-specific performance metrics, score distributions, and topic failure rates. |
-| `GET` | `/skill-gaps/student/me` | Student | Computes Bayesian skill gaps, weakest topics/subtopics, and mastery tree for authenticated student. |
-| `GET` | `/skill-gaps/student/:studentId` | Faculty / Admin | Detailed student skill gap diagnostic report for a specific student. |
-| `GET` | `/skill-gaps/section/:sectionId` | Faculty / Admin | Computes section-level cohort mastery, lecture re-teaching recommendations, and at-risk students. |
-| `GET` | `/skill-gaps/year/:year` | Admin | Multi-section comparative year skill gap overview across 4 academic years. |
+| `GET` | `/questions` | Authenticated | Retrieves question bank items filtered by subject, topic, difficulty, or status |
+| `POST` | `/questions` | Faculty / Admin | Manually creates an assessment question with distractors and explanation |
+| `POST` | `/questions/generate` | Faculty / Admin | Generates MCQs via Gemini 1.5 Flash mapped to Bloom's taxonomy |
+| `PATCH` | `/questions/:id/status`| Faculty / Admin | Approves or rejects a pending AI-generated question |
 
-### 6. Courses & Sections (`/api/courses` & `/api/sections`)
-| Method | Route | Access | Description |
+### 6. Analytics & Knowledge Tracing (`/api/analytics`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/courses` | Authenticated | Lists all subjects, credit hours, and topics. |
-| `GET` | `/sections` | Authenticated | Lists sections with student enrollment counts and teaching assignments. |
-| `GET` | `/sections/faculty-classes` | Faculty | Returns classes specifically assigned to the logged-in faculty member. |
+| `GET` | `/analytics/knowledge-tracing` | Authenticated | Computes Bayesian knowledge profile across topics & Bloom tiers |
+| `GET` | `/analytics/practice/:topicId`| Authenticated | Fetches recommended practice questions for a flagged weak topic |
+| `GET` | `/analytics/student/:id` | Authenticated | Retrieves student overall score, streak, and recent attempt history |
+| `GET` | `/analytics/section/:id` | Faculty / Admin | Computes section-level score distribution and quiz completion metrics |
+| `GET` | `/analytics/leaderboard/:sectionId` | Authenticated | Calculates section student rankings by aggregate performance |
+| `GET` | `/analytics/class-gaps` | Faculty / Admin | Computes cohort-wide learning gaps and failure rates |
+| `POST` | `/analytics/remedial-quiz` | Faculty / Admin | Automatically pulls APPROVED questions for weak topics & assigns remedial quiz |
+| `GET` | `/analytics/faculty/learning-gaps` | Faculty / Admin | Retrieves topic performance breakdown for faculty assigned classes |
 
-### 7. AI Academic Tutor (`/api/chatbot`)
-| Method | Route | Access | Description |
+### 7. Notifications (`/api/notifications`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `POST` | `/chatbot` | Authenticated | Proxies user prompt and conversation history to Google Gemini 1.5 Flash (returns graceful fallback message if `GEMINI_API_KEY` is not set). |
+| `GET` | `/notifications` | Authenticated | Retrieves personal notifications and unread counter |
+| `PATCH` | `/notifications/:id/read` | Authenticated | Marks a specific notification as read |
+| `PATCH` | `/notifications/read-all` | Authenticated | Marks all notifications as read |
 
-### 8. Notifications Hub (`/api/notifications`)
-| Method | Route | Access | Description |
+### 8. AI Academic Tutor (`/api/chatbot`)
+| Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/notifications` | Authenticated | Fetches notifications for the active user or user's role. |
-| `PUT` | `/notifications/:id/read` | Authenticated | Marks a specific notification as read. |
-| `PUT` | `/notifications/read-all` | Authenticated | Marks all notifications for the active user as read. |
-
-### 9. Institutional Administration (`/api/admin`)
-| Method | Route | Access | Description |
-|---|---|---|---|
-| `GET` | `/admin/overview` | Admin | Comprehensive analytics: total enrollments, year-wise data, course pass rates, and participation metrics. |
-| `GET` | `/admin/faculty` | Admin | Faculty directory with their assigned teaching workloads. |
-| `POST` | `/admin/faculty/assignments` | Admin | Assigns a faculty member to teach a subject in a specific section. |
-| `DELETE`| `/admin/faculty/assignments/:id`| Admin | Removes a teaching assignment. |
-| `DELETE`| `/admin/faculty/:id` | Admin | Deletes a faculty member profile and user record. |
-| `GET` | `/admin/courses` | Admin | Lists all courses with enrollment and assignment metrics. |
-| `POST` | `/admin/courses` | Admin | Creates a new subject. |
-| `PUT` | `/admin/courses/:id` | Admin | Updates course details. |
-| `DELETE`| `/admin/courses/:id` | Admin | Deletes a subject. |
-| `GET` | `/admin/students` | Admin | Retrieves student roster with filters for semester, section, and search query. |
-| `POST` | `/admin/students` | Admin | Creates a student record and user account. |
-| `PUT` | `/admin/students/:id/section` | Admin | Reassigns a student to a different section. |
-| `DELETE`| `/admin/students/:id` | Admin | Deletes a student account and associated submission data. |
-| `GET` | `/admin/departments` | Admin | Lists all academic departments. |
-| `GET` | `/admin/sections` | Admin | Retrieves section list with enrollment counts. |
-| `POST` | `/admin/sections` | Admin | Provisions a new section for a department and semester. |
-| `DELETE`| `/admin/sections/:id` | Admin | Removes an empty section. |
-| `GET` | `/admin/notifications` | Admin | Lists administrative notifications. |
+| `POST` | `/chatbot` | Authenticated | Sends conversational query to Gemini 1.5 Flash with Socratic tutoring persona |
 
 ---
 
 ## 📂 Repository Directory Structure
 
-```plaintext
+```
 Acadexa/
-├── package.json                   # Root package definition (Frontend dependencies & scripts)
-├── vite.config.ts                 # Vite bundler configuration & React plugin
-├── tailwind.config.js             # Tailwind CSS custom themes & color palette
-├── tsconfig.json                  # Root TypeScript configuration
-├── tsconfig.app.json              # Vite client TypeScript build settings
-├── tsconfig.node.json             # Vite config TypeScript compiler settings
-├── .oxlintrc.json                 # Oxlint configuration for ultra-fast linting
-├── .env.example                   # Frontend environment variables template
-├── .env.local                     # Local frontend environment config (git-ignored)
+├── index.html                 # Frontend single-page application entry HTML
+├── package.json               # Root dependencies (React, Vite, Tailwind, Recharts)
+├── tsconfig.json              # Root TypeScript compiler options
+├── vite.config.ts             # Vite configuration with proxy rules
+├── tailwind.config.js         # Tailwind CSS design system tokens
 │
-├── src/                           # Frontend React Application Source
-│   ├── main.tsx                   # React 19 bootstrap & mount
-│   ├── App.tsx                    # Root application wrapper (<AuthProvider> & <AppRoutes>)
-│   ├── index.css                  # Global styles, CSS design tokens, and utility classes
-│   │
-│   ├── components/                # Reusable UI & Layout Components
-│   │   ├── chatbot/               # Floating AI Tutor chat window & message bubbles
-│   │   ├── dashboard/             # Metric stat cards, streak indicators, progress bars
-│   │   ├── faculty/               # Faculty class cards, assignment modal dialogs
-│   │   ├── layout/                # DashboardLayout, Sidebar, Navbar, NotificationPopover
-│   │   ├── leaderboard/           # Podium rank badges, leaderboards, streak widgets
-│   │   └── ui/                    # Base primitives: Button, Input, Modal, Badge, Card
-│   │
-│   ├── context/                   # Global React State
-│   │   └── AuthContext.tsx        # Authentication provider, session restore, role dispatch
-│   │
-│   ├── data/                      # Resilient Local Fallbacks & Mock Data
-│   │   ├── analytics.ts           # Mock student & class analytics data
-│   │   ├── collegeInfo.ts         # Mock department directory, events, and staff
-│   │   ├── courses.ts             # Static course catalog & syllabus definitions
-│   │   ├── facultyClasses.ts      # Sample class groupings and assignments
-│   │   ├── paperBank.ts           # Past examination papers repository
-│   │   ├── quizzes.ts             # Sample quizzes, questions, and Kahoot options
-│   │   └── students.ts            # Mock student roster & leaderboard records
-│   │
-│   ├── lib/                       # Core Third-Party Client Instances
-│   │   ├── apiClient.ts           # Axios instance with automatic JWT Authorization interceptor
-│   │   └── supabase.ts            # Supabase JS browser client instance
-│   │
-│   ├── pages/                     # Routed View Components
-│   │   ├── auth/
-│   │   │   └── Login.tsx          # Login page with 1-click Student, Faculty & Admin demo buttons
-│   │   ├── student/               # Student views:
-│   │   │   ├── StudentDashboard.tsx
-│   │   │   ├── Courses.tsx
-│   │   │   ├── Quiz.tsx
-│   │   │   ├── QuizScreen.tsx     # Kahoot-style quiz engine with Web Audio & Confetti
-│   │   │   ├── QuizResult.tsx
-│   │   │   ├── QuestionBank.tsx
-│   │   │   ├── LearningGaps.tsx   # Visual mastery tracker & remedial triggers
-│   │   │   ├── Leaderboard.tsx
-│   │   │   ├── AcademicChatbot.tsx# AI Tutor interface
-│   │   │   ├── DepartmentInfo.tsx
-│   │   │   ├── StudentProfile.tsx
-│   │   │   └── StudentSettings.tsx
-│   │   ├── faculty/               # Faculty views:
-│   │   │   ├── FacultyDashboard.tsx
-│   │   │   ├── ClassDashboard.tsx
-│   │   │   ├── ClassAnalytics.tsx
-│   │   │   ├── QuizBuilder.tsx    # 3-step assessment builder
-│   │   │   ├── QuizManagement.tsx
-│   │   │   ├── LearningGapAnalytics.tsx
-│   │   │   ├── QuestionPaperBank.tsx
-│   │   │   ├── FacultyProfile.tsx
-│   │   │   └── FacultySettings.tsx
-│   │   └── admin/                 # Administrator views:
-│   │       ├── AdminOverview.tsx  # Campus-level analytics & metrics
-│   │       ├── FacultyManagement.tsx
-│   │       ├── CourseManagement.tsx
-│   │       ├── StudentManagement.tsx
-│   │       ├── SectionManagement.tsx
-│   │       ├── AdminNotifications.tsx
-│   │       ├── AdminProfile.tsx
-│   │       └── AdminSettings.tsx
-│   │
-│   ├── routes/
-│   │   └── AppRoutes.tsx          # Client route definitions, 404 handler, and RBAC guards
-│   ├── services/                  # Business & API Services (with offline mock fallback)
-│   │   ├── adminService.ts        # Admin API client methods
-│   │   ├── analyticsService.ts    # Analytics data retrieval
-│   │   ├── authService.ts         # Login, logout, session persistence
-│   │   ├── chatService.ts         # AI tutor message submission
-│   │   ├── courseService.ts       # Course catalog queries
-│   │   ├── facultyService.ts      # Faculty assignments and class queries
-│   │   ├── notificationService.ts # Notification fetch and read actions
-│   │   ├── paperBankService.ts    # Question paper management
-│   │   ├── questionPdfGenerator.ts# In-browser academic question paper PDF generation
-│   │   ├── quizService.ts         # Quiz creation, retrieval, and attempt submission
-│   │   └── studentService.ts      # Student profile queries
-│   └── types/                     # TypeScript Domain Models & Interfaces
-│       ├── analytics.ts
-│       ├── course.ts
-│       ├── department.ts
-│       ├── faculty.ts
-│       ├── notification.ts
-│       ├── quiz.ts
-│       └── student.ts
+├── src/                       # Frontend Source Directory
+│   ├── components/            # Reusable UI component library
+│   │   ├── chatbot/           # Academic AI Tutor & Nexus floating widgets
+│   │   ├── dashboard/         # Stat cards, performance widgets
+│   │   ├── faculty/           # Class switcher & section selector
+│   │   ├── layout/            # Sidebar, Topbar, DashboardLayout, PageHeader
+│   │   ├── leaderboard/       # Leaderboard ranking tables
+│   │   └── ui/                # Core primitives (Button, Card, Badge, Modal, Tabs)
+│   ├── context/               # Global state providers (AuthContext.tsx)
+│   ├── data/                  # Resilient offline fallback data
+│   ├── lib/                   # API clients (apiClient.ts) & helper utilities
+│   ├── pages/                 # Route page views
+│   │   ├── admin/             # Admin console (Overview, Faculty, Courses, Students, Sections, Notifications)
+│   │   ├── auth/              # Login screen with 1-click demo buttons
+│   │   ├── faculty/           # Faculty portal (Dashboard, ClassAnalytics, QuizBuilder, QuizManagement, PaperBank)
+│   │   └── student/           # Student portal (Dashboard, Courses, Quiz, QuizScreen, QuizResult, LearningGaps)
+│   ├── routes/                # Route definitions & guards (AppRoutes.tsx)
+│   ├── services/              # API caller services with fallback resilience
+│   └── types/                 # Shared TypeScript interfaces
 │
-└── server/                        # Backend Express API Application
-    ├── package.json               # Backend dependencies & scripts
-    ├── tsconfig.json              # Server TypeScript compiler configuration
-    ├── .env.example               # Backend environment variables template
-    ├── .env                       # Backend local environment config (git-ignored)
-    │
-    ├── prisma/                    # Database Layer
-    │   ├── schema.prisma          # PostgreSQL relational schema definition
-    │   ├── migrations/            # Versioned SQL migration history
-    │   └── seed.ts                # Database seeder (creates departments, demo accounts, sample quizzes)
-    │
-    └── src/                       # Backend Source Code
-        ├── index.ts               # Express application initialization, CORS, route mounting
-        ├── config.ts              # Environment variable loading and validation
-        ├── prisma.ts              # Shared PrismaClient singleton instance
-        ├── middleware/
-        │   └── auth.ts            # JWT authentication middleware & role-based route guard
-        ├── routes/                # Express Route Handlers
-        │   ├── admin.ts           # Admin routes (CRUD for faculty, students, courses, sections, metrics)
-        │   ├── analytics.ts       # Performance and gap analytics
-        │   ├── auth.ts            # Login, register, me
-        │   ├── chatbot.ts         # Gemini 1.5 Flash AI tutor proxy
-        │   ├── courses.ts         # Subject and topic queries
-        │   ├── notifications.ts   # In-app notification retrieval & read flags
-        │   ├── questions.ts       # Question bank search and creation
-        │   ├── quizzes.ts         # Quiz lifecycle and scoring engine
-        │   ├── sections.ts        # Class section queries and faculty assignments
-        │   └── users.ts           # Account profile management
-        └── services/              # Server-side business logic (quizService, etc.)
+└── server/                    # Backend API Source Directory
+    ├── package.json           # Backend dependencies (Express, Prisma, JWT, Bcrypt)
+    ├── prisma/                # Prisma schema & database seeds
+    │   ├── schema.prisma      # Relational PostgreSQL models
+    │   └── seed.ts            # Curriculum, demo users, sections & quiz seeder
+    └── src/
+        ├── index.ts           # Express server entry point & route registration
+        ├── middleware/        # JWT authentication (auth.ts) & global errorHandler.ts
+        ├── routes/            # REST endpoint routers (admin, auth, quizzes, analytics, chatbot, dept, etc.)
+        └── services/          # Business logic services (analytics, auth, quizzes, chatbot, skill gaps)
 ```
 
 ---
@@ -506,10 +498,9 @@ Acadexa/
 ## 🚀 Getting Started & Local Setup
 
 ### Prerequisites
-
 - **Node.js**: v18.0.0 or higher
 - **npm** (bundled with Node.js) or **pnpm** / **yarn**
-- **PostgreSQL**: Local PostgreSQL instance OR a free cloud instance on [Supabase](https://supabase.com/).  
+- **PostgreSQL**: Local PostgreSQL instance OR a free cloud project on [Supabase](https://supabase.com/).  
   *(Note: Even without PostgreSQL, you can run and fully explore the frontend via its automatic mock fallback mode).*
 
 ---
@@ -523,23 +514,24 @@ cd Acadexa
 
 ---
 
-### 2. Backend Setup
+### 2. Backend Setup & Supabase Connection
 
-Open a terminal and navigate to `./server/`:
+Navigate to `server/` and install dependencies:
 
 ```bash
 cd server
 npm install
 ```
 
-#### Configure Server Environment
-Create `server/.env` (copy from `server/.env.example`):
+#### Configure `server/.env`
+Create `server/.env` (or copy from `server/.env.example`):
 
 ```env
+# Server Configuration
 PORT=3001
 CORS_ORIGIN="http://localhost:5173"
 
-# PostgreSQL connection string (Supabase or local PostgreSQL)
+# Supabase or Local PostgreSQL Connection String
 # Tip: If your password contains special characters like '@', URL-encode them (e.g. '@' -> '%40')
 DATABASE_URL="postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres?schema=public"
 
@@ -557,44 +549,49 @@ SUPABASE_SECRET_KEY="your-secret-key"
 SUPABASE_JWKS_URL="https://your-project.supabase.co/auth/v1/.well-known/jwks.json"
 ```
 
-#### Push Schema & Seed Initial Data
+---
+
+### 3. Database Migration & Seed
+
+Sync the Prisma schema to your PostgreSQL database and run the seeder:
+
 ```bash
 # Generate Prisma Client types
 npm run prisma:generate
 
-# Sync schema directly to PostgreSQL database
+# Sync schema directly to database
 npx prisma db push
 
-# Seed initial department, sections, demo accounts, courses, and sample quizzes
+# Seed initial curriculum, topics, demo users, sections, and questions
 npm run seed
 ```
 
-#### Start Backend Server
+Start the backend development server:
+
 ```bash
 npm run dev
 ```
-The server will start at `http://localhost:3001` with API routes live at `http://localhost:3001/api`.
+
+The Express server will start at **`http://localhost:3001`** (API Base: `http://localhost:3001/api`).
 
 ---
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 
-Open a second terminal in the project root (`Acadexa/`):
+In a new terminal window, navigate to the project root:
 
 ```bash
-# Return to root directory if you were inside server/
-cd ..
-
-# Install frontend dependencies
+cd Acadexa
 npm install
 ```
 
-#### Configure Frontend Environment
-Create `.env.local` in the root directory (copy from `.env.example`):
+#### Configure Root `.env`
+Create `.env` in the root directory:
 
 ```env
 VITE_SUPABASE_URL="https://your-project.supabase.co"
-VITE_SUPABASE_ANON_KEY="your-anon-or-publishable-key"
+VITE_SUPABASE_ANON_KEY="your-publishable-key"
+DATABASE_URL="postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres?schema=public"
 ```
 
 #### Start Frontend Dev Server
@@ -612,19 +609,21 @@ Open your browser to: **`http://localhost:5173`**.
 
 The database seed (`server/prisma/seed.ts`) and frontend login page come pre-configured with demo accounts. On the Login page (`/login`), you can use the **1-click quick login buttons** or input these credentials:
 
-| Role | Email | Password | Assigned Scope & Permissions |
+| Role | Email | Password | Assigned Scope & Details |
 |---|---|---|---|
-| **Student** | `student@college.edu` | `student123` | Enrolled in CS Sem 5, Section A. Full quiz participation, learning gap tracker, leaderboard, and AI tutor. |
+| **Student** | `student@college.edu` | `student123` | CS Sem 5, Section A. Full quiz participation, learning gap tracker, leaderboard, and AI tutor. |
+| **Student** | `chaman@cs.college.edu` | `student123` | Pre-populated with Knowledge Tracing data (Arrays: 92%, Trees: 45%). |
+| **Student** | `rehan@cs.college.edu` | `rehan123` | Rehan Patel (CS 5th Semester, Sec A). |
 | **Faculty** | `faculty@college.edu` | `faculty123` | Dr. Ramesh Kumar (CS Dept). Class analytics, 3-step quiz builder, remedial quiz dispatch, paper bank. |
+| **Faculty** | `faculty@cs.college.edu` | `faculty123` | Dr. Ramesh Kumar (CS Dept Faculty Account). |
+| **Faculty** | `soumya@cs.college.edu` | `soumya123` | Soumya (CS Dept Faculty). |
 | **Admin** | `admin@college.edu` | `admin123` | System Administrator. Institutional KPIs, faculty workload assignments, course catalog, student roster, section provisioning, broadcast notifications. |
-
-*(Legacy mock login: `chaman@cs.college.edu` / `student123` is also supported in mock mode).*
 
 ---
 
-## ⚙️ Environment Variables
+## ⚙️ Environment Variables Guide
 
-### Frontend (`.env.local`)
+### Frontend (`.env` / `.env.local`)
 | Variable | Type | Required | Description |
 |---|---|---|---|
 | `VITE_SUPABASE_URL` | String | Optional | Supabase project URL for direct frontend client operations. |
@@ -638,7 +637,7 @@ The database seed (`server/prisma/seed.ts`) and frontend login page come pre-con
 | `DATABASE_URL` | String | **Yes** (for live DB) | PostgreSQL connection URI (`postgresql://user:pass@host:5432/db?schema=public`). |
 | `JWT_SECRET` | String | **Yes** | Secret string used for signing and verifying JSON Web Tokens. |
 | `JWT_EXPIRES_IN` | String | No (Default: `7d`) | Token expiration timeframe. |
-| `GEMINI_API_KEY` | String | Optional | Google AI Studio API key. When present, enables live Gemini 1.5 Flash tutor responses; when blank, returns smart contextual fallback message. |
+| `GEMINI_API_KEY` | String | Optional | Google AI Studio API key for live Gemini 1.5 Flash tutor responses. |
 | `SUPABASE_URL` | String | Optional | Supabase backend URL. |
 | `SUPABASE_PUBLISHABLE_KEY` | String | Optional | Supabase publishable key. |
 | `SUPABASE_SECRET_KEY` | String | Optional | Supabase service/secret key for administrative server calls. |
@@ -696,7 +695,7 @@ npm run seed
   - Warning / Learning Gap: `#f59e0b` (Amber for moderate mastery)
   - Critical Review: `#ef4444` (Coral red for weak concepts needing immediate remedial work)
   - Kahoot Options Colors: Red (`#ef4444`), Blue (`#3b82f6`), Yellow (`#eab308`), Green (`#22c55e`)
-- **Audio Synthesizer**: Uses native HTML5 `AudioContext` to construct harmonic chords for winning streaks and low buzzers for errors without downloading heavy `.mp3` audio files.
+- **Audio Synthesizer**: Uses native HTML5 `AudioContext` to construct harmonic chords for winning streaks and low buzzers for errors without downloading heavy audio files.
 - **Accessibility & Responsiveness**: Fluid layouts supporting multi-monitor desktop workstations, laptops, and mobile screens via slide-out sidebars and collapsible drawers.
 
 ---
@@ -711,9 +710,16 @@ npm run seed
 
 ---
 
-## 📄 License
+## 🤝 Contributing & License
 
-This project is licensed under the **ISC License**. Feel free to use, adapt, and build upon it for academic and institutional research.
+Contributions, feedback, and pull requests are welcomed!
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m "feat: add amazing feature"`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
+
+This project is licensed under the **ISC License**.
 
 ---
 

@@ -185,7 +185,7 @@ export const paperBankService = {
       totalMarks: Number(data.totalMarks) || 100,
       duration: data.duration.trim() || '3 Hours',
       questionCount: Number(data.questionCount) || 10,
-      uploadedBy: facultyUser?.name || 'Dr. Ramesh Kumar (Faculty)',
+      uploadedBy: facultyUser?.name || 'Faculty Member',
       uploadedAt: new Date().toISOString().split('T')[0],
       tags: data.tags && data.tags.length > 0 ? data.tags : ['Unit Topics', 'Model Exam'],
       fileSize: fileSizeFormatted,

@@ -30,20 +30,20 @@ export const authService = {
         role: data.role,
         ...(data.role === 'STUDENT' && data.rollNo && data.sectionId
           ? {
-              student: {
-                create: {
-                  rollNo: data.rollNo,
-                  sectionId: data.sectionId,
-                },
+            student: {
+              create: {
+                rollNo: data.rollNo,
+                sectionId: data.sectionId,
               },
-            }
+            },
+          }
           : {}),
         ...(data.role === 'FACULTY'
           ? {
-              faculty: {
-                create: {},
-              },
-            }
+            faculty: {
+              create: {},
+            },
+          }
           : {}),
       },
       include: {
@@ -88,9 +88,11 @@ export const authService = {
       throw new Error(`Invalid role. Account registered as ${user.role}`);
     }
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      throw new Error('Invalid email or password');
+    if (user.passwordHash) {
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        throw new Error('Invalid email or password');
+      }
     }
 
     const token = jwt.sign(

@@ -1,31 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { classPerformanceMatrix, studentsNeedingAttention } from '../../data/analytics';
 import { FileDown, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import type { StudentNeedingAttention } from '../../types/analytics';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../lib/apiClient';
 
-const facultyClasses = [
-  { id: 'sec_5a_ds', semester: '5th Sem', section: '5A', subject: 'Data Structures', studentsCount: 72 },
-  { id: 'sec_5b_ds', semester: '5th Sem', section: '5B', subject: 'Data Structures', studentsCount: 68 },
-  { id: 'sec_7c_cc', semester: '7th Sem', section: '7C', subject: 'Cloud Computing', studentsCount: 70 },
-  { id: 'sec_3a_db', semester: '3rd Sem', section: '3A', subject: 'Database Systems', studentsCount: 75 },
-];
+interface FacultyClassItem {
+  id: string;
+  sectionId?: string;
+  semester: string;
+  section: string;
+  subject: string;
+  studentsCount: number;
+}
 
 export const ClassAnalytics: React.FC = () => {
   const { classId: urlClassId } = useParams<{ classId: string }>();
-  const defaultClassId = urlClassId ?? facultyClasses[0].id;
-  const [selectedClassId, setSelectedClassId] = useState(defaultClassId);
-  const selectedClass = facultyClasses.find(c => c.id === selectedClassId) || facultyClasses[0];
+  const [classes, setClasses] = useState<FacultyClassItem[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>(urlClassId || '');
+  const [studentsAttention] = useState<StudentNeedingAttention[]>([]);
   const { user } = useAuth();
 
   const [isExporting, setIsExporting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await api.get('/sections/faculty-classes');
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          const mapped: FacultyClassItem[] = res.data.map((c: any) => ({
+            id: c.id,
+            sectionId: c.sectionId || c.id,
+            semester: typeof c.semester === 'number' ? `${c.semester}th Sem` : (c.semester || '5th Sem'),
+            section: (c.section || c.sectionName || 'A').replace(/^Section\s+/i, ''),
+            subject: c.subject || c.subjectName || 'Course',
+            studentsCount: c.studentsCount || 0,
+          }));
+          setClasses(mapped);
+          if (!selectedClassId) {
+            setSelectedClassId(urlClassId || mapped[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load faculty classes:', err);
+      }
+    };
+    fetchClasses();
+  }, [urlClassId]);
+
+  const selectedClass = classes.find(c => c.id === selectedClassId) || classes[0] || {
+    id: '',
+    semester: '',
+    section: '',
+    subject: '',
+    studentsCount: 0,
+  };
 
   // Data variation based on selected class
   const classModifier = selectedClass.studentsCount % 5;
@@ -70,39 +105,21 @@ export const ClassAnalytics: React.FC = () => {
       rows.push(['Section', selectedClass.section]);
       rows.push(['Semester', selectedClass.semester]);
       rows.push(['Total Enrolled Students', String(selectedClass.studentsCount)]);
-      rows.push(['Faculty Member', user?.name || 'Dr. Ramesh Kumar']);
+      rows.push(['Faculty Member', user?.name || 'Faculty Member']);
       rows.push(['Export Timestamp', new Date().toLocaleString('en-IN')]);
       rows.push([]);
 
-      // 2. Unit Performance Summary Matrix
-      rows.push(['=== UNIT PERFORMANCE MATRIX ===']);
-      rows.push(['Topic Focus', 'Unit 1 Score (%)', 'Unit 2 Score (%)', 'Unit 3 Score (%)', 'Unit 4 Score (%)']);
-
-      const focusNames = ['Core Concepts', 'Practical Application', 'Theory Analysis'];
-      classPerformanceMatrix.slice(0, 3).forEach((course, idx) => {
-        const rowScores = [0, 1, 2, 3].map(i => {
-          const unit = course.units[i];
-          if (!unit) return 'N/A';
-          const score = Math.min(100, Math.max(0, unit.averageScore + (classModifier * (idx === 1 ? -1 : 1))));
-          return `${score}%`;
-        });
-        rows.push([focusNames[idx], ...rowScores]);
-      });
-
-      rows.push([]);
-
-      // 3. Students Needing Attention
+      // 2. Students Needing Attention
       rows.push(['=== STUDENTS NEEDING ACADEMIC ATTENTION ===']);
       rows.push(['Student ID', 'Last Quiz Score (%)', 'Identified Weak Topics', 'Intervention Status']);
 
-      if (studentsNeedingAttention.length === 0) {
+      if (studentsAttention.length === 0) {
         rows.push(['No students currently flagged as needing attention.', '', '', 'Normal']);
       } else {
-        studentsNeedingAttention.forEach(s => {
-          const adjustedScore = Math.max(0, s.lastQuizScore - classModifier);
+        studentsAttention.forEach(s => {
           rows.push([
             s.displayId,
-            `${adjustedScore}%`,
+            `${s.lastQuizScore}%`,
             `"${s.weakTopics.join('; ')}"`,
             'Remedial Practice Recommended',
           ]);
@@ -159,7 +176,7 @@ export const ClassAnalytics: React.FC = () => {
                 onChange={e => setSelectedClassId(e.target.value)}
                 className="text-xs border border-[var(--color-border)] rounded-[8px] px-2.5 py-1.5 bg-[var(--color-surface)] text-[var(--color-text-primary)] outline-none"
               >
-                {facultyClasses.map(c => (
+                {classes.map(c => (
                   <option key={c.id} value={c.id}>
                     Sec {c.section} · {c.subject}
                   </option>
@@ -212,52 +229,19 @@ export const ClassAnalytics: React.FC = () => {
           subtitle={`Section ${selectedClass.section} · ${selectedClass.semester}`}
         />
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <th className="text-left font-semibold text-[var(--color-text-muted)] pb-3 w-48">Topic Focus</th>
-                <th className="font-semibold text-[var(--color-text-muted)] pb-3 text-center">Unit 1</th>
-                <th className="font-semibold text-[var(--color-text-muted)] pb-3 text-center">Unit 2</th>
-                <th className="font-semibold text-[var(--color-text-muted)] pb-3 text-center">Unit 3</th>
-                <th className="font-semibold text-[var(--color-text-muted)] pb-3 text-center">Unit 4</th>
-              </tr>
-            </thead>
-            <tbody>
-              {classPerformanceMatrix.slice(0, 3).map((course, idx) => (
-                <tr key={idx} className="border-t border-[var(--color-border)]">
-                  <td className="py-3 font-medium text-[var(--color-text-primary)]">
-                    {idx === 0 ? 'Core Concepts' : idx === 1 ? 'Practical App' : 'Theory Analysis'}
-                  </td>
-                  {[0, 1, 2, 3].map(i => {
-                    const unit = course.units[i];
-                    if (!unit) return <td key={i} className="p-1"><div className="heatmap-cell bg-[var(--color-muted)] text-[var(--color-text-muted)]">N/A</div></td>;
-                    
-                    const score = Math.min(100, Math.max(0, unit.averageScore + (classModifier * (idx === 1 ? -1 : 1))));
-                    return (
-                      <td key={i} className="p-1">
-                        <div className={`heatmap-cell ${
-                          score >= 75 ? 'heatmap-high' :
-                          score >= 60 ? 'heatmap-medium' : 'heatmap-low'
-                        }`} title={unit.unitName}>
-                          {score}%
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p className="text-xs text-[var(--color-text-muted)] py-4 text-center">
+            Heatmap metrics populate automatically as students complete unit-based quizzes for this section.
+          </p>
         </div>
       </Card>
 
-      {/* Students Needing Attention (Unnecessary dummy search bar removed) */}
+      {/* Students Needing Attention */}
       <Card>
         <CardHeader 
           title={`Students Needing Attention — Section ${selectedClass.section}`} 
           subtitle="Identified based on consistent low performance in specific topics"
         />
-        <DataTable columns={attentionColumns} data={studentsNeedingAttention} keyField="studentId" />
+        <DataTable columns={attentionColumns} data={studentsAttention} keyField="studentId" emptyMessage="No students currently flagged as needing attention." />
       </Card>
     </div>
   );

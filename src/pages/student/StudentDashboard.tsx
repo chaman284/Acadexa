@@ -13,8 +13,6 @@ import { ControlledTabs } from '../../components/ui/Tabs';
 import { LeaderboardTable } from '../../components/leaderboard/LeaderboardTable';
 import { studentService } from '../../services/studentService';
 import { courseService } from '../../services/courseService';
-import { departmentEvents } from '../../data/collegeInfo';
-import { mockLeaderboard } from '../../data/students';
 import api from '../../lib/apiClient';
 import type { Student, LeaderboardEntry } from '../../types/student';
 import type { Course } from '../../types/course';
@@ -190,15 +188,29 @@ export const StudentDashboard: React.FC = () => {
     }
   };
 
-  const recentEvents = departmentEvents;
+  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/dept/info').then(res => {
+      if (Array.isArray(res.data?.data)) {
+        const events = res.data.data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          category: d.type === 'EVENT' ? 'exam' : 'holiday',
+          date: d.date,
+          time: 'All Day',
+        }));
+        setRecentEvents(events);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Overall average course progress
   const averageProgress = courses.length > 0
     ? Math.round(courses.reduce((acc, c) => acc + (c.progress || 0), 0) / courses.length)
     : 0;
 
-  const currentLeaderboard =
-    liveLeaderboard.length > 0 ? liveLeaderboard : mockLeaderboard;
+  const currentLeaderboard = liveLeaderboard;
 
   const leaderboardData =
     leaderboardTab === 'improved' ? mostImprovedData : currentLeaderboard;
@@ -393,3 +405,5 @@ export const StudentDashboard: React.FC = () => {
     </div>
   );
 };
+
+export { Dashboard } from './Dashboard';

@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import { authenticateJWT, AuthRequest } from '../middleware/auth';
-import { config } from '../config';
+import { chatbotService } from '../services/chatbot';
 
 const router = Router();
 
+/**
+ * POST /api/chatbot
+ * Primary endpoint for Nexus RAG Department AI Assistant
+ */
 router.post('/', authenticateJWT, async (req: AuthRequest, res) => {
   try {
     const { message, history } = req.body;
@@ -12,47 +16,51 @@ router.post('/', authenticateJWT, async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    // Check if GEMINI_API_KEY is configured
-    if (!config.geminiApiKey) {
-      // Return a smart fallback if API key isn't configured yet
-      return res.json({
-        reply: `Hello ${req.user?.name || 'there'}! I am your Acadexa AI Study Tutor. (Note: To enable live Gemini responses, please set GEMINI_API_KEY in server/.env). How can I assist you with your coursework today?`,
-      });
+    const result = await chatbotService.askNexus(message, history || [], req.user?.name);
+
+    res.json({
+      reply: result.reply,
+      contextSources: result.contextSources,
+    });
+  } catch (error: any) {
+    console.error('Nexus Chatbot Error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error in Nexus assistant' });
+  }
+});
+
+/**
+ * POST /api/chatbot/nexus
+ * Alias dedicated specifically to Nexus Department Assistant
+ */
+router.post('/nexus', authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const { message, history } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ message: 'Message is required' });
     }
 
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            ...(history || []).map((h: { sender: string; text: string }) => ({
-              role: h.sender === 'user' ? 'user' : 'model',
-              parts: [{ text: h.text }],
-            })),
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: `You are Acadexa AI Tutor, an intelligent, encouraging academic assistant helping university students learn concepts and prepare for quizzes. Keep answers structured, insightful, and pedagogical.\n\nStudent asks: ${message}`,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    const result = await chatbotService.askNexus(message, history || [], req.user?.name);
 
-    const data = await response.json();
-    const replyText =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "I'm sorry, I could not generate a response at this moment.";
+    res.json({
+      reply: result.reply,
+      contextSources: result.contextSources,
+    });
+  } catch (error: any) {
+    console.error('Nexus Chatbot Error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error in Nexus assistant' });
+  }
+});
 
-    res.json({ reply: replyText });
+/**
+ * GET /api/chatbot/context?query=...
+ * Inspect retrieved RAG context for verification & debugging
+ */
+router.get('/context', authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    const query = (req.query.query as string) || '';
+    const ragData = await chatbotService.retrieveContext(query);
+    res.json(ragData);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
