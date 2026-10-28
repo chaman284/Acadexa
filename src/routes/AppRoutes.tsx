@@ -35,6 +35,12 @@ import { QuizBuilder } from '../pages/faculty/QuizBuilder';
 import { FacultyProfile } from '../pages/faculty/FacultyProfile';
 import { FacultySettings } from '../pages/faculty/FacultySettings';
 
+// Acadexa Flagship Quiz System Features
+import { QuizListPage } from '../features/quizzes/pages/QuizListPage';
+import { QuizBuilderPage } from '../features/quizzes/pages/QuizBuilderPage';
+import { QuizPreviewPage } from '../features/quizzes/pages/QuizPreviewPage';
+import { QuizResultsPage } from '../features/quizzes/pages/QuizResultsPage';
+
 // Admin Pages
 import { AdminOverview } from '../pages/admin/AdminOverview';
 import { FacultyManagement } from '../pages/admin/FacultyManagement';
@@ -86,10 +92,19 @@ const StandaloneRoute = ({ children, role }: { children: React.ReactNode; role: 
   return <>{children}</>;
 };
 
+// Smart root redirect: sends authenticated users to their dashboard, otherwise to /login
+const RootRedirect = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  const dest = user.role === 'admin' ? '/admin' : user.role === 'faculty' ? '/faculty/select-class' : '/student';
+  return <Navigate to={dest} replace />;
+};
+
 export const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<Login />} />
 
       {/* Student Routes */}
@@ -112,14 +127,18 @@ export const AppRoutes = () => {
       <Route path="/faculty/select-class" element={<StandaloneRoute role="faculty"><ClassSelection /></StandaloneRoute>} />
       <Route path="/faculty/class/:classId" element={<PrivateRoute role="faculty"><ClassDashboard /></PrivateRoute>} />
       <Route path="/faculty/class/:classId/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
-      <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilder /></StandaloneRoute>} />
+      <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilderPage /></StandaloneRoute>} />
+      <Route path="/faculty/quiz/:id/edit" element={<StandaloneRoute role="faculty"><QuizBuilderPage /></StandaloneRoute>} />
+      <Route path="/faculty/quiz/:id/preview" element={<StandaloneRoute role="faculty"><QuizPreviewPage /></StandaloneRoute>} />
+      <Route path="/faculty/quiz/preview" element={<StandaloneRoute role="faculty"><QuizPreviewPage /></StandaloneRoute>} />
+      <Route path="/faculty/quiz/:id/results" element={<StandaloneRoute role="faculty"><QuizResultsPage /></StandaloneRoute>} />
       <Route path="/faculty/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/students" element={<PrivateRoute role="faculty"><div>Students Management (Placeholder)</div></PrivateRoute>} />
       <Route path="/faculty/paper-bank" element={<StandaloneRoute role="faculty"><QuestionPaperBank /></StandaloneRoute>} />
       <Route path="/faculty/question-bank" element={<Navigate to="/faculty/paper-bank" replace />} />
-      <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizManagement /></StandaloneRoute>} />
+      <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizListPage /></StandaloneRoute>} />
       <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
-      <Route path="/faculty/remedial-quizzes" element={<PrivateRoute role="faculty"><QuizManagement /></PrivateRoute>} />
+      <Route path="/faculty/remedial-quizzes" element={<StandaloneRoute role="faculty"><QuizListPage /></StandaloneRoute>} />
       <Route path="/faculty/department" element={<PrivateRoute role="faculty"><DepartmentInfo /></PrivateRoute>} />
       <Route path="/faculty/profile" element={<PrivateRoute role="faculty"><FacultyProfile /></PrivateRoute>} />
       <Route path="/faculty/settings" element={<PrivateRoute role="faculty"><FacultySettings /></PrivateRoute>} />

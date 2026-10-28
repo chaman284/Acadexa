@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Mail, Lock, Eye, EyeOff, GraduationCap,
@@ -27,7 +27,7 @@ const playClickSound = () => {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { user, isLoading: authLoading, login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +35,19 @@ export const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [remember, setRemember] = useState(false);
+
+  // If already authenticated, redirect immediately away from login
+  useEffect(() => {
+    if (!authLoading && user) {
+      const dest =
+        user.role === 'admin'
+          ? '/admin'
+          : user.role === 'faculty'
+          ? '/faculty/select-class'
+          : '/student';
+      navigate(dest, { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   // Sliding role selector animation
   const roleContainerRef = useRef<HTMLDivElement>(null);
@@ -73,10 +86,10 @@ export const Login: React.FC = () => {
     setError('');
     setIsLoading(true);
     try {
-      const user = await login(email, password, role);
-      if (user.role === 'admin') navigate('/admin');
-      else if (user.role === 'faculty') navigate('/faculty/select-class');
-      else navigate('/student');
+      const loggedUser = await login(email, password, role);
+      if (loggedUser.role === 'admin') navigate('/admin', { replace: true });
+      else if (loggedUser.role === 'faculty') navigate('/faculty/select-class', { replace: true });
+      else navigate('/student', { replace: true });
     } catch {
       setError('Invalid credentials. Please try again.');
     } finally {
@@ -98,10 +111,10 @@ export const Login: React.FC = () => {
         demoEmail = 'admin@college.edu';
         demoPassword = 'admin123';
       }
-      const user = await login(demoEmail, demoPassword, demoRole);
-      if (user.role === 'admin') navigate('/admin');
-      else if (user.role === 'faculty') navigate('/faculty/select-class');
-      else navigate('/student');
+      const loggedUser = await login(demoEmail, demoPassword, demoRole);
+      if (loggedUser.role === 'admin') navigate('/admin', { replace: true });
+      else if (loggedUser.role === 'faculty') navigate('/faculty/select-class', { replace: true });
+      else navigate('/student', { replace: true });
     } catch {
       setError('Failed to login with demo account.');
     } finally {

@@ -5,6 +5,7 @@ import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import api from '../../lib/apiClient';
+import { quizService } from '../../features/quizzes/services/quizService';
 import {
   ClipboardList,
   Clock,
@@ -59,16 +60,54 @@ export const Quiz: React.FC = () => {
 
   const fetchQuizzes = async () => {
     setLoading(true);
+    let loadedFromApi = false;
     try {
       const res = await api.get('/quizzes');
-      if (Array.isArray(res.data)) {
+      if (Array.isArray(res.data) && res.data.length > 0) {
         setQuizzes(res.data);
+        loadedFromApi = true;
       }
     } catch (err) {
-      console.warn('Failed to load student quizzes:', err);
-    } finally {
-      setLoading(false);
+      console.warn('API quizzes unavailable, falling back to local quiz service:', err);
     }
+
+    if (!loadedFromApi) {
+      try {
+        const allQuizzes = await quizService.getQuizzes();
+        const localQuizzes = allQuizzes.filter(q => q.status === 'active' || q.status === 'scheduled');
+        const mapped: DbQuizStudent[] = localQuizzes.map(q => ({
+          id: q.id,
+          title: q.title,
+          duration: q.settings?.exam?.durationMinutes || q.settings?.practice?.timeLimitMinutes || 20,
+          type: q.category || (q.mode === 'exam' ? 'Weekly Assessment' : 'Practice Quiz'),
+          status: q.status.toUpperCase(),
+          scheduledAt: q.scheduledStart || null,
+          createdAt: q.createdAt,
+          subjectId: q.subjectId,
+          sectionId: q.assignedClasses[0]?.id || 'sec_3a',
+          subject: {
+            id: q.subjectId,
+            name: q.subjectName,
+            code: q.subjectCode,
+            semester: q.semester || 5,
+          },
+          section: {
+            id: q.assignedClasses[0]?.id || 'sec_3a',
+            name: q.assignedClasses[0]?.name || 'Section 3A',
+            semester: q.semester || 5,
+          },
+          _count: {
+            questions: q.questions.length,
+            attempts: q.attemptsCount || 0,
+          },
+          attempts: [],
+        }));
+        setQuizzes(mapped);
+      } catch (e) {
+        console.warn('Failed to load fallback quizzes:', e);
+      }
+    }
+    setLoading(false);
   };
 
   useEffect(() => {

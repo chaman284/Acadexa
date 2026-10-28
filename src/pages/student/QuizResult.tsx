@@ -191,14 +191,14 @@ export const QuizResult: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              onClick={() => navigate('/student/quiz')}
+              onClick={() => navigate('/student/quiz', { replace: true })}
               className="!bg-white/10 hover:!bg-white/15 !text-white border border-white/20"
             >
               <RotateCcw className="w-4 h-4 mr-2" /> All Quizzes
             </Button>
             <Button
               size="lg"
-              onClick={() => navigate('/student/learning-gaps')}
+              onClick={() => navigate('/student/learning-gaps', { replace: true })}
               className="!bg-brass hover:!bg-[#a38858] !text-cherry font-bold shadow-btn"
             >
               <TrendingUp className="w-4 h-4 mr-2" /> Practice Weak Topics
@@ -247,7 +247,7 @@ export const QuizResult: React.FC = () => {
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => navigate('/student/tutor')}
+                  onClick={() => navigate('/student/tutor', { replace: true })}
                   className="!bg-oxblood hover:!bg-cherry !text-white border border-white/20"
                 >
                   Ask AI Tutor <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
@@ -267,7 +267,7 @@ export const QuizResult: React.FC = () => {
 
         <motion.div variants={itemVariants} className="flex justify-center pt-4">
           <button
-            onClick={() => navigate('/student')}
+            onClick={() => navigate('/student', { replace: true })}
             className="text-sm text-ivory/80 hover:text-white font-medium transition-colors bg-white/5 hover:bg-white/10 px-6 py-2 rounded-full border border-white/10 cursor-pointer"
           >
             Back to Dashboard

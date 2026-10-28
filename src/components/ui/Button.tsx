@@ -11,7 +11,28 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  withSound?: boolean;
 }
+
+const playButtonSound = () => {
+  try {
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(650, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.09);
+  } catch (_) {}
+};
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:   'bg-[#542536] text-[#F7F1E8] border-[#321923] shadow-[0_2px_6px_rgba(84,37,54,0.25)] hover:bg-[#321923] hover:shadow-[0_4px_14px_rgba(84,37,54,0.32)]',
@@ -38,11 +59,22 @@ export const Button: React.FC<ButtonProps> = ({
   leftIcon,
   rightIcon,
   fullWidth = false,
+  withSound = false,
   children,
   className,
   disabled,
+  onClick,
   ...rest
 }) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (withSound || rest.type === 'submit') {
+      playButtonSound();
+    }
+    if (onClick) {
+      onClick(e);
+    }
+  };
+
   return (
     <button
       className={clsx(
@@ -53,6 +85,7 @@ export const Button: React.FC<ButtonProps> = ({
         className
       )}
       disabled={disabled || isLoading}
+      onClick={handleClick}
       {...rest}
     >
       {isLoading ? (
