@@ -77,8 +77,9 @@ export const Login: React.FC = () => {
       if (user.role === 'admin') navigate('/admin');
       else if (user.role === 'faculty') navigate('/faculty/select-class');
       else navigate('/student');
-    } catch {
-      setError('Invalid credentials. Please try again.');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err?.response?.data?.message || err?.message || 'Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -102,8 +103,9 @@ export const Login: React.FC = () => {
       if (user.role === 'admin') navigate('/admin');
       else if (user.role === 'faculty') navigate('/faculty/select-class');
       else navigate('/student');
-    } catch {
-      setError('Failed to login with demo account.');
+    } catch (err: any) {
+      console.error('Demo login error:', err);
+      setError(err?.response?.data?.message || err?.message || 'Failed to login with demo account.');
     } finally {
       setIsLoading(false);
     }

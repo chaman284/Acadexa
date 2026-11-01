@@ -106,14 +106,22 @@ export const quizService = {
               text: qText,
               type: 'MCQ',
               difficulty: qDiff as any,
+              status: 'APPROVED',
+              cognitiveLevel: ((clientQ as any)?.cognitiveLevel as any) || 'CL2_UNDERSTAND',
+              explanation: (clientQ as any)?.explanation || null,
               topicId: topic.id,
               options: {
-                create: [
-                  { text: 'Option A (Correct answer)', isCorrect: true },
-                  { text: 'Option B', isCorrect: false },
-                  { text: 'Option C', isCorrect: false },
-                  { text: 'Option D', isCorrect: false },
-                ],
+                create: (clientQ as any)?.options && Array.isArray((clientQ as any).options) && (clientQ as any).options.length > 0
+                  ? (clientQ as any).options.map((opt: any) => ({
+                      text: opt.text,
+                      isCorrect: Boolean(opt.isCorrect),
+                    }))
+                  : [
+                      { text: 'Option A (Correct answer)', isCorrect: true },
+                      { text: 'Option B', isCorrect: false },
+                      { text: 'Option C', isCorrect: false },
+                      { text: 'Option D', isCorrect: false },
+                    ],
               },
             },
           });

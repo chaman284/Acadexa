@@ -109,7 +109,7 @@ export const chatService = {
       return {
         id: `msg_${Date.now()}`,
         role: 'assistant',
-        content: 'I can help you with information about the CS department. You can ask me about upcoming events, examinations, faculty, timetables, or general academic policies.',
+        content: 'I can help you with academic and department information. You can ask me about coursework, concepts, announcements, or general academic policies.',
         timestamp: new Date().toISOString(),
         type: 'department',
       };

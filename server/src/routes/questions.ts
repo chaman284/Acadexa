@@ -281,7 +281,26 @@ router.get('/', authenticateJWT, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. AIG: Automated Item Generation with Gemini 1.5 API (Status: PENDING_APPROVAL)
+// 1b. Get Topics (optionally by subjectId)
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/topics', authenticateJWT, async (req, res) => {
+  try {
+    const { subjectId } = req.query;
+    const topics = await prisma.topic.findMany({
+      where: subjectId ? { subjectId: String(subjectId) } : {},
+      include: {
+        subject: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+    res.json(topics);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. AIG: Automated Item Generation with Gemini 1.5 API
 // ─────────────────────────────────────────────────────────────────────────────
 router.post(
   '/generate',
@@ -297,11 +316,16 @@ router.post(
         bloomsLevel,
         count = 3,
         topicId,
+        subjectId,
+        autoApprove = false,
+        status: reqStatus,
       } = req.body;
 
       const normCognitiveLevel = normalizeCognitiveLevel(bloomsLevel || cognitiveLevel);
       const normDifficulty = normalizeDifficulty(difficulty);
       const numQuestions = Math.min(Math.max(parseInt(count, 10) || 3, 1), 10);
+      const isApproved = Boolean(autoApprove) || reqStatus === 'APPROVED';
+      const initialStatus = isApproved ? 'APPROVED' : 'PENDING_APPROVAL';
 
       // Generate MCQs with Gemini 1.5 API (or fallback generator)
       const rawGenerated = await generateQuestionsWithGemini(
@@ -322,6 +346,16 @@ router.post(
           });
         }
 
+        if (!targetTopic && subjectId) {
+          targetTopic = await prisma.topic.findFirst({
+            where: {
+              subjectId: String(subjectId),
+              name: { equals: topic, mode: 'insensitive' },
+            },
+            include: { subject: true },
+          });
+        }
+
         if (!targetTopic) {
           targetTopic = await prisma.topic.findFirst({
             where: {
@@ -332,14 +366,23 @@ router.post(
         }
 
         if (!targetTopic) {
-          let targetSubject = await prisma.subject.findFirst({
-            where: {
-              OR: [
-                { name: { equals: subject, mode: 'insensitive' } },
-                { code: { equals: subject, mode: 'insensitive' } },
-              ],
-            },
-          });
+          let targetSubject: any = null;
+          if (subjectId) {
+            targetSubject = await prisma.subject.findUnique({
+              where: { id: String(subjectId) },
+            });
+          }
+
+          if (!targetSubject) {
+            targetSubject = await prisma.subject.findFirst({
+              where: {
+                OR: [
+                  { name: { equals: subject, mode: 'insensitive' } },
+                  { code: { equals: subject, mode: 'insensitive' } },
+                ],
+              },
+            });
+          }
 
           if (!targetSubject) {
             let dept = await prisma.department.findFirst();
@@ -370,11 +413,11 @@ router.post(
         targetTopic = {
           id: topicId || `t_${Date.now()}`,
           name: topic,
-          subject: { name: subject, id: 's1' },
+          subject: { name: subject, id: subjectId || 's1' },
         };
       }
 
-      // Save questions into database with status PENDING_APPROVAL
+      // Save questions into database with determined status
       const createdQuestions: any[] = [];
       for (const item of rawGenerated) {
         let createdRecord: any = null;
@@ -386,7 +429,7 @@ router.post(
                 type: 'MCQ',
                 difficulty: normDifficulty,
                 cognitiveLevel: normCognitiveLevel,
-                status: 'PENDING_APPROVAL',
+                status: initialStatus,
                 explanation: item.explanation || null,
                 topicId: targetTopic.id,
                 options: {
@@ -415,7 +458,7 @@ router.post(
             type: 'MCQ',
             difficulty: normDifficulty,
             cognitiveLevel: normCognitiveLevel,
-            status: 'PENDING_APPROVAL',
+            status: initialStatus,
             explanation: item.explanation || null,
             topicId: targetTopic?.id || 't1',
             topic: {
@@ -436,7 +479,9 @@ router.post(
       }
 
       res.status(201).json({
-        message: `Successfully generated ${createdQuestions.length} questions awaiting faculty review`,
+        message: isApproved
+          ? `Successfully generated and approved ${createdQuestions.length} questions for quiz`
+          : `Successfully generated ${createdQuestions.length} questions awaiting faculty review`,
         subject: targetTopic?.subject?.name || subject,
         topic: targetTopic?.name || topic,
         cognitiveLevel: normCognitiveLevel,

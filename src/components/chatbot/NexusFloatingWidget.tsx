@@ -33,12 +33,12 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  '📅 Upcoming department events & symposium',
-  '🌳 Explain BST traversal and search complexity',
-  '📝 When is our CIE-1 internal exam schedule?',
-  '🏛️ Who is the faculty for DBMS & office hours?',
-  '🌴 Are there any upcoming holidays?',
-  '💻 What is the normalization syllabus?',
+  '📅 Are there any upcoming department announcements?',
+  '💡 Can you explain a key concept from my coursework?',
+  '📝 How should I prepare for upcoming quizzes?',
+  '🎯 Give me study strategies for technical assessments',
+  '🏛️ What courses and topics are registered in curriculum?',
+  '🔍 Explain time vs space complexity trade-offs',
 ];
 
 export const NexusFloatingWidget: React.FC = () => {
@@ -48,7 +48,7 @@ export const NexusFloatingWidget: React.FC = () => {
     {
       id: 'msg_welcome',
       sender: 'nexus',
-      text: 'Hello! I am Nexus, your official Department AI Assistant. I use verified Department Records and Syllabus Documents to provide factual guidance on courses, exams, schedules, and faculty hours. How can I assist you today?',
+      text: 'Hello! I am your AI Academic Tutor & Department Assistant. I can help explain concepts, answer questions about your courses and assessments, and provide study guidance. How can I assist you today?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);

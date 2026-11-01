@@ -5,18 +5,18 @@ import { chatService } from '../../services/chatService';
 import type { ChatMessage } from '../../types/department';
 
 const SUGGESTED_PROMPTS = [
-  'Explain normalization with examples',
-  'Give me 3 questions on Binary Trees',
-  'Explain my Trees quiz mistake',
-  'Help me prepare for tomorrow\'s quiz',
-  'What is the difference between BFS and DFS?',
-  'Explain paging vs segmentation',
+  'Explain the core concept and intuition behind this topic',
+  'How do I analyze the time and space complexity?',
+  'Give me 3 practice questions with step-by-step explanations',
+  'Help me prepare and review for an upcoming quiz',
+  'What is the difference between these two algorithmic approaches?',
+  'Give me an intuitive real-world analogy to understand this',
 ];
 
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'init',
   role: 'assistant',
-  content: 'Hello! I\'m your AI Academic Tutor. I can help you understand concepts, clarify doubts from your quizzes, and suggest practice questions based on your learning gaps. What would you like to explore today?',
+  content: 'Hello! I\'m your AI Academic Tutor. I can help you understand concepts, clarify doubts from your quizzes, and suggest practice questions. What would you like to explore today?',
   timestamp: new Date().toISOString(),
   type: 'tutor',
 };

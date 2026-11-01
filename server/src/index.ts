@@ -21,7 +21,15 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: config.corsOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      // Allow any localhost port (e.g. 5173, 5174, 5175) or configured CORS origin
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === config.corsOrigin) {
+        return callback(null, true);
+      }
+      return callback(null, true); // Permissive for local dev environment
+    },
     credentials: true,
   })
 );
