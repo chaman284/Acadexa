@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, TrendingUp, TrendingDown, Minus, ArrowRight, ArrowLeft,
-  ClipboardList, FileStack, ChevronRight, BarChart2, Sparkles, BookOpen
+  ClipboardList, FileStack, ChevronRight, BarChart2, Sparkles, BookOpen, LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../../components/ui/Avatar';
@@ -30,7 +30,7 @@ const playClickSound = () => {
 
 export const ClassSelection: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [classes, setClasses] = useState<FacultyClass[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -101,6 +101,12 @@ export const ClassSelection: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    playClickSound();
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="min-h-screen flex flex-col select-none bg-[#F7F1E8] overflow-y-auto">
       {/* ── Top Bar ── */}
@@ -148,6 +154,19 @@ export const ClassSelection: React.FC = () => {
               </Badge>
             </div>
           </div>
+
+          <div className="h-5 w-px bg-[#E1D4CA]" />
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#E1D4CA] text-[#79666A] hover:text-[#542536] hover:bg-[#542536]/10 hover:border-[#542536]/30 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+            title="Log out of Faculty Portal"
+            id="faculty-logout-button"
+          >
+            <LogOut className="w-4 h-4 text-[#542536]" />
+            <span className="hidden sm:inline font-bold">Logout</span>
+          </button>
         </div>
       </header>
 

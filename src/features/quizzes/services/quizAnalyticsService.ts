@@ -7,115 +7,21 @@ import type { QuizAttempt, TopicPerformance } from '../types/quizTypes';
 
 const ATTEMPTS_STORAGE_KEY = 'acadexa_quiz_attempts_v2';
 
-// Seed demo attempts for demonstration
-const SEED_ATTEMPTS: QuizAttempt[] = [
-  {
-    id: 'att_seed_1',
-    quizId: 'quiz_cie1_ds',
-    quizTitle: 'Unit 2 Assessment — Binary Trees & Traversal Techniques',
-    studentId: 'stud_101',
-    studentName: 'Aarav Sharma',
-    studentRollNo: 'CS23B101',
-    className: 'Section 3A',
-    mode: 'exam',
-    startedAt: '2026-10-23T10:00:00.000Z',
-    submittedAt: '2026-10-23T10:22:00.000Z',
-    durationSeconds: 1320,
-    totalScore: 8,
-    maxPossibleScore: 10,
-    percentage: 80,
-    hasPendingManualEvaluation: false,
-    responses: {
-      lib_q_1: { questionId: 'lib_q_1', selectedOptionIds: ['opt_1_b'], timeTakenSeconds: 90, isAnswered: true },
-      lib_q_2: { questionId: 'lib_q_2', selectedOptionIds: ['opt_2_b'], timeTakenSeconds: 45, isAnswered: true },
-      man_q_1: { questionId: 'man_q_1', selectedOptionIds: ['opt_h_1'], timeTakenSeconds: 110, isAnswered: true },
-      lib_q_7: { questionId: 'lib_q_7', textResponse: '30 20 10', timeTakenSeconds: 140, isAnswered: true },
-      ai_q_demo: { questionId: 'ai_q_demo', selectedOptionIds: ['opt_avl_2'], timeTakenSeconds: 160, isAnswered: true },
-    },
-    evaluations: {
-      lib_q_1: { questionId: 'lib_q_1', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_bst', topicName: 'Binary Search Trees (BST)' },
-      lib_q_2: { questionId: 'lib_q_2', scoreAwarded: 1, maxMarks: 1, isCorrect: true, status: 'graded', topicId: 'top_tree_trav', topicName: 'Binary Tree Traversal' },
-      man_q_1: { questionId: 'man_q_1', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_bst', topicName: 'Binary Search Trees (BST)' },
-      lib_q_7: { questionId: 'lib_q_7', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_tree_trav', topicName: 'Binary Tree Traversal' },
-      ai_q_demo: { questionId: 'ai_q_demo', scoreAwarded: 0, maxMarks: 3, isCorrect: false, status: 'graded', topicId: 'top_avl', topicName: 'Balanced Trees (AVL & Red-Black)' },
-    },
-  },
-  {
-    id: 'att_seed_2',
-    quizId: 'quiz_cie1_ds',
-    quizTitle: 'Unit 2 Assessment — Binary Trees & Traversal Techniques',
-    studentId: 'stud_102',
-    studentName: 'Bhavna Reddy',
-    studentRollNo: 'CS23B102',
-    className: 'Section 3A',
-    mode: 'exam',
-    startedAt: '2026-10-23T10:02:00.000Z',
-    submittedAt: '2026-10-23T10:24:00.000Z',
-    durationSeconds: 1320,
-    totalScore: 5,
-    maxPossibleScore: 10,
-    percentage: 50,
-    hasPendingManualEvaluation: false,
-    responses: {
-      lib_q_1: { questionId: 'lib_q_1', selectedOptionIds: ['opt_1_c'], timeTakenSeconds: 120, isAnswered: true },
-      lib_q_2: { questionId: 'lib_q_2', selectedOptionIds: ['opt_2_b'], timeTakenSeconds: 50, isAnswered: true },
-      man_q_1: { questionId: 'man_q_1', selectedOptionIds: ['opt_h_2'], timeTakenSeconds: 130, isAnswered: true },
-      lib_q_7: { questionId: 'lib_q_7', textResponse: '30 20 10', timeTakenSeconds: 150, isAnswered: true },
-      ai_q_demo: { questionId: 'ai_q_demo', selectedOptionIds: ['opt_avl_3'], timeTakenSeconds: 180, isAnswered: true },
-    },
-    evaluations: {
-      lib_q_1: { questionId: 'lib_q_1', scoreAwarded: 0, maxMarks: 2, isCorrect: false, status: 'graded', topicId: 'top_bst', topicName: 'Binary Search Trees (BST)' },
-      lib_q_2: { questionId: 'lib_q_2', scoreAwarded: 1, maxMarks: 1, isCorrect: true, status: 'graded', topicId: 'top_tree_trav', topicName: 'Binary Tree Traversal' },
-      man_q_1: { questionId: 'man_q_1', scoreAwarded: 0, maxMarks: 2, isCorrect: false, status: 'graded', topicId: 'top_bst', topicName: 'Binary Search Trees (BST)' },
-      lib_q_7: { questionId: 'lib_q_7', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_tree_trav', topicName: 'Binary Tree Traversal' },
-      ai_q_demo: { questionId: 'ai_q_demo', scoreAwarded: 0, maxMarks: 3, isCorrect: false, status: 'graded', topicId: 'top_avl', topicName: 'Balanced Trees (AVL & Red-Black)' },
-    },
-  },
-  {
-    id: 'att_seed_3',
-    quizId: 'quiz_cie1_ds',
-    quizTitle: 'Unit 2 Assessment — Binary Trees & Traversal Techniques',
-    studentId: 'stud_103',
-    studentName: 'Chirag Patil',
-    studentRollNo: 'CS23B103',
-    className: 'Section 3B',
-    mode: 'exam',
-    startedAt: '2026-10-23T10:05:00.000Z',
-    submittedAt: '2026-10-23T10:20:00.000Z',
-    durationSeconds: 900,
-    totalScore: 9,
-    maxPossibleScore: 10,
-    percentage: 90,
-    hasPendingManualEvaluation: false,
-    responses: {
-      lib_q_1: { questionId: 'lib_q_1', selectedOptionIds: ['opt_1_b'], timeTakenSeconds: 70, isAnswered: true },
-      lib_q_2: { questionId: 'lib_q_2', selectedOptionIds: ['opt_2_b'], timeTakenSeconds: 30, isAnswered: true },
-      man_q_1: { questionId: 'man_q_1', selectedOptionIds: ['opt_h_1'], timeTakenSeconds: 90, isAnswered: true },
-      lib_q_7: { questionId: 'lib_q_7', textResponse: '30 20 10', timeTakenSeconds: 100, isAnswered: true },
-      ai_q_demo: { questionId: 'ai_q_demo', selectedOptionIds: ['opt_avl_1'], timeTakenSeconds: 110, isAnswered: true },
-    },
-    evaluations: {
-      lib_q_1: { questionId: 'lib_q_1', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_bst', topicName: 'Binary Search Trees (BST)' },
-      lib_q_2: { questionId: 'lib_q_2', scoreAwarded: 1, maxMarks: 1, isCorrect: true, status: 'graded', topicId: 'top_tree_trav', topicName: 'Binary Tree Traversal' },
-      man_q_1: { questionId: 'man_q_1', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_bst', topicName: 'Binary Search Trees (BST)' },
-      lib_q_7: { questionId: 'lib_q_7', scoreAwarded: 2, maxMarks: 2, isCorrect: true, status: 'graded', topicId: 'top_tree_trav', topicName: 'Binary Tree Traversal' },
-      ai_q_demo: { questionId: 'ai_q_demo', scoreAwarded: 3, maxMarks: 3, isCorrect: true, status: 'graded', topicId: 'top_avl', topicName: 'Balanced Trees (AVL & Red-Black)' },
-    },
-  },
-];
+const SEED_ATTEMPTS: QuizAttempt[] = [];
 
 const getStoredAttempts = (): QuizAttempt[] => {
   try {
     const raw = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((a: any) => a && !String(a.id).startsWith('att_seed_'));
+      }
     }
   } catch (err) {
     console.warn('Failed to parse quiz attempts:', err);
   }
-  localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(SEED_ATTEMPTS));
-  return SEED_ATTEMPTS;
+  return [];
 };
 
 const saveStoredAttempts = (attempts: QuizAttempt[]) => {

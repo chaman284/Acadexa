@@ -59,6 +59,26 @@ export const QuizListPage: React.FC = () => {
     loadQuizzes();
   }, []);
 
+  // Dynamic list of subjects from loaded quizzes and curriculum
+  const availableSubjects = React.useMemo(() => {
+    const map = new Map<string, { id: string; code: string; name: string }>();
+    quizzes.forEach(q => {
+      if (q.subjectId && !map.has(q.subjectId)) {
+        map.set(q.subjectId, {
+          id: q.subjectId,
+          code: q.subjectCode || 'SUB',
+          name: q.subjectName || 'Subject',
+        });
+      }
+    });
+    CURRICULUM_DATA.forEach(c => {
+      if (!map.has(c.id)) {
+        map.set(c.id, { id: c.id, code: c.code, name: c.name });
+      }
+    });
+    return Array.from(map.values());
+  }, [quizzes]);
+
   // Filtered dataset
   const filteredQuizzes = quizzes.filter(q => {
     const statusMatch =
@@ -69,7 +89,9 @@ export const QuizListPage: React.FC = () => {
       (tab === 'draft' && q.status === 'draft');
 
     const subjectMatch =
-      selectedSubject === 'all' || q.subjectId === selectedSubject;
+      selectedSubject === 'all' ||
+      q.subjectId === selectedSubject ||
+      q.subjectCode === selectedSubject;
 
     const modeMatch =
       selectedMode === 'all' || q.mode === selectedMode;
@@ -205,7 +227,7 @@ export const QuizListPage: React.FC = () => {
               className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700"
             >
               <option value="all">All Subjects</option>
-              {CURRICULUM_DATA.map(s => (
+              {availableSubjects.map(s => (
                 <option key={s.id} value={s.id}>
                   [{s.code}] {s.name}
                 </option>

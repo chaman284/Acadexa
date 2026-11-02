@@ -196,7 +196,7 @@ export const QuizBuilderPage: React.FC = () => {
 
   // Build Quiz Payload helper
   const assembleQuizPayload = (status: Quiz['status']): Omit<Quiz, 'id' | 'createdAt' | 'updatedAt'> => {
-    const currentSubj = CURRICULUM_DATA.find(s => s.id === subjectId) || CURRICULUM_DATA[0];
+    const currentSubj = CURRICULUM_DATA.find(s => s.id === subjectId);
 
     return {
       title: title.trim() || 'Untitled Curriculum Assessment',
@@ -204,18 +204,20 @@ export const QuizBuilderPage: React.FC = () => {
       category,
       mode,
       status,
-      department: currentSubj.department,
+      department: currentSubj?.department || 'Computer Science and Engineering',
       semester,
-      subjectId: currentSubj.id,
-      subjectCode: currentSubj.code,
-      subjectName: currentSubj.name,
+      subjectId: subjectId || currentSubj?.id || '',
+      subjectCode: currentSubj?.code || 'CS',
+      subjectName: currentSubj?.name || 'Curriculum Course',
       unitIds,
-      unitNames: currentSubj.units.filter(u => unitIds.includes(u.id)).map(u => u.name),
+      unitNames: currentSubj?.units?.filter(u => unitIds.includes(u.id)).map(u => u.name) || [],
       topicIds,
-      topicNames: currentSubj.units
-        .flatMap(u => u.topics)
-        .filter(t => topicIds.includes(t.id))
-        .map(t => t.name),
+      topicNames: currentSubj?.units
+        ? currentSubj.units
+            .flatMap(u => u.topics)
+            .filter(t => topicIds.includes(t.id))
+            .map(t => t.name)
+        : [],
       assignedClasses,
       questions,
       totalQuestions: questions.length,
@@ -279,7 +281,7 @@ export const QuizBuilderPage: React.FC = () => {
 
   const handlePreviewAsStudent = () => {
     // Navigate to preview page with the in-progress draft state
-    const currentSubj = CURRICULUM_DATA.find(s => s.id === subjectId) || CURRICULUM_DATA[0];
+    const currentSubj = CURRICULUM_DATA.find(s => s.id === subjectId);
     const previewQuiz: Quiz = {
       id: editQuizId || 'quiz_preview_temp',
       title: title || 'Curriculum Assessment Preview',
@@ -287,11 +289,11 @@ export const QuizBuilderPage: React.FC = () => {
       category,
       mode,
       status: 'active',
-      department: currentSubj.department,
+      department: currentSubj?.department || 'Computer Science and Engineering',
       semester,
-      subjectId: currentSubj.id,
-      subjectCode: currentSubj.code,
-      subjectName: currentSubj.name,
+      subjectId: subjectId || currentSubj?.id || '',
+      subjectCode: currentSubj?.code || 'CS',
+      subjectName: currentSubj?.name || 'Curriculum Course',
       unitIds,
       unitNames: [],
       topicIds,
