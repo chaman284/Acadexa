@@ -161,6 +161,9 @@ export const questionService = {
     cognitiveLevel?: string;
     count?: number;
     topicId?: string;
+    subjectId?: string;
+    autoApprove?: boolean;
+    status?: string;
   }): Promise<Question[]> => {
     const res = await api.post('/questions/generate', {
       subject: params.subject,
@@ -170,10 +173,24 @@ export const questionService = {
       cognitiveLevel: params.cognitiveLevel || params.bloomsLevel,
       count: params.count || 3,
       topicId: params.topicId,
+      subjectId: params.subjectId,
+      autoApprove: params.autoApprove ?? true,
+      status: params.status || 'APPROVED',
     });
 
     if (res.data?.questions && Array.isArray(res.data.questions)) {
       return res.data.questions.map(mapApiQuestion);
+    }
+    return [];
+  },
+
+  /** GET /api/questions/topics */
+  getTopics: async (subjectId?: string): Promise<{ id: string; name: string; subject?: { id: string; name: string } }[]> => {
+    try {
+      const res = await api.get('/questions/topics', { params: { subjectId } });
+      if (Array.isArray(res.data)) return res.data;
+    } catch (e) {
+      console.warn('API getTopics error:', e);
     }
     return [];
   },

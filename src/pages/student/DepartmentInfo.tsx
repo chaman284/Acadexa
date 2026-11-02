@@ -13,12 +13,12 @@ import {
 } from 'lucide-react';
 
 const DEPT_SUGGESTED_PROMPTS = [
-  'When is the next department event?',
-  'When are the internal exams?',
-  'Who teaches Database Management Systems?',
-  "What is tomorrow's timetable?",
-  'Where is the department office?',
-  'When is the project submission deadline?',
+  'Are there any upcoming department announcements?',
+  'When are the upcoming examinations and assessments?',
+  'How do I find faculty office hours?',
+  'Where is the department office located?',
+  'What academic policies should I be aware of?',
+  'How do I prepare for upcoming quizzes?',
 ];
 
 const DEPT_INITIAL_MESSAGE: ChatMessage = {
