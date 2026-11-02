@@ -238,7 +238,32 @@ router.get('/overview', async (req, res) => {
 // List all faculty with assignment details
 router.get('/faculty', async (req, res) => {
   try {
+    const { search, departmentId, subjectId, sectionId } = req.query;
+
+    const where: any = {};
+
+    if (search) {
+      const searchStr = String(search).trim();
+      where.user = {
+        OR: [
+          { name: { contains: searchStr, mode: 'insensitive' } },
+          { email: { contains: searchStr, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    if (departmentId || subjectId || sectionId) {
+      where.assignments = {
+        some: {
+          ...(subjectId ? { subjectId: String(subjectId) } : {}),
+          ...(sectionId ? { sectionId: String(sectionId) } : {}),
+          ...(departmentId ? { section: { departmentId: String(departmentId) } } : {}),
+        },
+      };
+    }
+
     const faculty = await prisma.faculty.findMany({
+      where,
       include: {
         user: {
           select: {
@@ -280,6 +305,9 @@ router.get('/faculty', async (req, res) => {
       email: f.user.email,
       avatarUrl: f.user.avatarUrl,
       joinedAt: f.user.createdAt,
+      createdAt: f.user.createdAt,
+      coursesCount: new Set(f.assignments.map(a => a.subjectId)).size,
+      sectionsCount: f.assignments.length,
       totalCourses: new Set(f.assignments.map(a => a.subjectId)).size,
       totalSections: f.assignments.length,
       assignments: f.assignments.map(a => ({
@@ -297,6 +325,186 @@ router.get('/faculty', async (req, res) => {
     res.json(formatted);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Get single faculty profile & allocations
+router.get('/faculty/:id', async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    const f = await prisma.faculty.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+            createdAt: true,
+          },
+        },
+        assignments: {
+          include: {
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                department: { select: { id: true, name: true, code: true } },
+              },
+            },
+            section: {
+              select: {
+                id: true,
+                name: true,
+                semester: true,
+                department: { select: { id: true, name: true, code: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!f) {
+      return res.status(404).json({ message: 'Faculty member not found' });
+    }
+
+    res.json({
+      id: f.id,
+      userId: f.userId,
+      name: f.user.name,
+      email: f.user.email,
+      avatarUrl: f.user.avatarUrl,
+      joinedAt: f.user.createdAt,
+      createdAt: f.user.createdAt,
+      coursesCount: new Set(f.assignments.map(a => a.subjectId)).size,
+      sectionsCount: f.assignments.length,
+      totalCourses: new Set(f.assignments.map(a => a.subjectId)).size,
+      totalSections: f.assignments.length,
+      assignments: f.assignments.map(a => ({
+        id: a.id,
+        subjectId: a.subject.id,
+        subjectName: a.subject.name,
+        subjectCode: a.subject.code,
+        sectionId: a.section.id,
+        sectionName: `${a.section.semester}${a.section.name}`,
+        semester: a.section.semester,
+        department: a.section.department.code,
+      })),
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Add new faculty member (creates User + Faculty profile atomically, with optional course/section assignment)
+router.post('/faculty', async (req, res) => {
+  try {
+    const { name, email, password, subjectId, sectionId } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required' });
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+
+    // Check unique email
+    const existingUser = await prisma.user.findUnique({
+      where: { email: trimmedEmail },
+    });
+    if (existingUser) {
+      return res.status(409).json({ message: 'A user with this email address already exists' });
+    }
+
+    if ((subjectId && !sectionId) || (!subjectId && sectionId)) {
+      return res.status(400).json({ message: 'Both course and section must be provided together for assignment' });
+    }
+
+    if (subjectId && sectionId) {
+      const [subject, section] = await Promise.all([
+        prisma.subject.findUnique({ where: { id: subjectId } }),
+        prisma.section.findUnique({ where: { id: sectionId } }),
+      ]);
+      if (!subject) return res.status(404).json({ message: 'Selected course does not exist' });
+      if (!section) return res.status(404).json({ message: 'Selected section does not exist' });
+    }
+
+    const passwordHash = await bcrypt.hash(password || 'Acadexa@123', 10);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: trimmedName,
+          email: trimmedEmail,
+          passwordHash,
+          role: 'FACULTY',
+        },
+      });
+
+      const faculty = await tx.faculty.create({
+        data: {
+          userId: user.id,
+        },
+      });
+
+      let assignment = null;
+      if (subjectId && sectionId) {
+        assignment = await tx.facultySubject.create({
+          data: {
+            facultyId: faculty.id,
+            subjectId,
+            sectionId,
+          },
+          include: {
+            subject: true,
+            section: true,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            title: 'Welcome to Acadexa',
+            message: `Your faculty account has been created and you have been assigned to ${assignment.subject.name} for Section ${assignment.section.semester}${assignment.section.name}.`,
+            type: 'course',
+            role: 'FACULTY',
+            actionUrl: '/faculty',
+          },
+        });
+      } else {
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            title: 'Welcome to Acadexa',
+            message: 'Your faculty account has been created.',
+            type: 'info',
+            role: 'FACULTY',
+            actionUrl: '/faculty',
+          },
+        });
+      }
+
+      return {
+        id: faculty.id,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        assignment,
+      };
+    });
+
+    res.status(201).json(result);
+  } catch (error: any) {
+    console.error('Error creating faculty member:', error);
+    res.status(500).json({ message: error.message || 'Failed to create faculty member' });
   }
 });
 
