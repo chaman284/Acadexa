@@ -5,6 +5,7 @@ import {
   BookOpen, Clock, BarChart2, Layers,
   Plus, Trash2, Sparkles, Users, GraduationCap, CheckCircle2, ShieldCheck,
   X, RefreshCw, HelpCircle, AlertCircle, ArrowRight, Lightbulb,
+  Pencil, Key, Settings2,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -170,9 +171,42 @@ export const QuizBuilder: React.FC = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [selectedGeneratedIds, setSelectedGeneratedIds] = useState<string[]>([]);
 
+  // API Key & Edit Question State
+  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState(
+    () => localStorage.getItem('acadexa_gemini_key') || ''
+  );
+  const [showApiKeySetting, setShowApiKeySetting] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<{
+    id: string;
+    text: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    cognitiveLevel?: string;
+    explanation: string;
+    options: { id: string; text: string; isCorrect: boolean }[];
+    source: 'generated' | 'available';
+  } | null>(null);
+
+  const cleanQuestionText = (text: string): string => {
+    if (!text) return '';
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^In\s+[^:]*:\s*/i, '');
+    cleaned = cleaned.replace(/\(?Bloom'?s\s+[A-Za-z0-9_]+\)?:\s*/i, '');
+    cleaned = cleaned.replace(/^considering\s+[^:]*:\s*/i, '');
+    cleaned = cleaned.replace(/^\[[A-Z0-9]{3,10}\]\s*[-—:]?\s*/i, '');
+    cleaned = cleaned.replace(/^[A-Z]{2,5}\d{2,4}[A-Z0-9]?\s*[-—:]\s*/i, '');
+    cleaned = cleaned.replace(/^(Question\s*\d+|Q\d+)\s*[:.-]\s*/i, '');
+    if (cleaned.length > 0) {
+      cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    }
+    return cleaned.trim();
+  };
+
   useEffect(() => {
     questionService.getQuestions({ status: 'APPROVED' }).then(res => {
-      const approvedOnly = res.filter(q => q.status === 'approved');
+      const approvedOnly = res.filter(q => q.status === 'approved').map(q => ({
+        ...q,
+        text: cleanQuestionText(q.text),
+      }));
       setAvailableQuestions(approvedOnly);
     });
   }, []);
@@ -236,6 +270,101 @@ export const QuizBuilder: React.FC = () => {
   const toggleClass = (id: string) =>
     setAssignedClassIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
+  // Question Edit Handlers
+  const handleOpenEditQuestion = (q: Question, source: 'generated' | 'available') => {
+    setEditingQuestion({
+      id: q.id,
+      text: cleanQuestionText(q.text),
+      difficulty: q.difficulty || 'medium',
+      cognitiveLevel: q.cognitiveLevel,
+      explanation: q.explanation || '',
+      options: (q.options || []).map((o, idx) => ({
+        id: o.id || `opt_${idx}`,
+        text: o.text,
+        isCorrect: Boolean(o.isCorrect),
+      })),
+      source,
+    });
+  };
+
+  const handleSaveQuestionEdit = async () => {
+    if (!editingQuestion) return;
+    const { id, text, difficulty, cognitiveLevel, explanation, options, source } = editingQuestion;
+
+    if (!text.trim()) {
+      alert('Question text cannot be empty.');
+      return;
+    }
+
+    if (options.some(o => !o.text.trim())) {
+      alert('All 4 options must contain text.');
+      return;
+    }
+
+    if (!options.some(o => o.isCorrect)) {
+      alert('Please select at least one correct option.');
+      return;
+    }
+
+    const cleanedText = cleanQuestionText(text);
+    const sanitizedOptions = options.map((o, idx) => ({
+      id: o.id || `opt_${idx}_${Date.now()}`,
+      text: o.text.trim(),
+      isCorrect: Boolean(o.isCorrect),
+    }));
+
+    if (source === 'generated') {
+      setGeneratedQuestions(prev =>
+        prev.map(q => {
+          if (q.id === id) {
+            return {
+              ...q,
+              text: cleanedText,
+              difficulty,
+              cognitiveLevel: cognitiveLevel as any,
+              explanation: explanation.trim(),
+              options: sanitizedOptions,
+            };
+          }
+          return q;
+        })
+      );
+    } else {
+      setAvailableQuestions(prev =>
+        prev.map(q => {
+          if (q.id === id) {
+            return {
+              ...q,
+              text: cleanedText,
+              difficulty,
+              cognitiveLevel: cognitiveLevel as any,
+              explanation: explanation.trim(),
+              options: sanitizedOptions,
+            };
+          }
+          return q;
+        })
+      );
+
+      if (!id.startsWith('gen_')) {
+        try {
+          await questionService.reviewQuestion(id, {
+            text: cleanedText,
+            difficulty,
+            cognitiveLevel,
+            explanation: explanation.trim(),
+            options: options.map(o => ({ text: o.text.trim(), isCorrect: o.isCorrect })),
+            action: 'approve',
+          });
+        } catch (err) {
+          console.warn('Failed to update question in database:', err);
+        }
+      }
+    }
+
+    setEditingQuestion(null);
+  };
+
   // AIG Generation Handler
   const handleGenerateAIG = async () => {
     const topicToUse = aigTopic.trim() || suggestedTopics[0] || subject || 'Curriculum Course';
@@ -252,11 +381,16 @@ export const QuizBuilder: React.FC = () => {
         subjectId: selectedCourseId || undefined,
         autoApprove: true,
         status: 'APPROVED',
+        geminiApiKey: geminiApiKeyInput.trim() || undefined,
       });
 
       if (results && results.length > 0) {
-        setGeneratedQuestions(results);
-        setSelectedGeneratedIds(results.map(q => q.id));
+        const cleanedResults = results.map(q => ({
+          ...q,
+          text: cleanQuestionText(q.text),
+        }));
+        setGeneratedQuestions(cleanedResults);
+        setSelectedGeneratedIds(cleanedResults.map(q => q.id));
       } else {
         setAigError('No questions could be synthesized. Please refine the topic and try again.');
       }
@@ -401,6 +535,30 @@ export const QuizBuilder: React.FC = () => {
 
           {/* Academic Semester Selector */}
           <Field label="Academic Semester" hint="Choose the target semester for this quiz">
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(s => {
+                const isSelected = selectedSemester === String(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSemester(String(s));
+                      setSelectedCourseId('');
+                      setSubject('');
+                      setAssignedClassIds([]);
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      isSelected
+                        ? 'border-[var(--color-oxblood)] bg-[var(--color-oxblood)] text-white shadow-xs'
+                        : 'border-[var(--color-border)] bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-muted)]'
+                    }`}
+                  >
+                    Sem {s}
+                  </button>
+                );
+              })}
+            </div>
             <select
               className={selectCls}
               value={selectedSemester}
@@ -413,7 +571,7 @@ export const QuizBuilder: React.FC = () => {
               }}
               required
             >
-              <option value="">-- Select Semester (1 - 8) --</option>
+              <option value="">-- Or choose from dropdown (1 - 8) --</option>
               {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
                 <option key={s} value={s}>
                   Semester {s}
@@ -431,6 +589,30 @@ export const QuizBuilder: React.FC = () => {
                 : `Showing courses registered for Semester ${selectedSemester}`
             }
           >
+            {semesterCourses.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                {semesterCourses.map(c => {
+                  const isSelected = selectedCourseId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCourseId(c.id);
+                        setSubject(`${c.code} — ${c.name}`);
+                      }}
+                      className={`p-2.5 rounded-xl text-xs font-medium text-left border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[var(--color-oxblood)] bg-[rgba(84,37,54,0.06)] ring-1 ring-[var(--color-oxblood)] text-[var(--color-oxblood)] font-bold'
+                          : 'border-[var(--color-border)] bg-white text-[var(--color-text-primary)] hover:bg-[var(--color-muted)]'
+                      }`}
+                    >
+                      <span className="font-bold">[{c.code}]</span> {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <select
               className={selectCls}
               value={selectedCourseId}
@@ -446,7 +628,7 @@ export const QuizBuilder: React.FC = () => {
               {!selectedSemester ? (
                 <option value="">-- Select a semester first --</option>
               ) : semesterCourses.length === 0 ? (
-                <option value="">-- No courses registered for Semester ${selectedSemester} --</option>
+                <option value="">-- No courses registered for Semester {selectedSemester} --</option>
               ) : (
                 <>
                   <option value="">-- Select Course --</option>
@@ -590,10 +772,10 @@ export const QuizBuilder: React.FC = () => {
               const selected = selectedQIds.includes(q.id);
               const isAi = q.isAiGenerated || q.id.startsWith('gen_');
               return (
-                <button
+                <div
                   key={q.id}
                   onClick={() => toggleQuestion(q.id)}
-                  className="w-full text-left rounded-xl border p-3.5 transition-all shadow-xs"
+                  className="w-full text-left rounded-xl border p-3.5 transition-all shadow-xs cursor-pointer select-none"
                   style={{
                     borderColor: selected ? 'var(--color-oxblood)' : 'var(--color-border)',
                     background: selected ? 'rgba(84,37,54,0.06)' : '#fff',
@@ -611,13 +793,27 @@ export const QuizBuilder: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-[var(--color-text-primary)] font-medium leading-snug">{q.text}</p>
-                        {isAi && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex-shrink-0">
-                            <Sparkles className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
-                            AIG
-                          </span>
-                        )}
+                        <p className="text-sm text-[var(--color-text-primary)] font-medium leading-snug">{cleanQuestionText(q.text)}</p>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {isAi && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                              <Sparkles className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                              AIG
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditQuestion(q, 'available');
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-oxblood)] bg-[var(--color-muted)] hover:bg-[rgba(84,37,54,0.08)] rounded-lg border border-[var(--color-border)] transition-all cursor-pointer"
+                            title="Edit question text and options"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <Badge color={q.difficulty === 'easy' ? 'green' : q.difficulty === 'medium' ? 'amber' : 'red'}>
@@ -638,7 +834,7 @@ export const QuizBuilder: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -882,6 +1078,55 @@ export const QuizBuilder: React.FC = () => {
               </span>
             </div>
 
+            {/* Optional Gemini Live Web Grounding Key */}
+            <div className="p-2.5 bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900 rounded-xl text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-purple-900 dark:text-purple-200 font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Gemini Web-Grounded Research</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowApiKeySetting(!showApiKeySetting)}
+                  className="text-[11px] text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1 font-medium"
+                >
+                  <Key className="w-3 h-3" />
+                  {showApiKeySetting ? 'Hide Settings' : (geminiApiKeyInput ? 'Key Configured ✓' : 'Add Gemini Key')}
+                </button>
+              </div>
+              {showApiKeySetting && (
+                <div className="pt-1 space-y-1">
+                  <p className="text-[11px] text-[var(--color-text-muted)]">
+                    Paste your Gemini API key to enable live Google Search grounding for fresh syllabus questions:
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={geminiApiKeyInput}
+                      onChange={(e) => {
+                        setGeminiApiKeyInput(e.target.value);
+                        localStorage.setItem('acadexa_gemini_key', e.target.value);
+                      }}
+                      placeholder="AIzaSy..."
+                      className={inputCls}
+                    />
+                    {geminiApiKeyInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGeminiApiKeyInput('');
+                          localStorage.removeItem('acadexa_gemini_key');
+                        }}
+                        className="px-2 text-[11px] text-red-600 hover:underline flex-shrink-0"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Topic Input & Chips */}
             <div>
               <label className="block text-xs font-bold text-[var(--color-text-primary)] mb-1.5">
@@ -1031,22 +1276,33 @@ export const QuizBuilder: React.FC = () => {
                         </button>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-bold text-[var(--color-oxblood)]">
-                              Q{idx + 1}.
-                            </span>
-                            <Badge color={q.difficulty === 'easy' ? 'green' : q.difficulty === 'medium' ? 'amber' : 'red'}>
-                              {q.difficulty}
-                            </Badge>
-                            {q.cognitiveLevel && (
-                              <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-                                {q.cognitiveLevel.replace('CL', 'Level ')}
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-[var(--color-oxblood)]">
+                                Q{idx + 1}.
                               </span>
-                            )}
+                              <Badge color={q.difficulty === 'easy' ? 'green' : q.difficulty === 'medium' ? 'amber' : 'red'}>
+                                {q.difficulty}
+                              </Badge>
+                              {q.cognitiveLevel && (
+                                <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                  {q.cognitiveLevel.replace('CL', 'Level ')}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditQuestion(q, 'generated')}
+                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-lg transition-all cursor-pointer"
+                              title="Edit question and options"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              <span>Edit Question & Options</span>
+                            </button>
                           </div>
 
                           <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-2 leading-relaxed">
-                            {q.text}
+                            {cleanQuestionText(q.text)}
                           </p>
 
                           {/* Options grid */}
@@ -1112,6 +1368,198 @@ export const QuizBuilder: React.FC = () => {
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* ── Edit Question & Options Modal ── */}
+      <Modal
+        isOpen={Boolean(editingQuestion)}
+        onClose={() => setEditingQuestion(null)}
+        title="Edit Question & Options"
+        size="lg"
+      >
+        {editingQuestion && (
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-300">
+              <strong>Exact Question Format:</strong> The question text displays the exact question without any course codes, Bloom&apos;s level prefixes, or condition boilerplate.
+            </div>
+
+            {/* Question Text */}
+            <div>
+              <label className="block text-xs font-bold text-[var(--color-text-primary)] mb-1">
+                Question Text <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={editingQuestion.text}
+                onChange={(e) =>
+                  setEditingQuestion({ ...editingQuestion, text: e.target.value })
+                }
+                placeholder="Enter the exact question..."
+                className={`${inputCls} resize-none`}
+              />
+            </div>
+
+            {/* Difficulty and Cognitive Level */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-text-primary)] mb-1">
+                  Difficulty
+                </label>
+                <select
+                  value={editingQuestion.difficulty}
+                  onChange={(e) =>
+                    setEditingQuestion({
+                      ...editingQuestion,
+                      difficulty: e.target.value as 'easy' | 'medium' | 'hard',
+                    })
+                  }
+                  className={selectCls}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-text-primary)] mb-1">
+                  Cognitive Level (Bloom&apos;s)
+                </label>
+                <select
+                  value={editingQuestion.cognitiveLevel || 'CL2_UNDERSTAND'}
+                  onChange={(e) =>
+                    setEditingQuestion({
+                      ...editingQuestion,
+                      cognitiveLevel: e.target.value,
+                    })
+                  }
+                  className={selectCls}
+                >
+                  <option value="CL1_REMEMBER">CL1: Remember</option>
+                  <option value="CL2_UNDERSTAND">CL2: Understand</option>
+                  <option value="CL3_APPLY">CL3: Apply</option>
+                  <option value="CL4_ANALYZE">CL4: Analyze</option>
+                  <option value="CL5_EVALUATE">CL5: Evaluate</option>
+                  <option value="CL6_CREATE">CL6: Create</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Options list with Radio selector for isCorrect */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-[var(--color-text-primary)]">
+                  Answer Options & Correct Answer <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[11px] text-[var(--color-text-muted)]">
+                  Click the circle next to an option to mark it as correct
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {editingQuestion.options.map((opt, idx) => {
+                  const letter = String.fromCharCode(65 + idx);
+                  return (
+                    <div
+                      key={opt.id || idx}
+                      className={`p-3 rounded-xl border transition-all flex items-start gap-3 ${
+                        opt.isCorrect
+                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500'
+                          : 'border-[var(--color-border)] bg-white'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = editingQuestion.options.map((o, i) => ({
+                            ...o,
+                            isCorrect: i === idx,
+                          }));
+                          setEditingQuestion({ ...editingQuestion, options: updated });
+                        }}
+                        className="mt-2 flex items-center justify-center cursor-pointer flex-shrink-0"
+                        title="Mark this option as correct"
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            opt.isCorrect
+                              ? 'border-emerald-600 bg-emerald-600 text-white'
+                              : 'border-slate-300 hover:border-slate-400 bg-white'
+                          }`}
+                        >
+                          {opt.isCorrect && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </button>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-[var(--color-text-secondary)]">
+                            Option {letter} {opt.isCorrect && (
+                              <span className="ml-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-300 px-1.5 py-0.5 rounded">
+                                Correct Answer
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={opt.text}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = [...editingQuestion.options];
+                            updated[idx] = { ...updated[idx], text: val };
+                            setEditingQuestion({ ...editingQuestion, options: updated });
+                          }}
+                          placeholder={`Option ${letter} text...`}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pedagogical Explanation */}
+            <div>
+              <label className="block text-xs font-bold text-[var(--color-text-primary)] mb-1">
+                Pedagogical Explanation / Rationale
+              </label>
+              <textarea
+                rows={2}
+                value={editingQuestion.explanation}
+                onChange={(e) =>
+                  setEditingQuestion({
+                    ...editingQuestion,
+                    explanation: e.target.value,
+                  })
+                }
+                placeholder="Explain why the selected option is correct and why other options are incorrect..."
+                className={`${inputCls} resize-none`}
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--color-border)]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingQuestion(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSaveQuestionEdit}
+                className="bg-[var(--color-oxblood)] hover:opacity-95 text-white"
+                leftIcon={<Check className="w-4 h-4" />}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       </div>

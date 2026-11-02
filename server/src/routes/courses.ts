@@ -71,7 +71,7 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
         id: s.id,
         code: s.code,
         name: s.name,
-        semester: (s as any).semester || 1,
+        semester: s.semester || s.assignments[0]?.section?.semester || (s.code.includes('303') ? 3 : s.code.includes('501') ? 5 : 1),
         departmentId: s.departmentId,
         departmentName: s.department?.name,
         departmentCode: s.department?.code,

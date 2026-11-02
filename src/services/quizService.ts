@@ -97,10 +97,26 @@ export const quizService = {
   },
 };
 
+// Helper to clean boilerplate from question text
+const cleanClientQuestionText = (text: string): string => {
+  if (!text) return '';
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^In\s+[^:]*:\s*/i, '');
+  cleaned = cleaned.replace(/\(?Bloom'?s\s+[A-Za-z0-9_]+\)?:\s*/i, '');
+  cleaned = cleaned.replace(/^considering\s+[^:]*:\s*/i, '');
+  cleaned = cleaned.replace(/^\[[A-Z0-9]{3,10}\]\s*[-—:]?\s*/i, '');
+  cleaned = cleaned.replace(/^[A-Z]{2,5}\d{2,4}[A-Z0-9]?\s*[-—:]\s*/i, '');
+  cleaned = cleaned.replace(/^(Question\s*\d+|Q\d+)\s*[:.-]\s*/i, '');
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return cleaned.trim();
+};
+
 // Helper to map DB/API Question to Frontend Question
 const mapApiQuestion = (q: any): Question => ({
   id: q.id,
-  text: q.text,
+  text: cleanClientQuestionText(q.text),
   courseId: q.topic?.subjectId || q.courseId || '',
   courseName: q.topic?.subject?.name || q.courseName || '',
   unitId: q.unitId || '',
@@ -164,7 +180,10 @@ export const questionService = {
     subjectId?: string;
     autoApprove?: boolean;
     status?: string;
+    geminiApiKey?: string;
   }): Promise<Question[]> => {
+    const storedApiKey = params.geminiApiKey || localStorage.getItem('acadexa_gemini_key') || undefined;
+
     const res = await api.post('/questions/generate', {
       subject: params.subject,
       topic: params.topic,
@@ -176,6 +195,7 @@ export const questionService = {
       subjectId: params.subjectId,
       autoApprove: params.autoApprove ?? true,
       status: params.status || 'APPROVED',
+      geminiApiKey: storedApiKey,
     });
 
     if (res.data?.questions && Array.isArray(res.data.questions)) {

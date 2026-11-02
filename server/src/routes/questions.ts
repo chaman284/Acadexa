@@ -35,6 +35,290 @@ function normalizeStatus(st?: string): QuestionStatus {
   return 'APPROVED';
 }
 
+// Clean question text to ensure NO course codes, Bloom's level, or boilerplate prefixes appear
+export function cleanQuestionText(text: string): string {
+  if (!text) return '';
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^In\s+[^:]*:\s*/i, '');
+  cleaned = cleaned.replace(/\(?Bloom'?s\s+[A-Za-z0-9_]+\)?:\s*/i, '');
+  cleaned = cleaned.replace(/^considering\s+[^:]*:\s*/i, '');
+  cleaned = cleaned.replace(/^\[[A-Z0-9]{3,10}\]\s*[-—:]?\s*/i, '');
+  cleaned = cleaned.replace(/^[A-Z]{2,5}\d{2,4}[A-Z0-9]?\s*[-—:]\s*/i, '');
+  cleaned = cleaned.replace(/^(Question\s*\d+|Q\d+)\s*[:.-]\s*/i, '');
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return cleaned.trim();
+}
+
+// Safely extract JSON array from Gemini output
+function extractJsonArray(rawText: string): any[] | null {
+  try {
+    const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    // Locate the first '[' and last ']'
+    const startIdx = cleaned.indexOf('[');
+    const endIdx = cleaned.lastIndexOf(']');
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      const jsonSub = cleaned.substring(startIdx, endIdx + 1);
+      const parsed = JSON.parse(jsonSub);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+    const parsedDirect = JSON.parse(cleaned);
+    if (Array.isArray(parsedDirect)) return parsedDirect;
+  } catch (e) {
+    console.warn('Failed to parse JSON array from Gemini output:', e);
+  }
+  return null;
+}
+
+// Extensive, diverse question bank by topic (authentic university questions without boilerplate)
+const TOPIC_QUESTION_BANKS: Record<string, { text: string; options: { text: string; isCorrect: boolean }[]; explanation: string }[]> = {
+  trees: [
+    {
+      text: 'What is the worst-case time complexity of searching for an element in an unbalanced Binary Search Tree (BST) with n nodes?',
+      options: [
+        { text: 'O(log n)', isCorrect: false },
+        { text: 'O(n)', isCorrect: true },
+        { text: 'O(1)', isCorrect: false },
+        { text: 'O(n log n)', isCorrect: false },
+      ],
+      explanation: 'When keys are inserted in sorted order, an unbalanced BST degenerates into a linear chain (linked list) of height n, making search O(n).',
+    },
+    {
+      text: 'Which self-balancing binary search tree strictly guarantees that the height difference between left and right subtrees is at most 1 at every node?',
+      options: [
+        { text: 'Red-Black Tree', isCorrect: false },
+        { text: 'AVL Tree', isCorrect: true },
+        { text: 'B-Tree', isCorrect: false },
+        { text: 'Splay Tree', isCorrect: false },
+      ],
+      explanation: 'AVL trees enforce a strict balance factor of {-1, 0, +1} through single and double rotations after every insertion and deletion.',
+    },
+    {
+      text: 'Which binary tree traversal order visits the root node between its left and right subtrees?',
+      options: [
+        { text: 'Preorder traversal', isCorrect: false },
+        { text: 'Inorder traversal', isCorrect: true },
+        { text: 'Postorder traversal', isCorrect: false },
+        { text: 'Level-order traversal', isCorrect: false },
+      ],
+      explanation: 'Inorder traversal follows the sequence Left -> Root -> Right, which visits elements of a Binary Search Tree in non-decreasing sorted order.',
+    },
+    {
+      text: 'In a complete binary tree with n nodes, what is the height of the tree?',
+      options: [
+        { text: '⌊log₂ n⌋', isCorrect: true },
+        { text: 'n / 2', isCorrect: false },
+        { text: '⌈n / log₂ n⌉', isCorrect: false },
+        { text: 'n - 1', isCorrect: false },
+      ],
+      explanation: 'A complete binary tree has all levels completely filled except possibly the last level, resulting in a logarithmic height of ⌊log₂ n⌋.',
+    },
+    {
+      text: 'What rotation is required in an AVL tree when a new node is inserted into the right subtree of the left child (LR imbalance)?',
+      options: [
+        { text: 'Single Left Rotation', isCorrect: false },
+        { text: 'Single Right Rotation', isCorrect: false },
+        { text: 'Left-Right Double Rotation', isCorrect: true },
+        { text: 'Right-Left Double Rotation', isCorrect: false },
+      ],
+      explanation: 'An LR imbalance requires a Left rotation on the left child followed by a Right rotation on the unbalanced parent node.',
+    },
+    {
+      text: 'What is the maximum number of keys stored in an internal node of a B-tree of order m?',
+      options: [
+        { text: 'm', isCorrect: false },
+        { text: 'm - 1', isCorrect: true },
+        { text: '2m', isCorrect: false },
+        { text: '⌈m / 2⌉', isCorrect: false },
+      ],
+      explanation: 'In a B-tree of order m, each internal node can have at most m child pointers and at most m - 1 keys.',
+    },
+  ],
+  graphs: [
+    {
+      text: 'What is the time complexity of Breadth-First Search (BFS) on a graph represented using an adjacency list with V vertices and E edges?',
+      options: [
+        { text: 'O(V + E)', isCorrect: true },
+        { text: 'O(V * E)', isCorrect: false },
+        { text: 'O(V²)', isCorrect: false },
+        { text: 'O(E log V)', isCorrect: false },
+      ],
+      explanation: 'With an adjacency list, every vertex is enqueued once and all outgoing edges are inspected once, yielding O(V + E) time.',
+    },
+    {
+      text: 'Why does Dijkstra’s algorithm fail to produce the correct shortest path on graphs containing edges with negative weights?',
+      options: [
+        { text: 'It uses a FIFO queue instead of a priority queue', isCorrect: false },
+        { text: 'It assumes that adding an edge can never decrease the total path distance (greedy assumption)', isCorrect: true },
+        { text: 'It cannot detect disconnected components', isCorrect: false },
+        { text: 'It only works on directed acyclic graphs', isCorrect: false },
+      ],
+      explanation: 'Dijkstra permanently marks a vertex as visited under the assumption that the shortest distance cannot be reduced further; negative edges violate this invariant.',
+    },
+    {
+      text: 'Which algorithm finds strongly connected components (SCCs) in a directed graph in linear O(V + E) time?',
+      options: [
+        { text: 'Tarjan’s algorithm', isCorrect: true },
+        { text: 'Prim’s algorithm', isCorrect: false },
+        { text: 'Floyd-Warshall algorithm', isCorrect: false },
+        { text: 'Kruskal’s algorithm', isCorrect: false },
+      ],
+      explanation: 'Both Tarjan’s and Kosaraju’s algorithms find strongly connected components in O(V + E) time using depth-first search.',
+    },
+    {
+      text: 'Which condition is necessary and sufficient for an undirected, connected graph to contain an Eulerian circuit?',
+      options: [
+        { text: 'Every vertex must have an even degree', isCorrect: true },
+        { text: 'Exactly two vertices must have an odd degree', isCorrect: false },
+        { text: 'The graph must be a tree', isCorrect: false },
+        { text: 'The graph must be bipartite', isCorrect: false },
+      ],
+      explanation: 'Euler’s theorem states that a connected undirected graph has an Eulerian circuit if and only if every vertex has an even degree.',
+    },
+    {
+      text: 'What data structure is used in Kruskal’s algorithm to detect cycles efficiently when adding edges?',
+      options: [
+        { text: 'Disjoint Set Union (Union-Find)', isCorrect: true },
+        { text: 'Binary Search Tree', isCorrect: false },
+        { text: 'Adjacency Matrix', isCorrect: false },
+        { text: 'Fibonacci Heap', isCorrect: false },
+      ],
+      explanation: 'Kruskal’s algorithm sorts all edges by weight and uses Union-Find with path compression to check if two vertices are already in the same tree in near O(1) time.',
+    },
+  ],
+  hashing: [
+    {
+      text: 'What primary problem occurs in open addressing when using linear probing, where occupied slots group together in contiguous blocks?',
+      options: [
+        { text: 'Primary clustering', isCorrect: true },
+        { text: 'Secondary clustering', isCorrect: false },
+        { text: 'Hash collisions overflow', isCorrect: false },
+        { text: 'Thrashing', isCorrect: false },
+      ],
+      explanation: 'Linear probing suffers from primary clustering: once a collision occurs, adjacent filled slots form contiguous clusters, increasing average probe length.',
+    },
+    {
+      text: 'What is the expected average-case search time complexity in a hash table with load factor α < 1 under Simple Uniform Hashing?',
+      options: [
+        { text: 'O(1)', isCorrect: true },
+        { text: 'O(log n)', isCorrect: false },
+        { text: 'O(n)', isCorrect: false },
+        { text: 'O(n log n)', isCorrect: false },
+      ],
+      explanation: 'Under Simple Uniform Hashing with a constant load factor α, average successful and unsuccessful searches run in O(1 + α) = O(1) time.',
+    },
+    {
+      text: 'In separate chaining collision resolution, what happens to the worst-case search time if all n keys hash to the same bucket?',
+      options: [
+        { text: 'It remains O(1)', isCorrect: false },
+        { text: 'It degrades to O(n)', isCorrect: true },
+        { text: 'It becomes O(log n)', isCorrect: false },
+        { text: 'An out-of-memory error occurs', isCorrect: false },
+      ],
+      explanation: 'If all keys hash to the same bucket, the linked list chain contains all n elements, degrading lookup to a linear scan of O(n).',
+    },
+    {
+      text: 'What property must the second hash function h₂(k) satisfy in double hashing to guarantee that all table slots can be probed?',
+      options: [
+        { text: 'h₂(k) must be relatively prime to the table size m', isCorrect: true },
+        { text: 'h₂(k) must equal zero for empty slots', isCorrect: false },
+        { text: 'h₂(k) must be strictly greater than m', isCorrect: false },
+        { text: 'h₂(k) must be negative', isCorrect: false },
+      ],
+      explanation: 'In double hashing, h₂(k) must be coprime to the table size m so that the probe sequence covers all m slots without cycling prematurely.',
+    },
+  ],
+  dp: [
+    {
+      text: 'In the 0/1 Knapsack problem with n items and capacity W, what is the space complexity of the standard 2D DP tabulation table?',
+      options: [
+        { text: 'O(n * W)', isCorrect: true },
+        { text: 'O(n + W)', isCorrect: false },
+        { text: 'O(2^n)', isCorrect: false },
+        { text: 'O(W)', isCorrect: false },
+      ],
+      explanation: 'The standard tabulation table dp[n+1][W+1] stores subproblem solutions for each item index and weight capacity, consuming O(n * W) space.',
+    },
+    {
+      text: 'Which two core properties must a computational problem exhibit to be solvable using Dynamic Programming?',
+      options: [
+        { text: 'Optimal substructure and overlapping subproblems', isCorrect: true },
+        { text: 'Greedy choice property and disjoint subproblems', isCorrect: false },
+        { text: 'Linear independence and convex duality', isCorrect: false },
+        { text: 'Deterministic transitions and memoryless states', isCorrect: false },
+      ],
+      explanation: 'Dynamic Programming applies when an optimal solution to the problem contains optimal solutions to subproblems (optimal substructure) and subproblems recur frequently (overlapping subproblems).',
+    },
+    {
+      text: 'What is the time complexity of finding the Longest Common Subsequence (LCS) of two strings of lengths m and n using dynamic programming?',
+      options: [
+        { text: 'O(m * n)', isCorrect: true },
+        { text: 'O(m + n)', isCorrect: false },
+        { text: 'O(2^(m+n))', isCorrect: false },
+        { text: 'O(max(m, n))', isCorrect: false },
+      ],
+      explanation: 'The DP algorithm fills an (m+1) x (n+1) grid where each cell takes O(1) comparison time, leading to O(m * n) total time.',
+    },
+  ],
+  dbms: [
+    {
+      text: 'Which normal form eliminates transitive dependencies of non-prime attributes on candidate keys?',
+      options: [
+        { text: 'Third Normal Form (3NF)', isCorrect: true },
+        { text: 'First Normal Form (1NF)', isCorrect: false },
+        { text: 'Second Normal Form (2NF)', isCorrect: false },
+        { text: 'Boyce-Codd Normal Form (BCNF)', isCorrect: false },
+      ],
+      explanation: '3NF requires that the relation is in 2NF and that no non-prime attribute is transitively dependent on any candidate key.',
+    },
+    {
+      text: 'In database transaction management, what does the "I" in ACID properties stand for?',
+      options: [
+        { text: 'Isolation', isCorrect: true },
+        { text: 'Integrity', isCorrect: false },
+        { text: 'Indexing', isCorrect: false },
+        { text: 'Idempotency', isCorrect: false },
+      ],
+      explanation: 'Isolation ensures that concurrent transactions execute without interfering with one another, producing results identical to a serial schedule.',
+    },
+    {
+      text: 'Why are B+ trees preferred over B-trees for relational database indexes on secondary storage?',
+      options: [
+        { text: 'All data records are stored only in leaf nodes connected by pointers, optimizing range queries and sequential scans', isCorrect: true },
+        { text: 'B+ trees require less memory than B-trees in all cases', isCorrect: false },
+        { text: 'B+ trees do not require disk I/O operations', isCorrect: false },
+        { text: 'B+ trees allow duplicate primary keys', isCorrect: false },
+      ],
+      explanation: 'In B+ trees, internal nodes only store routing keys, allowing higher fanout, and leaf nodes form a linked list that enables efficient range queries.',
+    },
+  ],
+  os: [
+    {
+      text: 'Which four Coffman conditions must hold simultaneously for a deadlock to occur in an operating system?',
+      options: [
+        { text: 'Mutual Exclusion, Hold and Wait, No Preemption, Circular Wait', isCorrect: true },
+        { text: 'Priority Inversion, Starvation, Race Condition, Deadlock', isCorrect: false },
+        { text: 'Paging, Segmentation, Swapping, Fragmentation', isCorrect: false },
+        { text: 'Preemption, Semaphore, Spinlock, Barrier', isCorrect: false },
+      ],
+      explanation: 'Deadlock can only arise if all four Coffman conditions (Mutual Exclusion, Hold and Wait, No Preemption, and Circular Wait) hold simultaneously.',
+    },
+    {
+      text: 'What hardware cache is used by the Memory Management Unit (MMU) to accelerate virtual-to-physical address translation?',
+      options: [
+        { text: 'Translation Lookaside Buffer (TLB)', isCorrect: true },
+        { text: 'Instruction Cache (L1i)', isCorrect: false },
+        { text: 'Page Table Descriptor', isCorrect: false },
+        { text: 'Disk Buffer Cache', isCorrect: false },
+      ],
+      explanation: 'The TLB is an associative hardware cache that stores recent virtual-to-physical page translations, avoiding memory-intensive page table walks on a TLB hit.',
+    },
+  ],
+};
+
 // Fallback question generator when Gemini API is offline or key is unset
 function generateFallbackQuestions(
   subject: string,
@@ -43,113 +327,204 @@ function generateFallbackQuestions(
   cognitiveLevel: CognitiveLevel,
   count: number
 ) {
-  const bloomDescriptors: Record<CognitiveLevel, { verb: string; context: string }> = {
-    CL1_REMEMBER: { verb: 'identify the fundamental definition of', context: 'theoretical definition and basic recall' },
-    CL2_UNDERSTAND: { verb: 'explain the operational mechanism behind', context: 'conceptual principles and operational flow' },
-    CL3_APPLY: { verb: 'apply the standard algorithm to solve a problem involving', context: 'practical problem-solving and scenario application' },
-    CL4_ANALYZE: { verb: 'analyze the asymptotic performance and structural bottlenecks in', context: 'complexity breakdown, trade-offs, and edge conditions' },
-    CL5_EVALUATE: { verb: 'critique and evaluate the design tradeoffs when selecting', context: 'architectural decisions and rigorous comparative assessment' },
-    CL6_CREATE: { verb: 'synthesize an optimized hybrid architecture incorporating', context: 'novel design formulation and system synthesis' },
-  };
+  const topLower = topic.toLowerCase();
+  let matchedBank: { text: string; options: { text: string; isCorrect: boolean }[]; explanation: string }[] = [];
 
-  const descriptor = bloomDescriptors[cognitiveLevel] || bloomDescriptors.CL2_UNDERSTAND;
-  const questions = [];
-
-  for (let i = 1; i <= count; i++) {
-    questions.push({
-      text: `In ${subject}, considering ${topic} under ${difficulty.toLowerCase()} conditions (Bloom's ${cognitiveLevel}): Which of the following best allows an engineer to ${descriptor.verb} ${topic}?`,
-      options: [
-        {
-          text: `Optimal approach: Leverages ${topic} properties with correct bounds and invariants (${descriptor.context}).`,
-          isCorrect: true,
-        },
-        {
-          text: `Sub-optimal approach: Omits invariant verification leading to linear degradation.`,
-          isCorrect: false,
-        },
-        {
-          text: `Erroneous approach: Inappropriately assumes constant memory overhead under recursive traversal.`,
-          isCorrect: false,
-        },
-        {
-          text: `Irrelevant approach: Uses unbounded global state violating thread safety guarantees.`,
-          isCorrect: false,
-        },
-      ],
-      explanation: `According to university curriculum standards for ${subject} (${topic}), evaluating ${descriptor.context} ensures that ${cognitiveLevel} competencies are verified correctly.`,
-    });
+  if (topLower.includes('tree') || topLower.includes('bst') || topLower.includes('avl') || topLower.includes('heap') || topLower.includes('b-tree')) {
+    matchedBank = TOPIC_QUESTION_BANKS.trees;
+  } else if (topLower.includes('graph') || topLower.includes('bfs') || topLower.includes('dfs') || topLower.includes('shortest') || topLower.includes('dijkstra')) {
+    matchedBank = TOPIC_QUESTION_BANKS.graphs;
+  } else if (topLower.includes('hash') || topLower.includes('map') || topLower.includes('table')) {
+    matchedBank = TOPIC_QUESTION_BANKS.hashing;
+  } else if (topLower.includes('dp') || topLower.includes('dynamic') || topLower.includes('knapsack') || topLower.includes('subsequence')) {
+    matchedBank = TOPIC_QUESTION_BANKS.dp;
+  } else if (topLower.includes('dbms') || topLower.includes('database') || topLower.includes('sql') || topLower.includes('normalization') || topLower.includes('acid')) {
+    matchedBank = TOPIC_QUESTION_BANKS.dbms;
+  } else if (topLower.includes('os') || topLower.includes('operating') || topLower.includes('deadlock') || topLower.includes('page') || topLower.includes('memory')) {
+    matchedBank = TOPIC_QUESTION_BANKS.os;
   }
 
-  return questions;
+  const cleanTopicName = topic.replace(/BAI[0-9]+[A-Z]?\s*[-—]\s*/i, '').trim();
+  const selected: { text: string; options: { text: string; isCorrect: boolean }[]; explanation: string }[] = [];
+
+  // Pick up to count questions from matched bank, shuffled
+  if (matchedBank.length > 0) {
+    const shuffled = [...matchedBank].sort(() => 0.5 - Math.random());
+    for (let i = 0; i < Math.min(count, shuffled.length); i++) {
+      selected.push(shuffled[i]);
+    }
+  }
+
+  // If we still need more questions, dynamically synthesize distinct, clean questions for this topic
+  const dynamicTemplates = [
+    {
+      text: `What is the primary operational invariant that must hold true when implementing ${cleanTopicName}?`,
+      options: [
+        { text: `All state transitions must preserve valid structural bounds and constraint invariants.`, isCorrect: true },
+        { text: `Every element must be stored in contiguous cache blocks without pointer references.`, isCorrect: false },
+        { text: `Operations must avoid recursive stack frames regardless of data hierarchy.`, isCorrect: false },
+        { text: `Elements must be processed strictly in FIFO sequence at all times.`, isCorrect: false },
+      ],
+      explanation: `Maintaining the core mathematical and structural invariant is essential to ensure that ${cleanTopicName} guarantees correct bounds and optimal performance.`,
+    },
+    {
+      text: `What is the worst-case asymptotic time complexity of standard lookups in ${cleanTopicName}?`,
+      options: [
+        { text: `O(log n) when balanced, degrading to O(n) under skewed edge distributions`, isCorrect: true },
+        { text: `Strictly O(1) in all possible edge scenarios`, isCorrect: false },
+        { text: `O(n²) under normal operating conditions`, isCorrect: false },
+        { text: `O(2ⁿ) due to combinatorial backtracking`, isCorrect: false },
+      ],
+      explanation: `Asymptotic analysis demonstrates that unless balancing mechanisms are enforced, worst-case lookups in ${cleanTopicName} can degrade linearly with the number of elements.`,
+    },
+    {
+      text: `Which auxiliary space overhead is typically incurred when performing deep traversals in ${cleanTopicName}?`,
+      options: [
+        { text: `O(h) where h is the height/depth of the call stack or traversal buffer`, isCorrect: true },
+        { text: `O(n²) due to duplicated pointer tables`, isCorrect: false },
+        { text: `O(1) auxiliary memory under all traversal implementations`, isCorrect: false },
+        { text: `O(n!) due to permutation tracking`, isCorrect: false },
+      ],
+      explanation: `Deep traversals require stack or queue memory proportional to the depth or height of the structural hierarchy.`,
+    },
+    {
+      text: `Under which practical scenario is ${cleanTopicName} strictly preferred over alternative linear data structures?`,
+      options: [
+        { text: `When frequent dynamic insertions, deletions, and hierarchical searches must be supported efficiently`, isCorrect: true },
+        { text: `When memory consumption must be strictly zero bytes of auxiliary overhead`, isCorrect: false },
+        { text: `When data is strictly static and only contiguous index lookups are performed`, isCorrect: false },
+        { text: `When network bandwidth is the sole bottleneck in single-threaded execution`, isCorrect: false },
+      ],
+      explanation: `${cleanTopicName} provides superior logarithmic or amortized runtime when applications involve frequent mutations and structured relational lookups.`,
+    },
+    {
+      text: `Which boundary condition or edge case must be explicitly verified to prevent runtime crashes when querying ${cleanTopicName}?`,
+      options: [
+        { text: `Null root/head pointers and single-element boundary states`, isCorrect: true },
+        { text: `Integer overflow during floating-point bitwise shifts`, isCorrect: false },
+        { text: `Garbage collector pause durations in unmanaged memory`, isCorrect: false },
+        { text: `Instruction cache alignment on non-x86 architectures`, isCorrect: false },
+      ],
+      explanation: `Defensive programming requires verifying null pointers and single-node boundary conditions before accessing internal child references in ${cleanTopicName}.`,
+    },
+  ];
+
+  let templateIdx = 0;
+  while (selected.length < count && templateIdx < dynamicTemplates.length) {
+    selected.push(dynamicTemplates[templateIdx]);
+    templateIdx++;
+  }
+
+  return selected.slice(0, count);
 }
 
-// Gemini 1.5 Flash MCQ generator
+// Gemini 1.5 Flash MCQ generator with Google Search grounding support
 async function generateQuestionsWithGemini(
   subject: string,
   topic: string,
   difficulty: Difficulty,
   cognitiveLevel: CognitiveLevel,
-  count: number
+  count: number,
+  clientApiKey?: string
 ) {
-  if (config.geminiApiKey) {
+  const apiKey = clientApiKey || config.geminiApiKey || process.env.GEMINI_API_KEY;
+
+  if (apiKey) {
     try {
-      const prompt = `You are a distinguished university professor designing rigorous Multiple Choice Questions (MCQs) for university engineering examinations.
-Generate ${count} high-quality MCQs covering:
-- Course/Subject: ${subject}
-- Topic: ${topic}
-- Difficulty Level: ${difficulty}
-- Bloom's Taxonomy Cognitive Level: ${cognitiveLevel}
-  * CL1_REMEMBER: Recall facts, terms, basic definitions
-  * CL2_UNDERSTAND: Explain ideas, predict outcomes, classify concepts
-  * CL3_APPLY: Apply knowledge, calculate results, trace code/algorithms
-  * CL4_ANALYZE: Distinguish parts, analyze trade-offs, edge cases, asymptotic complexities
-  * CL5_EVALUATE: Justify selections, critique alternatives, compare optimal solutions
-  * CL6_CREATE: Formulate hybrid designs, synthesize novel algorithmic architectures
+      const cleanTopic = topic.replace(/BAI[0-9]+[A-Z]?\s*[-—]\s*/i, '').trim();
+      const prompt = `You are a distinguished university professor and computer science examination board chair designing rigorous Multiple Choice Questions (MCQs) for university engineering examinations.
 
-Strict Requirements:
-1. Every question must strictly reflect the cognitive depth of Bloom's Level: ${cognitiveLevel}.
-2. Provide exactly 4 options per question.
-3. Exactly ONE option must have "isCorrect": true, and the other 3 must have "isCorrect": false.
-4. Include an informative pedagogical explanation for why the correct option is right.
-5. Return ONLY a valid JSON array of question objects without markdown backticks or commentary.
+Topic: "${cleanTopic}"
+Academic Course Context: "${subject}"
+Difficulty Level: ${difficulty}
+Bloom's Taxonomy Cognitive Level: ${cognitiveLevel}
 
-JSON format:
+CRITICAL FORMATTING RULES:
+1. Question Text: Must be ONLY the exact, standalone examination question itself (e.g., "What is the worst-case time complexity of searching in an AVL tree with n nodes?").
+   - DO NOT prefix the question with course codes (e.g. do NOT say "In BAI303P — Data Structures and Application...").
+   - DO NOT mention difficulty or Bloom's taxonomy tags in the question (e.g. do NOT write "(Bloom's CL2_UNDERSTAND):" or "under medium conditions").
+   - Put ONLY the exact, clean question.
+2. Variety & Uniqueness:
+   - Generate ${count} completely distinct questions.
+   - Each question must explore a DIFFERENT facet of "${cleanTopic}" (e.g., core structural invariant, algorithmic complexity, traversal behavior, edge cases, space overhead, comparative trade-offs).
+   - NEVER repeat identical questions, options, or sentence structures.
+3. Options:
+   - Provide exactly 4 options per question (Option A, B, C, D).
+   - Exactly ONE option must have "isCorrect": true, and the other 3 must have "isCorrect": false.
+   - Distractors must be plausible, authentic technical options.
+4. Explanation:
+   - Provide a clear, pedagogical rationale explaining why the correct option is right.
+
+Return ONLY a valid JSON array of question objects without markdown commentary:
 [
   {
-    "text": "Question text here?",
+    "text": "Exact clean question here?",
     "options": [
-      { "text": "Option A", "isCorrect": true },
-      { "text": "Option B", "isCorrect": false },
-      { "text": "Option C", "isCorrect": false },
-      { "text": "Option D", "isCorrect": false }
+      { "text": "Option A text", "isCorrect": true },
+      { "text": "Option B text", "isCorrect": false },
+      { "text": "Option C text", "isCorrect": false },
+      { "text": "Option D text", "isCorrect": false }
     ],
-    "explanation": "Detailed pedagogical explanation."
+    "explanation": "Detailed explanation of the concept."
   }
 ]`;
 
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.geminiApiKey}`,
-        {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+      // First attempt: Call Gemini 1.5 Flash with search grounding if possible
+      try {
+        const searchResp = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
+            tools: [{ googleSearch: {} }],
             generationConfig: {
-              temperature: 0.7,
-              responseMimeType: 'application/json',
+              temperature: 0.75,
             },
           }),
+        });
+
+        if (searchResp.ok) {
+          const searchData = await searchResp.json();
+          const textOut = searchData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (textOut) {
+            const parsed = extractJsonArray(textOut);
+            if (parsed && parsed.length > 0) {
+              return parsed.map(q => ({
+                ...q,
+                text: cleanQuestionText(q.text),
+              }));
+            }
+          }
         }
-      );
+      } catch (searchErr) {
+        console.warn('Gemini search grounding call failed, falling back to structured mode:', searchErr);
+      }
+
+      // Second attempt: Standard structured JSON output mode
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            responseMimeType: 'application/json',
+          },
+        }),
+      });
 
       if (resp.ok) {
         const data = await resp.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
-          const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+          const parsed = extractJsonArray(rawText);
+          if (parsed && parsed.length > 0) {
+            return parsed.map(q => ({
+              ...q,
+              text: cleanQuestionText(q.text),
+            }));
           }
         }
       }
@@ -274,7 +649,12 @@ router.get('/', authenticateJWT, async (req, res) => {
       ];
     }
 
-    res.json(questions);
+    const cleanedQuestions = questions.map(q => ({
+      ...q,
+      text: cleanQuestionText(q.text),
+    }));
+
+    res.json(cleanedQuestions);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -319,6 +699,7 @@ router.post(
         subjectId,
         autoApprove = false,
         status: reqStatus,
+        geminiApiKey,
       } = req.body;
 
       const normCognitiveLevel = normalizeCognitiveLevel(bloomsLevel || cognitiveLevel);
@@ -333,7 +714,8 @@ router.post(
         topic,
         normDifficulty,
         normCognitiveLevel,
-        numQuestions
+        numQuestions,
+        geminiApiKey
       );
 
       // Resolve Topic and Subject in database (if connected)
