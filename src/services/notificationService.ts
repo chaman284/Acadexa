@@ -1,4 +1,35 @@
-import type { Notification } from '../types/notification';
+import api from '../lib/apiClient';
+import type { Notification, NotificationType } from '../types/notification';
+
+export interface RemoteNotification {
+  id: string;
+  userId: string | null;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  actionUrl: string | null;
+  role: string | null;
+  createdAt: string;
+}
+
+const NOTIFICATION_TYPES: NotificationType[] = ['quiz', 'course', 'announcement', 'system', 'learning_gap', 'enrollment'];
+
+const toAppNotification = (item: RemoteNotification): Notification => {
+  const role = String(item.role || 'all').toLowerCase();
+  return {
+    id: item.id,
+    title: item.title,
+    message: item.message,
+    type: NOTIFICATION_TYPES.includes(item.type as NotificationType)
+      ? (item.type as NotificationType)
+      : 'system',
+    createdAt: item.createdAt,
+    isRead: Boolean(item.isRead),
+    actionUrl: item.actionUrl || undefined,
+    targetRole: role === 'faculty' || role === 'student' ? role : 'all',
+  };
+};
 
 const NOTIFICATIONS_STORAGE_KEY = 'acadexa_notifications_v1';
 
@@ -47,7 +78,7 @@ export const initialNotifications: Notification[] = [
   {
     id: 'notif-5',
     title: 'Department Tech Symposium',
-    message: 'Annual CS Coding Fest registration is now open in the Department Portal.',
+    message: 'Annual AIML Coding Fest registration is now open in the Department Portal.',
     type: 'announcement',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
     isRead: true,
@@ -89,7 +120,7 @@ export const initialNotifications: Notification[] = [
   {
     id: 'notif-f4',
     title: 'Question Paper Bank Archive 2024–25',
-    message: 'Previous year question papers and model exam templates are available for Computer Science subjects.',
+    message: 'Previous year question papers and model exam templates are available for Artificial Intelligence and Machine Learning subjects.',
     type: 'course',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
     isRead: true,
@@ -174,5 +205,24 @@ export const notificationService = {
     const updated = [newNotif, ...all];
     localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
     return newNotif;
+  },
+
+  // --- Backend-backed notifications (single source of truth) ---
+
+  getRemoteNotifications: async (): Promise<Notification[]> => {
+    const res = await api.get<RemoteNotification[]>('/notifications');
+    return (Array.isArray(res.data) ? res.data : []).map(toAppNotification);
+  },
+
+  markRemoteAsRead: async (id: string): Promise<void> => {
+    await api.put(`/notifications/${id}/read`);
+  },
+
+  markAllRemoteAsRead: async (): Promise<void> => {
+    await api.put('/notifications/read-all');
+  },
+
+  deleteRemoteNotification: async (id: string): Promise<void> => {
+    await api.delete(`/notifications/${id}`);
   },
 };

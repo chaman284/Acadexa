@@ -69,7 +69,7 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
             name: a.subject.name,
             code: a.subject.code,
             semester: a.subject.semester || a.section.semester || 1,
-            department: a.subject.department?.name || 'Computer Science',
+            department: a.subject.department?.name || 'Artificial Intelligence and Machine Learning',
             topics: a.subject.topics.map(t => ({ id: t.id, name: t.name })),
           },
           section: {
@@ -78,18 +78,59 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
             sectionName: a.section.name,
             semester: a.section.semester,
             studentsCount: a.section._count.students,
-            department: a.section.department?.name || 'Computer Science',
+            department: a.section.department?.name || 'Artificial Intelligence and Machine Learning',
           },
         })),
       });
     }
 
     if (!faculty || faculty.assignments.length === 0) {
+      const allSubjects = await prisma.subject.findMany({
+        include: {
+          topics: true,
+          department: true,
+          assignments: {
+            include: {
+              section: {
+                include: {
+                  _count: { select: { students: true } },
+                  department: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { code: 'asc' },
+      });
+
+      const semesters = Array.from(
+        new Set(allSubjects.map(s => s.semester || 1))
+      ).sort((a, b) => a - b);
+
       return res.json({
         facultyId: faculty?.id || null,
         facultyName: req.user.name,
-        semesters: [],
-        assignments: [],
+        semesters,
+        assignments: allSubjects.map(s => ({
+          id: `assign_${s.id}`,
+          semester: s.semester || 1,
+          subject: {
+            id: s.id,
+            name: s.name,
+            code: s.code,
+            semester: s.semester || 1,
+            department: s.department?.name || 'Artificial Intelligence and Machine Learning',
+            topics: s.topics.map(t => ({ id: t.id, name: t.name })),
+          },
+          section: {
+            id: s.assignments[0]?.section?.id || 'default_sec',
+            name: s.assignments[0]?.section?.name ? `Section ${s.assignments[0]?.section?.name}` : 'Section A',
+            sectionName: s.assignments[0]?.section?.name || 'A',
+            semester: s.semester || 1,
+            studentsCount: s.assignments[0]?.section?._count?.students || 0,
+            department: s.department?.name || 'Artificial Intelligence and Machine Learning',
+          },
+        })),
       });
     }
 
@@ -106,7 +147,7 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
         name: a.subject.name,
         code: a.subject.code,
         semester: a.subject.semester || a.section.semester || 1,
-        department: a.subject.department?.name || 'Computer Science',
+        department: a.subject.department?.name || 'Artificial Intelligence and Machine Learning',
         topics: a.subject.topics.map(t => ({ id: t.id, name: t.name })),
       },
       section: {
@@ -115,7 +156,7 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
         sectionName: a.section.name,
         semester: a.section.semester,
         studentsCount: a.section._count.students,
-        department: a.section.department?.name || 'Computer Science',
+        department: a.section.department?.name || 'Artificial Intelligence and Machine Learning',
       },
     }));
 
@@ -163,6 +204,7 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
       where,
       include: {
         department: true,
+        topics: true,
         assignments: {
           include: {
             faculty: {
@@ -201,6 +243,7 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
         departmentId: s.departmentId,
         departmentName: s.department?.name,
         departmentCode: s.department?.code,
+        topics: s.topics.map(t => ({ id: t.id, name: t.name })),
         assignments: s.assignments.map(a => ({
           id: a.id,
           facultyId: a.facultyId,

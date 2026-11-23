@@ -228,7 +228,7 @@ export const Dashboard: React.FC = () => {
                 Weekly Assessment
               </span>
               <Badge color="green" className="text-xs">Live Active</Badge>
-              <span className="text-xs text-white/50">Subject: Data Structures (CS-201)</span>
+              <span className="text-xs text-white/50">Subject: Data Structures (AIML-201)</span>
             </div>
 
             <div>
@@ -463,7 +463,7 @@ export const Dashboard: React.FC = () => {
                               <td className="py-3 px-3 font-medium text-slate-800">
                                 <div>
                                   <span className="font-semibold">{topic.topicName}</span>
-                                  <span className="text-[10px] text-slate-400 block">{topic.subjectName || 'CS-201'}</span>
+                                  <span className="text-[10px] text-slate-400 block">{topic.subjectName || 'AIML-201'}</span>
                                 </div>
                               </td>
                               <td className="py-3 px-3 text-center">
@@ -653,7 +653,7 @@ export const Dashboard: React.FC = () => {
                             >
                               {gap.severity} Priority
                             </Badge>
-                            <span className="text-[10px] text-slate-400">· {gap.subjectName || 'CS-201'}</span>
+                            <span className="text-[10px] text-slate-400">· {gap.subjectName || 'AIML-201'}</span>
                           </div>
                           <h4 className="font-bold text-sm text-slate-900">{gap.topicName}</h4>
                           <p className="text-xs text-slate-500 mt-0.5">

@@ -23,7 +23,7 @@ export const defaultFacultyProfile: FacultyProfile = {
   email: '',
   phone: '',
   designation: 'Faculty Member',
-  department: 'Computer Science',
+  department: 'Artificial Intelligence and Machine Learning',
   employeeId: '',
   joiningYear: '',
   officeLocation: '',
@@ -82,7 +82,7 @@ export const facultyService = {
 
           const realDepartment = assignments[0]?.subject?.department?.name ||
             assignments[0]?.section?.department?.name ||
-            (localData.department === 'Computer Science & Engineering' ? 'Computer Science' : localData.department);
+            (localData.department === 'Artificial Intelligence and Machine Learning' ? 'Artificial Intelligence and Machine Learning' : localData.department);
 
           const merged: FacultyProfile = {
             ...localData,

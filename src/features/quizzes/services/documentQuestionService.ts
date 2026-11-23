@@ -151,7 +151,7 @@ export const documentQuestionService = {
         options: template.options,
         explanation: template.explanation,
         metadata: {
-          department: config.department || 'Computer Science and Engineering',
+          department: config.department || 'Artificial Intelligence and Machine Learning',
           semester: config.semester || 3,
           subjectId: config.subjectId,
           subjectCode: config.subjectId.toUpperCase(),

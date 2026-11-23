@@ -388,7 +388,7 @@ router.post(
             let dept = await prisma.department.findFirst();
             if (!dept) {
               dept = await prisma.department.create({
-                data: { name: 'Computer Science & Engineering', code: 'CSE' },
+                data: { name: 'Artificial Intelligence and Machine Learning', code: 'AIML' },
               });
             }
             targetSubject = await prisma.subject.create({

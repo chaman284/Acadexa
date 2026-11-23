@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
 import { AuthProvider } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { SplashScreen } from './components/ui/SplashScreen';
 
 function App() {
@@ -33,7 +34,9 @@ function App() {
         >
           <BrowserRouter>
             <AuthProvider>
-              <AppRoutes />
+              <SettingsProvider>
+                <AppRoutes />
+              </SettingsProvider>
             </AuthProvider>
           </BrowserRouter>
         </div>

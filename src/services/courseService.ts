@@ -1,41 +1,69 @@
 import type { Course, CourseProgressRecord } from '../types/course';
 import { mockCourses } from '../data/courses';
+import { settingsService } from './settingsService';
 
 const COURSE_PROGRESS_STORAGE_KEY = 'acadexa_course_progress_v1';
 
+// Used when the student turns off "Auto-Save Topic Progress": changes stay for
+// the current session only and are discarded on the next reload.
+let sessionProgressMap: Record<string, CourseProgressRecord> | null = null;
+
+const initialProgressMap = (): Record<string, CourseProgressRecord> => {
+  const map: Record<string, CourseProgressRecord> = {};
+  mockCourses.forEach(course => {
+    const completedUnits: string[] = [];
+    const completedTopics: string[] = [];
+    course.units.forEach(unit => {
+      if (unit.isCompleted) {
+        completedUnits.push(unit.id);
+        unit.topics.forEach(t => completedTopics.push(t.id));
+      }
+    });
+    map[course.id] = {
+      courseId: course.id,
+      completedUnitIds: completedUnits,
+      completedTopicIds: completedTopics,
+    };
+  });
+  return map;
+};
+
+const readStoredMap = (): Record<string, CourseProgressRecord> => {
+  try {
+    const stored = localStorage.getItem(COURSE_PROGRESS_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    console.warn('Failed reading course progress from localStorage:', e);
+  }
+  const initial = initialProgressMap();
+  localStorage.setItem(COURSE_PROGRESS_STORAGE_KEY, JSON.stringify(initial));
+  return initial;
+};
+
+const autoSaveEnabled = () => settingsService.getLocalSettings('student').autoSaveProgress;
+
+const saveProgressMap = (map: Record<string, CourseProgressRecord>) => {
+  if (autoSaveEnabled()) {
+    localStorage.setItem(COURSE_PROGRESS_STORAGE_KEY, JSON.stringify(map));
+  } else {
+    // Keep it in memory only — exactly what the "Auto-Save" toggle promises.
+    sessionProgressMap = map;
+  }
+};
+
 export const courseService = {
   getProgressMap: (): Record<string, CourseProgressRecord> => {
-    try {
-      const stored = localStorage.getItem(COURSE_PROGRESS_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.warn('Failed reading course progress from localStorage:', e);
+    if (!autoSaveEnabled()) {
+      if (!sessionProgressMap) sessionProgressMap = readStoredMap();
+      return sessionProgressMap;
     }
 
-    // Initialize progress map from initial mockCourses
-    const initialMap: Record<string, CourseProgressRecord> = {};
-    mockCourses.forEach(course => {
-      const completedUnits: string[] = [];
-      const completedTopics: string[] = [];
-
-      course.units.forEach(unit => {
-        if (unit.isCompleted) {
-          completedUnits.push(unit.id);
-          unit.topics.forEach(t => completedTopics.push(t.id));
-        }
-      });
-
-      initialMap[course.id] = {
-        courseId: course.id,
-        completedUnitIds: completedUnits,
-        completedTopicIds: completedTopics,
-      };
-    });
-
-    localStorage.setItem(COURSE_PROGRESS_STORAGE_KEY, JSON.stringify(initialMap));
-    return initialMap;
+    // Auto-save was re-enabled: flush any session-only progress to storage.
+    if (sessionProgressMap) {
+      localStorage.setItem(COURSE_PROGRESS_STORAGE_KEY, JSON.stringify(sessionProgressMap));
+      sessionProgressMap = null;
+    }
+    return readStoredMap();
   },
 
   getCoursesWithProgress: (): Course[] => {
@@ -58,46 +86,30 @@ export const courseService = {
         const updatedTopics = topics.map(t => {
           const isDone = courseRecord.completedTopicIds.includes(t.id);
           if (isDone) completedTopicsCount++;
-          return {
-            ...t,
-            isCompleted: isDone,
-          };
+          return { ...t, isCompleted: isDone };
         });
 
         const allTopicsCompleted = topics.length > 0 && updatedTopics.every(t => t.isCompleted);
         const isUnitCompleted = courseRecord.completedUnitIds.includes(unit.id) || allTopicsCompleted;
-
         const unitCompletedTopics = updatedTopics.filter(t => t.isCompleted).length;
         const unitProgress = topics.length > 0
           ? Math.round((unitCompletedTopics / topics.length) * 100)
           : (isUnitCompleted ? 100 : 0);
 
-        return {
-          ...unit,
-          topics: updatedTopics,
-          isCompleted: isUnitCompleted,
-          unitProgress,
-        };
+        return { ...unit, topics: updatedTopics, isCompleted: isUnitCompleted, unitProgress };
       });
 
-      // Calculate overall course progress percentage
       const totalUnits = enhancedUnits.length;
       let calculatedProgress = 0;
-
       if (totalTopics > 0) {
         calculatedProgress = Math.round((completedTopicsCount / totalTopics) * 100);
       } else if (totalUnits > 0) {
-        const completedUnitsCount = enhancedUnits.filter(u => u.isCompleted).length;
-        calculatedProgress = Math.round((completedUnitsCount / totalUnits) * 100);
-      } else {
-        calculatedProgress = 0;
+        calculatedProgress = Math.round(
+          (enhancedUnits.filter(u => u.isCompleted).length / totalUnits) * 100
+        );
       }
 
-      return {
-        ...course,
-        units: enhancedUnits,
-        progress: calculatedProgress,
-      };
+      return { ...course, units: enhancedUnits, progress: calculatedProgress };
     });
   },
 
@@ -110,25 +122,20 @@ export const courseService = {
     };
 
     const hasTopic = courseRecord.completedTopicIds.includes(topicId);
-    let newCompletedTopicIds: string[];
+    const newCompletedTopicIds = hasTopic
+      ? courseRecord.completedTopicIds.filter(id => id !== topicId)
+      : [...courseRecord.completedTopicIds, topicId];
 
-    if (hasTopic) {
-      newCompletedTopicIds = courseRecord.completedTopicIds.filter(id => id !== topicId);
-    } else {
-      newCompletedTopicIds = [...courseRecord.completedTopicIds, topicId];
-    }
-
-    // Find the course and unit to check if all topics in unit are done
     const course = mockCourses.find(c => c.id === courseId);
     const unit = course?.units.find(u => u.id === unitId);
-    let newCompletedUnitIds = [...courseRecord.completedUnitIds];
+    const newCompletedUnitIds = [...courseRecord.completedUnitIds];
 
     if (unit) {
       const allDone = unit.topics.every(t => newCompletedTopicIds.includes(t.id));
       if (allDone && !newCompletedUnitIds.includes(unitId)) {
         newCompletedUnitIds.push(unitId);
       } else if (!allDone && newCompletedUnitIds.includes(unitId)) {
-        newCompletedUnitIds = newCompletedUnitIds.filter(id => id !== unitId);
+        newCompletedUnitIds.splice(newCompletedUnitIds.indexOf(unitId), 1);
       }
     }
 
@@ -137,8 +144,7 @@ export const courseService = {
       completedUnitIds: newCompletedUnitIds,
       completedTopicIds: newCompletedTopicIds,
     };
-
-    localStorage.setItem(COURSE_PROGRESS_STORAGE_KEY, JSON.stringify(progressMap));
+    saveProgressMap(progressMap);
     return courseService.getCoursesWithProgress();
   },
 
@@ -158,20 +164,16 @@ export const courseService = {
     let newCompletedTopicIds = [...courseRecord.completedTopicIds];
 
     if (isCurrentlyCompleted) {
-      // Mark unit as not completed, and optionally uncheck all topics in this unit
       newCompletedUnitIds = courseRecord.completedUnitIds.filter(id => id !== unitId);
       if (unit) {
         const unitTopicIds = unit.topics.map(t => t.id);
         newCompletedTopicIds = newCompletedTopicIds.filter(id => !unitTopicIds.includes(id));
       }
     } else {
-      // Mark unit as completed and all its topics as completed
       newCompletedUnitIds = [...courseRecord.completedUnitIds, unitId];
       if (unit) {
         unit.topics.forEach(t => {
-          if (!newCompletedTopicIds.includes(t.id)) {
-            newCompletedTopicIds.push(t.id);
-          }
+          if (!newCompletedTopicIds.includes(t.id)) newCompletedTopicIds.push(t.id);
         });
       }
     }
@@ -181,8 +183,7 @@ export const courseService = {
       completedUnitIds: newCompletedUnitIds,
       completedTopicIds: newCompletedTopicIds,
     };
-
-    localStorage.setItem(COURSE_PROGRESS_STORAGE_KEY, JSON.stringify(progressMap));
+    saveProgressMap(progressMap);
     return courseService.getCoursesWithProgress();
   },
 };

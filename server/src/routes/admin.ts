@@ -3,6 +3,13 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../prisma';
 import { authenticateJWT, requireRole } from '../middleware/auth';
+import {
+  createNotification,
+  normalizeNotificationRole,
+  notifyCourseAssigned,
+  notifyFacultyRegistered,
+} from '../services/notificationService';
+import { readUserSettings } from '../services/userSettingsService';
 
 const router = Router();
 
@@ -454,6 +461,10 @@ router.post('/faculty', async (req, res) => {
         },
       });
 
+      // Registration and course assignment are separate alerts so the faculty
+      // member always sees both events, even when they happen at the same time.
+      await notifyFacultyRegistered(user.id, tx);
+
       let assignment = null;
       if (subjectId && sectionId) {
         assignment = await tx.facultySubject.create({
@@ -468,27 +479,12 @@ router.post('/faculty', async (req, res) => {
           },
         });
 
-        await tx.notification.create({
-          data: {
-            userId: user.id,
-            title: 'Welcome to Acadexa',
-            message: `Your faculty account has been created and you have been assigned to ${assignment.subject.name} for Section ${assignment.section.semester}${assignment.section.name}.`,
-            type: 'course',
-            role: 'FACULTY',
-            actionUrl: '/faculty',
-          },
-        });
-      } else {
-        await tx.notification.create({
-          data: {
-            userId: user.id,
-            title: 'Welcome to Acadexa',
-            message: 'Your faculty account has been created.',
-            type: 'info',
-            role: 'FACULTY',
-            actionUrl: '/faculty',
-          },
-        });
+        await notifyCourseAssigned({
+          userId: user.id,
+          subjectName: assignment.subject.name,
+          subjectCode: assignment.subject.code,
+          sectionLabel: `${assignment.section.semester}${assignment.section.name}`,
+        }, tx);
       }
 
       return {
@@ -544,9 +540,9 @@ router.post(['/faculty/assignments', '/faculty/assign'], async (req, res) => {
       return res.status(409).json({ message: 'Faculty is already assigned to this course and section' });
     }
 
-    // Create assignment and in-app notification in transaction
-    const [assignment, notification] = await prisma.$transaction([
-      prisma.facultySubject.create({
+    // Create the assignment and its in-app alert atomically.
+    const { assignment, notification } = await prisma.$transaction(async (tx) => {
+      const assignment = await tx.facultySubject.create({
         data: {
           facultyId,
           subjectId,
@@ -556,18 +552,15 @@ router.post(['/faculty/assignments', '/faculty/assign'], async (req, res) => {
           subject: true,
           section: true,
         },
-      }),
-      prisma.notification.create({
-        data: {
-          userId: faculty.userId,
-          title: 'New Course Assignment',
-          message: `You have been assigned to teach ${subject.name} (${subject.code}) for Section ${section.semester}${section.name}.`,
-          type: 'course',
-          role: 'FACULTY',
-          actionUrl: '/faculty',
-        },
-      }),
-    ]);
+      });
+      const notification = await notifyCourseAssigned({
+        userId: faculty.userId,
+        subjectName: subject.name,
+        subjectCode: subject.code,
+        sectionLabel: `${section.semester}${section.name}`,
+      }, tx);
+      return { assignment, notification };
+    });
 
     res.status(201).json({
       assignment,
@@ -985,6 +978,13 @@ router.post('/students', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password || 'student123', 10);
 
+    // Enrollment alerts follow the administrator's saved preferences.
+    const adminSettings = (req as any).user?.id
+      ? await readUserSettings((req as any).user.id)
+      : {};
+    const enrollmentAlertsEnabled = adminSettings.emailAlertsOnEnrollment !== false;
+    const autoYearEnabled = adminSettings.autoSyncAcademicYears !== false;
+
     const result = await prisma.$transaction(async tx => {
       const user = await tx.user.create({
         data: {
@@ -1006,6 +1006,21 @@ router.post('/students', async (req, res) => {
           user: { select: { id: true, name: true, email: true } },
         },
       });
+
+      if (enrollmentAlertsEnabled) {
+        const yearPart = autoYearEnabled
+          ? ` (Year ${semesterToYear(section.semester)})`
+          : '';
+        await tx.notification.create({
+          data: {
+            title: 'New Student Enrolled',
+            message: `${student.user.name} (${student.rollNo}) joined Sem ${section.semester}-${section.name}${yearPart}.`,
+            type: 'enrollment',
+            role: 'ADMIN',
+            actionUrl: '/admin/students',
+          },
+        });
+      }
 
       return student;
     });
@@ -1322,10 +1337,7 @@ router.delete('/sections/:id', async (req, res) => {
 // ============================================================
 router.get('/notifications', async (req, res) => {
   try {
-    if (!(prisma as any).notification) {
-      return res.json([]);
-    }
-    const notifications = await (prisma as any).notification.findMany({
+    const notifications = await prisma.notification.findMany({
       include: {
         user: { select: { name: true, email: true, role: true } },
       },
@@ -1334,8 +1346,50 @@ router.get('/notifications', async (req, res) => {
     });
     res.json(notifications);
   } catch (error: any) {
-    // Return empty list gracefully if table is not yet migrated in database
-    res.json([]);
+    console.error('Error loading notification log:', error);
+    res.status(500).json({ message: error.message || 'Failed to load notifications' });
+  }
+});
+
+// Broadcast an announcement to a role (or to one specific user).
+router.post('/notifications', async (req, res) => {
+  try {
+    const { title, message, type, role, targetUserId } = req.body || {};
+
+    if (!String(title || '').trim() || !String(message || '').trim()) {
+      return res.status(400).json({ message: 'Title and message are required' });
+    }
+
+    const requestedRole = String(role || 'ALL').toUpperCase();
+    if (!['ALL', 'ADMIN', 'FACULTY', 'STUDENT'].includes(requestedRole)) {
+      return res.status(400).json({ message: 'Invalid target audience' });
+    }
+
+    const targetRole = normalizeNotificationRole(requestedRole);
+    let recipient = targetRole;
+
+    if (targetUserId) {
+      const user = await prisma.user.findUnique({ where: { id: String(targetUserId) } });
+      if (!user) return res.status(404).json({ message: 'Target user not found' });
+      recipient = normalizeNotificationRole(user.role);
+    }
+
+    const allowedTypes = ['announcement', 'info', 'course', 'quiz', 'system', 'learning_gap', 'enrollment'];
+    const notificationType = allowedTypes.includes(String(type)) ? String(type) : 'announcement';
+
+    const notification = await createNotification({
+      userId: targetUserId ? String(targetUserId) : null,
+      title: String(title).trim(),
+      message: String(message).trim(),
+      type: notificationType,
+      role: recipient,
+      actionUrl: null,
+    });
+
+    res.status(201).json({ notification, audience: recipient });
+  } catch (error: any) {
+    console.error('Error broadcasting announcement:', error);
+    res.status(500).json({ message: error.message || 'Failed to send announcement' });
   }
 });
 

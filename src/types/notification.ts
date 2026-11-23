@@ -1,4 +1,4 @@
-export type NotificationType = 'quiz' | 'course' | 'announcement' | 'system' | 'learning_gap';
+export type NotificationType = 'quiz' | 'course' | 'announcement' | 'system' | 'learning_gap' | 'enrollment';
 
 export interface Notification {
   id: string;

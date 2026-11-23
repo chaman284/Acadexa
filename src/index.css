@@ -453,3 +453,41 @@ input:focus, textarea:focus, select:focus {
 main > * {
   animation: pageEnter 0.22s ease forwards;
 }
+
+/* ============================================
+   DARK THEME (Portal setting: theme = dark / system)
+   ============================================ */
+html.dark {
+  --color-background:   #1B1719;
+  --color-surface:      #2A2326;
+  --color-taupe:        #3A3034;
+  --color-border-warm:  #463A3E;
+  --color-charcoal:     #F7F1E8;
+  --color-secondary:    #C4B4B8;
+  --color-muted:        #352B2F;
+  --color-border:       #463A3E;
+  --color-text-primary: #F7F1E8;
+  --color-text-secondary:#C4B4B8;
+  --color-text-muted:   #A89AA0;
+  --color-primary-light:#3A2B31;
+}
+
+html.dark body { color: #F7F1E8; }
+
+/* Most components use hard-coded ivory/white classes; remap them in dark mode. */
+html.dark .bg-white,
+html.dark .bg-\[\#F7F1E8\],
+html.dark .bg-\[\#FAF4EE\],
+html.dark .bg-\[\#F7F1E8\]\/50,
+html.dark .bg-\[\#F7F1E8\]\/80 { background-color: #2A2326 !important; }
+
+html.dark .text-\[\#302A2B\],
+html.dark .text-\[\#321923\],
+html.dark .text-\[\#1a1416\] { color: #F7F1E8 !important; }
+
+html.dark .border-\[\#E1D4CA\],
+html.dark .border-\[\#E8DDD3\],
+html.dark .divide-\[\#E1D4CA\]\/60 > :not([hidden]) ~ :not([hidden]) { border-color: #463A3E !important; }
+
+html.dark .hover\:bg-\[\#F7F1E8\]:hover { background-color: #352B2F !important; }
+html.dark .hover\:bg-\[\#EEE3E0\]:hover { background-color: #3A2B31 !important; }

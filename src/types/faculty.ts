@@ -21,14 +21,6 @@ export interface FacultyProfile {
   assignedClasses: string[];
 }
 
-export interface FacultySettings {
-  emailNotifications: boolean;
-  submissionAlerts: boolean;
-  lowPerformanceAlerts: boolean;
-  departmentAnnouncements: boolean;
-  weeklyReportDigest: boolean;
-  theme: 'light' | 'dark' | 'system';
-  language: string;
-  soundEffects: boolean;
-  autoExportFormat: 'csv' | 'xlsx' | 'pdf';
-}
+import type { FacultySettings } from './settings';
+
+export type { FacultySettings };

@@ -41,7 +41,7 @@ function generateAcademicPaperPdfBlob(paper: PreviousYearPaper): Blob {
   const textCommands = [
     `BT`,
     `/F1 15 Tf 50 740 Td (ACADEXA INSTITUTE OF TECHNOLOGY & HIGHER STUDIES) Tj`,
-    `/F1 11 Tf 0 -22 Td (DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING) Tj`,
+    `/F1 11 Tf 0 -22 Td (DEPARTMENT OF ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING) Tj`,
     `/F2 10 Tf 0 -18 Td (${sanitize(examLabel)} - ACADEMIC YEAR ${sanitize(paper.year)}) Tj`,
     `/F1 10 Tf 0 -20 Td (Course: ${sanitize(paper.subject)} [${sanitize(paper.subjectCode)}]) Tj`,
     `/F2 9 Tf 0 -16 Td (Semester: ${sanitize(paper.semester)}    |    Duration: ${sanitize(paper.duration)}    |    Max Marks: ${paper.totalMarks}) Tj`,

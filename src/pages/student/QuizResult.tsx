@@ -5,8 +5,10 @@ import { Button } from '../../components/ui/Button';
 import api from '../../lib/apiClient';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { settingsService } from '../../services/settingsService';
 
 const playVictorySound = () => {
+  if (!settingsService.getLocalSettings().soundEffects) return;
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;

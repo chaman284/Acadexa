@@ -54,7 +54,7 @@ export const Courses: React.FC = () => {
               name: dbCourse.name,
               code: dbCourse.code,
               semester: dbCourse.semester || dbCourse.assignments?.[0]?.semester || 1,
-              department: dbCourse.departmentName || 'Computer Science',
+              department: dbCourse.departmentName || 'Artificial Intelligence and Machine Learning',
               creditHours: 4,
               facultyId: dbCourse.assignments?.[0]?.facultyId || '',
               facultyName: dbCourse.assignments?.[0]?.facultyName || 'Awaiting Faculty',

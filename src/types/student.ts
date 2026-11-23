@@ -20,16 +20,9 @@ export interface Student {
   learningProgress: number;
 }
 
-export interface StudentSettings {
-  emailNotifications: boolean;
-  quizReminders: boolean;
-  announcementAlerts: boolean;
-  performanceReports: boolean;
-  theme: 'light' | 'dark' | 'system';
-  language: string;
-  soundEffects: boolean;
-  autoSaveProgress: boolean;
-}
+import type { StudentSettings } from './settings';
+
+export type { StudentSettings };
 
 export interface LeaderboardEntry {
   rank: number;

@@ -219,10 +219,10 @@ export const QuizDetailsForm: React.FC<QuizDetailsFormProps> = ({
     const dbTopics = activeDbSubject?.topics || [];
     return {
       id: activeDbSubject?.id || subjectId || 'default_sub',
-      code: activeDbSubject?.code || 'CS',
+      code: activeDbSubject?.code || 'AIML',
       name: activeDbSubject?.name || 'Curriculum Course',
       semester,
-      department: activeDbSubject?.department || 'Computer Science and Engineering',
+      department: activeDbSubject?.department || 'Artificial Intelligence and Machine Learning',
       units: [
         {
           id: `u_${activeDbSubject?.id || '1'}`,

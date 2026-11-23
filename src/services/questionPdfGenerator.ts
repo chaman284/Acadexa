@@ -15,7 +15,7 @@ export const downloadQuestionsPdf = (
   }
 
   const title = options.title || 'Acadexa Academic Question Bank';
-  const subtitle = options.subtitle || 'Department of Computer Science & Engineering';
+  const subtitle = options.subtitle || 'Department of Artificial Intelligence and Machine Learning';
   const filterSummary = options.filterSummary || `Generated for ${questions.length} questions`;
   const dateStr = new Date().toLocaleDateString('en-IN', {
     day: 'numeric',

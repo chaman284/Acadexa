@@ -5,9 +5,11 @@ import {
   BookOpen, TrendingUp, Users, Award, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { settingsService } from '../../services/settingsService';
 
 // Warm button click sound via Web Audio API
 const playClickSound = () => {
+  if (!settingsService.getLocalSettings().soundEffects) return;
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = ctx.createOscillator();

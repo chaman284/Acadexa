@@ -66,14 +66,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { to: '/faculty/select-class', label: 'Dashboard', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
         { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-4.5 h-4.5 flex-shrink-0" /> },
         { to: '/faculty/paper-bank', label: 'Question Bank', icon: <Database className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: '/faculty/learning-gaps', label: 'Learning Analytics', icon: <TrendingUp className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: '/student/tutor', label: 'Academic Assistant', icon: <MessageSquare className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: '/faculty/department', label: 'Department Info', icon: <Building2 className="w-4.5 h-4.5 flex-shrink-0" /> },
       ];
 
   const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;
   const profileUrl = role === 'student' ? '/student/profile' : role === 'admin' ? '/admin/profile' : '/profile';
-  const settingsUrl = role === 'student' ? '/student/settings' : role === 'admin' ? '/admin/settings' : '/settings';
+  const settingsUrl = role === 'student' ? '/student/settings' : role === 'admin' ? '/admin/settings' : '/faculty/settings';
 
   const handleLogout = async () => {
     await logout();

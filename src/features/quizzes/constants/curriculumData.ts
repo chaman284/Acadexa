@@ -1,6 +1,6 @@
 // ============================================================================
 // ACADEXA CURRICULUM & QUESTION BANK SEED DATA
-// Real college curriculum models for Computer Science & Engineering
+// Real college curriculum models for Artificial Intelligence and Machine Learning
 // ============================================================================
 import type { Question, Quiz, AssignedClass } from '../types/quizTypes';
 
@@ -24,10 +24,10 @@ export interface SubjectCurriculum {
 export const CURRICULUM_DATA: SubjectCurriculum[] = [
   {
     id: 'sub_ds',
-    code: 'CS301',
+    code: 'AIML301',
     name: 'Data Structures & Algorithms',
     semester: 3,
-    department: 'Computer Science and Engineering',
+    department: 'Artificial Intelligence and Machine Learning',
     units: [
       {
         id: 'u_ds_1',
@@ -64,7 +64,7 @@ export const CURRICULUM_DATA: SubjectCurriculum[] = [
     code: 'CS502',
     name: 'Database Management Systems',
     semester: 5,
-    department: 'Computer Science and Engineering',
+    department: 'Artificial Intelligence and Machine Learning',
     units: [
       {
         id: 'u_db_1',
@@ -96,7 +96,7 @@ export const CURRICULUM_DATA: SubjectCurriculum[] = [
     code: 'CS403',
     name: 'Operating Systems',
     semester: 4,
-    department: 'Computer Science and Engineering',
+    department: 'Artificial Intelligence and Machine Learning',
     units: [
       {
         id: 'u_os_1',
@@ -120,7 +120,7 @@ export const CURRICULUM_DATA: SubjectCurriculum[] = [
     code: 'CS504',
     name: 'Computer Networks',
     semester: 5,
-    department: 'Computer Science and Engineering',
+    department: 'Artificial Intelligence and Machine Learning',
     units: [
       {
         id: 'u_cn_1',
@@ -158,10 +158,10 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     explanation: 'A balanced BST guarantees height h = O(log n). Each comparison cuts the search space in half.',
     hint: 'Think about the relationship between height and number of nodes in a balanced tree.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 3,
       subjectId: 'sub_ds',
-      subjectCode: 'CS301',
+      subjectCode: 'AIML301',
       subjectName: 'Data Structures & Algorithms',
       unitId: 'u_ds_2',
       unitName: 'Unit 2: Non-Linear Trees',
@@ -189,10 +189,10 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     ],
     explanation: 'Inorder traversal processes Left Subtree (smaller) -> Root (median) -> Right Subtree (larger), generating sorted output.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 3,
       subjectId: 'sub_ds',
-      subjectCode: 'CS301',
+      subjectCode: 'AIML301',
       subjectName: 'Data Structures & Algorithms',
       unitId: 'u_ds_2',
       unitName: 'Unit 2: Non-Linear Trees',
@@ -220,7 +220,7 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     ],
     explanation: 'BCNF is strictly stricter than 3NF: it requires that for every non-trivial FD X -> Y, X is a superkey without exception.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 5,
       subjectId: 'sub_dbms',
       subjectCode: 'CS502',
@@ -249,7 +249,7 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     ],
     explanation: 'False. In 2PL, locks can only be acquired in the Growing Phase and released in the Shrinking Phase. No lock can be released during the Growing Phase.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 5,
       subjectId: 'sub_dbms',
       subjectCode: 'CS502',
@@ -276,10 +276,10 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     caseSensitive: false,
     explanation: 'Breadth-First Search uses a Queue to explore all immediate neighbors before delving into deeper levels.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 3,
       subjectId: 'sub_ds',
-      subjectCode: 'CS301',
+      subjectCode: 'AIML301',
       subjectName: 'Data Structures & Algorithms',
       unitId: 'u_ds_3',
       unitName: 'Unit 3: Graphs & Graph Algorithms',
@@ -302,7 +302,7 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     expectedAnswer: 'Peterson algorithm uses flag[2] boolean array (indicating intent to enter critical section) and turn variable (indicating whose priority it is). Mutual exclusion is ensured because process P0 only enters if (flag[1] == false || turn == 0), preventing simultaneous entry.',
     explanation: 'Strict 2-process software synchronization algorithm satisfying mutual exclusion, progress, and bounded waiting.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 4,
       subjectId: 'sub_os',
       subjectCode: 'CS403',
@@ -331,10 +331,10 @@ export const MOCK_LIBRARY_QUESTIONS: Question[] = [
     acceptedAnswers: ['30 20 10', '30 20 10 '],
     explanation: 'Reverse inorder traversal (Right -> Root -> Left) prints elements of a BST in strictly descending order: 30, then 20, then 10.',
     metadata: {
-      department: 'Computer Science and Engineering',
+      department: 'Artificial Intelligence and Machine Learning',
       semester: 3,
       subjectId: 'sub_ds',
-      subjectCode: 'CS301',
+      subjectCode: 'AIML301',
       subjectName: 'Data Structures & Algorithms',
       unitId: 'u_ds_2',
       unitName: 'Unit 2: Non-Linear Trees',

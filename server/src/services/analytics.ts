@@ -136,7 +136,7 @@ export const analytics = {
       const topicId = q.topicId || 'general';
       const topicName = q.topic?.name || 'General';
       const subjectId = q.topic?.subjectId;
-      const subjectName = q.topic?.subject?.name || 'Computer Science';
+      const subjectName = q.topic?.subject?.name || 'Artificial Intelligence and Machine Learning';
       const cogLevel = q.cognitiveLevel || CognitiveLevel.CL1_REMEMBER;
 
       if (!topicMap[topicId]) {
@@ -479,7 +479,7 @@ export const analytics = {
           const q = ans.question;
           const tId = q.topicId || 'general';
           const tName = q.topic?.name || 'General';
-          const sName = q.topic?.subject?.name || 'Computer Science';
+          const sName = q.topic?.subject?.name || 'Artificial Intelligence and Machine Learning';
           const cog = q.cognitiveLevel || 'CL2_UNDERSTAND';
           const studentId = ans.attempt.studentId;
 

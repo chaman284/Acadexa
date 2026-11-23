@@ -2,6 +2,7 @@
 // ACADEXA AI QUESTION GENERATION SERVICE
 // Replaceable provider for syllabus-aligned assessment item generation
 // ============================================================================
+import api from '../../../lib/apiClient';
 import type { Question, QuestionType, Difficulty, CognitiveLevel } from '../types/quizTypes';
 
 export interface AiGenerationConfig {
@@ -22,7 +23,7 @@ export interface AiGenerationConfig {
   customPrompt?: string;
 }
 
-// Curriculum generation templates tailored to computer science concepts
+// Curriculum generation templates tailored to artificial intelligence and machine learning concepts
 const AI_QUESTION_TEMPLATES: Record<string, Partial<Question>[]> = {
   top_bst: [
     {
@@ -110,13 +111,72 @@ export const aiQuestionService = {
    * Generate questions from configured topic & parameters
    */
   generateQuestions: async (config: AiGenerationConfig): Promise<Question[]> => {
-    // Realistic API generation delay simulation (800ms - 1500ms)
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Simulate validation error if empty topic
+    // Validate required metadata
     if (!config.topicName || !config.subjectName) {
       throw new Error('Subject and Topic metadata are required for curriculum question generation.');
     }
+
+    // Try backend AI generator (powered by Gemini API or curriculum engine)
+    try {
+      const blooms =
+        config.skillFocus === 'problem_solving'
+          ? 'CL4_ANALYZE'
+          : config.skillFocus === 'application'
+          ? 'CL3_APPLY'
+          : config.skillFocus === 'recall'
+          ? 'CL1_REMEMBER'
+          : 'CL2_UNDERSTAND';
+
+      const res = await api.post('/questions/generate', {
+        subject: config.subjectName,
+        topic: config.topicName,
+        subjectId: config.subjectId,
+        topicId: config.topicId,
+        difficulty: (config.difficulty || 'medium').toUpperCase(),
+        bloomsLevel: blooms,
+        count: config.questionCount,
+      });
+
+      if (res.data?.questions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
+        return res.data.questions.map((q: any, i: number) => ({
+          id: q.id || `ai_gen_${Date.now()}_${i}`,
+          text: q.text,
+          type: (q.type || 'mcq').toLowerCase().replace('_', '-') as QuestionType,
+          difficulty: (q.difficulty || config.difficulty || 'medium').toLowerCase() as Difficulty,
+          marks: config.marksPerQuestion || 2,
+          options: (q.options || []).map((opt: any, optIdx: number) => ({
+            id: opt.id || `opt_${i}_${optIdx}`,
+            text: opt.text,
+            isCorrect: Boolean(opt.isCorrect),
+          })),
+          explanation: config.includeExplanations
+            ? q.explanation || `Derived from ${config.subjectName} curriculum: applies standard ${config.topicName} theorems.`
+            : undefined,
+          metadata: {
+            department: config.department || 'Artificial Intelligence and Machine Learning',
+            semester: config.semester || 3,
+            subjectId: config.subjectId,
+            subjectCode: config.subjectName,
+            subjectName: config.subjectName,
+            unitId: config.unitId,
+            unitName: config.unitName,
+            topicId: config.topicId,
+            topicName: config.topicName,
+            cognitiveLevel: (q.cognitiveLevel || blooms) as CognitiveLevel,
+            learningObjective: `Demonstrate ${config.skillFocus} in ${config.topicName}`,
+          },
+          source: 'ai' as const,
+          createdBy: 'Acadexa AI Generator (Gemini Curriculum Engine)',
+          createdAt: new Date().toISOString(),
+          hasValidAnswerKey: true,
+        }));
+      }
+    } catch (apiErr) {
+      console.warn('Backend question generator call failed, continuing with client template engine:', apiErr);
+    }
+
+    // Realistic API generation delay simulation (800ms - 1500ms)
+    await new Promise(r => setTimeout(r, 800));
 
     const availableTemplates =
       AI_QUESTION_TEMPLATES[config.topicId] ||
@@ -155,7 +215,7 @@ export const aiQuestionService = {
         acceptedAnswers: template.acceptedAnswers,
         expectedAnswer: template.expectedAnswer,
         metadata: {
-          department: config.department || 'Computer Science and Engineering',
+          department: config.department || 'Artificial Intelligence and Machine Learning',
           semester: config.semester || 3,
           subjectId: config.subjectId,
           subjectCode: config.subjectId.toUpperCase(),

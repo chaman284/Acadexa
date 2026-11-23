@@ -10,8 +10,10 @@ import { Badge } from '../../components/ui/Badge';
 import { NotificationPopover } from '../../components/layout/NotificationPopover';
 import { facultyClasses, type FacultyClass } from '../../data/facultyClasses';
 import api from '../../lib/apiClient';
+import { settingsService } from '../../services/settingsService';
 
 const playClickSound = () => {
+  if (!settingsService.getLocalSettings().soundEffects) return;
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = ctx.createOscillator();

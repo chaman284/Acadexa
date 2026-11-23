@@ -7,9 +7,11 @@ export interface DepartmentEvent {
   title: string;
   description: string;
   date: string;
+  endDate?: string;
   time: string;
   location: string;
-  category: 'event' | 'exam' | 'deadline' | 'announcement';
+  category: 'event' | 'exam' | 'deadline' | 'announcement' | 'holiday';
+  semester?: number; // 3, 5, or undefined for both / general
 }
 
 export interface Announcement {
@@ -19,7 +21,8 @@ export interface Announcement {
   postedBy: string;
   postedAt: string;
   isPinned: boolean;
-  category: 'general' | 'exam' | 'placement' | 'academic';
+  category: 'general' | 'exam' | 'placement' | 'academic' | 'event';
+  semester?: number;
 }
 
 export interface TimetableEntry {
@@ -31,7 +34,23 @@ export interface TimetableEntry {
   courseName: string;
   facultyName: string;
   room: string;
-  type: 'lecture' | 'lab' | 'tutorial';
+  type: 'lecture' | 'lab' | 'tutorial' | 'project' | 'skill' | 'remedial' | 'mentoring';
+  semester: number;
+  section: string; // 'A', 'B', 'C'
+}
+
+export interface SectionTimetableMeta {
+  semester: number;
+  section: string;
+  roomNo: string;
+  coordinator: string;
+  effectiveFrom: string;
+  courses: {
+    code: string;
+    name: string;
+    contactHours: string;
+    faculty: string;
+  }[];
 }
 
 export interface FacultyMember {
@@ -42,6 +61,8 @@ export interface FacultyMember {
   subjects: string[];
   email: string;
   office?: string;
+  phone?: string;
+  isHod?: boolean;
 }
 
 export interface DepartmentFAQ {

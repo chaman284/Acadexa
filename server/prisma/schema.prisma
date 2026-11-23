@@ -14,6 +14,7 @@ model User {
   name         String
   role         Role     @default(STUDENT)
   avatarUrl    String?
+  settings     Json?
   createdAt    DateTime @default(now())
   student       Student?
   faculty       Faculty?
@@ -28,8 +29,8 @@ enum Role {
 
 model Department {
   id       String    @id @default(cuid())
-  name     String    // e.g. "Computer Science"
-  code     String    @unique  // e.g. "CS"
+  name     String    // e.g. "Artificial Intelligence and Machine Learning"
+  code     String    @unique  // e.g. "AIML"
   sections Section[]
   subjects Subject[]
 }

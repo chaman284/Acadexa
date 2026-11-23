@@ -1,60 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { studentService } from '../../services/studentService';
-import type { StudentSettings } from '../../types/student';
+import { useSettings } from '../../context/SettingsContext';
+import type { StudentSettings as StudentSettingsType } from '../../types/settings';
 import {
   Bell, Volume2, Moon, Globe, Save, CheckCircle2,
   AlertCircle, ShieldCheck, Database, RefreshCw
 } from 'lucide-react';
 
+type BooleanSettingKey = {
+  [K in keyof StudentSettingsType]: StudentSettingsType[K] extends boolean ? K : never
+}[keyof StudentSettingsType];
+
 export const StudentSettingsPage: React.FC = () => {
-  const [settings, setSettings] = useState<StudentSettings>(studentService.getSettings());
-  const [isSaving, setIsSaving] = useState(false);
+  const { settings, updateSettings, resetSettings, savedToBackend } = useSettings();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
-    setSettings(studentService.getSettings());
-  }, []);
+  const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+    setFeedback({ type, message });
+    window.setTimeout(() => setFeedback(null), 3500);
+  };
 
-  const handleToggle = (key: keyof StudentSettings) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const handleToggle = (key: BooleanSettingKey) => {
+    updateSettings({ [key]: !settings[key] } as Partial<typeof settings>);
   };
 
   const handleSave = () => {
-    setIsSaving(true);
-    try {
-      studentService.updateSettings(settings);
-      setFeedback({ type: 'success', message: 'Settings saved and applied successfully!' });
-      setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      setFeedback({ type: 'error', message: 'Failed to save settings.' });
-    } finally {
-      setIsSaving(false);
-    }
+    showFeedback(savedToBackend
+      ? 'Settings saved and applied successfully!'
+      : 'Settings saved on this device (backend unavailable).');
   };
 
   const handleReset = () => {
-    const defaults: StudentSettings = {
-      emailNotifications: true,
-      quizReminders: true,
-      announcementAlerts: true,
-      performanceReports: false,
-      theme: 'light',
-      language: 'English',
-      soundEffects: true,
-      autoSaveProgress: true,
-    };
-    setSettings(defaults);
-    studentService.updateSettings(defaults);
-    setFeedback({ type: 'success', message: 'Settings reset to default values.' });
-    setTimeout(() => setFeedback(null), 3500);
+    resetSettings();
+    showFeedback('Settings reset to default values.');
   };
+
+  const toggleRow = (
+    key: BooleanSettingKey,
+    title: string,
+    description: string,
+    testId?: string,
+  ) => (
+    <div key={key} className="py-3.5 flex items-center justify-between gap-4" data-testid={testId}>
+      <div>
+        <p className="text-sm font-medium text-[var(--color-text-primary)]">{title}</p>
+        <p className="text-xs text-[var(--color-text-muted)]">{description}</p>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          checked={settings[key]}
+          onChange={() => handleToggle(key)}
+          className="sr-only peer"
+          aria-label={title}
+        />
+        <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
+      </label>
+    </div>
+  );
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up">
@@ -75,7 +81,6 @@ export const StudentSettingsPage: React.FC = () => {
             <Button
               size="sm"
               onClick={handleSave}
-              isLoading={isSaving}
               leftIcon={<Save className="w-3.5 h-3.5" />}
             >
               Save Preferences
@@ -105,73 +110,18 @@ export const StudentSettingsPage: React.FC = () => {
       <Card>
         <CardHeader
           title="Notification Alerts"
-          subtitle="Configure how and when you receive academic updates"
+          subtitle="Configure which academic updates appear in your notification bell"
           action={<Bell className="w-4 h-4 text-[var(--color-accent)]" />}
         />
         <div className="divide-y divide-[var(--color-border)]">
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Quiz & Assessment Reminders</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Get notified before weekly quizzes and deadlines</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.quizReminders}
-                onChange={() => handleToggle('quizReminders')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
-            </label>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Department Announcements</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Alerts for college schedules, exams, and symposium events</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.announcementAlerts}
-                onChange={() => handleToggle('announcementAlerts')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
-            </label>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Email Notifications</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Receive important notifications at your registered email</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.emailNotifications}
-                onChange={() => handleToggle('emailNotifications')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
-            </label>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Weekly Performance Reports</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Summary digest of completed quizzes and topic masteries</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.performanceReports}
-                onChange={() => handleToggle('performanceReports')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
-            </label>
-          </div>
+          {toggleRow('quizReminders', 'Quiz & Assessment Reminders',
+            'Show notices before weekly quizzes and deadlines')}
+          {toggleRow('announcementAlerts', 'Department Announcements',
+            'Alerts for college schedules, exams, and symposium events')}
+          {toggleRow('emailNotifications', 'Email Notifications',
+            'Receive important notifications at your registered email')}
+          {toggleRow('performanceReports', 'Weekly Performance Reports',
+            'Show topic mastery and quiz summary digests in your feed')}
         </div>
       </Card>
 
@@ -183,52 +133,26 @@ export const StudentSettingsPage: React.FC = () => {
           action={<Volume2 className="w-4 h-4 text-oxblood" />}
         />
         <div className="divide-y divide-[var(--color-border)]">
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Interactive Sound Effects</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Play audio feedback during quiz actions and submissions</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.soundEffects}
-                onChange={() => handleToggle('soundEffects')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
-            </label>
-          </div>
+          {toggleRow('soundEffects', 'Interactive Sound Effects',
+            'Play audio feedback during quiz actions and submissions')}
+          {toggleRow('autoSaveProgress', 'Auto-Save Topic Progress',
+            'Keep completed syllabus units across sessions when enabled')}
 
           <div className="py-3.5 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Auto-Save Topic Progress</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Automatically save completed course syllabus units across sessions</p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">Color Theme</p>
+              <p className="text-xs text-[var(--color-text-muted)]">Applied to the whole portal immediately</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autoSaveProgress}
-                onChange={() => handleToggle('autoSaveProgress')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-taupe/60 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-oxblood"></div>
-            </label>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">Auto-Save Topic Progress</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Automatically save completed course syllabus units across sessions</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autoSaveProgress}
-                onChange={() => handleToggle('autoSaveProgress')}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
-            </label>
+            <select
+              value={settings.theme}
+              onChange={e => updateSettings({ theme: e.target.value as typeof settings.theme })}
+              aria-label="Color Theme"
+              className="text-sm border border-[var(--color-border)] rounded-[10px] px-3 py-1.5 bg-[var(--color-surface)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+            >
+              <option value="light">Light Theme</option>
+              <option value="dark">Dark Theme</option>
+              <option value="system">System Preference</option>
+            </select>
           </div>
 
           <div className="py-3.5 flex items-center justify-between gap-4">
@@ -238,12 +162,14 @@ export const StudentSettingsPage: React.FC = () => {
             </div>
             <select
               value={settings.language}
-              onChange={e => setSettings({ ...settings, language: e.target.value })}
-              className="text-sm border border-[var(--color-border)] rounded-[10px] px-3 py-1.5 bg-white text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+              onChange={e => updateSettings({ language: e.target.value })}
+              aria-label="Display Language"
+              className="text-sm border border-[var(--color-border)] rounded-[10px] px-3 py-1.5 bg-[var(--color-surface)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
             >
               <option value="English">English (US/UK)</option>
-              <option value="Hindi">Hindi (हिंदी)</option>
-              <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+              <option value="Hindi">हिन्दी (Hindi)</option>
+              <option value="Spanish">Español (Spanish)</option>
+              <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
             </select>
           </div>
         </div>

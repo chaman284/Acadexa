@@ -23,6 +23,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
       } else {
         setUser(stored);
+        // Hydrate section information if not present
+        if (stored.role === 'student' && !stored.student?.section) {
+          authService.fetchCurrentUserProfile().then(updated => {
+            if (updated) setUser(updated);
+          }).catch(() => {});
+        }
       }
     }
     setIsLoading(false);
