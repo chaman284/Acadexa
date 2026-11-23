@@ -31,6 +31,7 @@ import { QuestionPaperBank } from '../pages/faculty/QuestionPaperBank';
 import { QuizManagement } from '../pages/faculty/QuizManagement';
 import { LearningGapAnalytics } from '../pages/faculty/LearningGapAnalytics';
 import { ClassDashboard } from '../pages/faculty/ClassDashboard';
+import { ClassSyllabus } from '../pages/faculty/ClassSyllabus';
 import { QuizBuilder } from '../pages/faculty/QuizBuilder';
 import { FacultyProfile } from '../pages/faculty/FacultyProfile';
 import { FacultySettings } from '../pages/faculty/FacultySettings';
@@ -126,6 +127,7 @@ export const AppRoutes = () => {
       <Route path="/faculty" element={<Navigate to="/faculty/select-class" replace />} />
       <Route path="/faculty/select-class" element={<StandaloneRoute role="faculty"><ClassSelection /></StandaloneRoute>} />
       <Route path="/faculty/class/:classId" element={<PrivateRoute role="faculty"><ClassDashboard /></PrivateRoute>} />
+      <Route path="/faculty/class/:classId/syllabus" element={<PrivateRoute role="faculty"><ClassSyllabus /></PrivateRoute>} />
       <Route path="/faculty/class/:classId/analytics" element={<PrivateRoute role="faculty"><ClassAnalytics /></PrivateRoute>} />
       <Route path="/faculty/quiz/create" element={<StandaloneRoute role="faculty"><QuizBuilderPage /></StandaloneRoute>} />
       <Route path="/faculty/quiz/:id/edit" element={<StandaloneRoute role="faculty"><QuizBuilderPage /></StandaloneRoute>} />

@@ -19,7 +19,15 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
           include: {
             subject: {
               include: {
-                topics: true,
+                topics: {
+                  include: {
+                    subtopics: {
+                      select: { id: true, name: true },
+                      orderBy: { id: 'asc' },
+                    },
+                  },
+                  orderBy: { moduleNo: 'asc' },
+                },
                 department: true,
               },
             },
@@ -40,7 +48,15 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
         include: {
           subject: {
             include: {
-              topics: true,
+              topics: {
+                include: {
+                  subtopics: {
+                    select: { id: true, name: true },
+                    orderBy: { id: 'asc' },
+                  },
+                },
+                orderBy: { moduleNo: 'asc' },
+              },
               department: true,
             },
           },
@@ -70,7 +86,12 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
             code: a.subject.code,
             semester: a.subject.semester || a.section.semester || 1,
             department: a.subject.department?.name || 'Artificial Intelligence and Machine Learning',
-            topics: a.subject.topics.map(t => ({ id: t.id, name: t.name })),
+            topics: a.subject.topics.map(t => ({
+          id: t.id,
+          name: t.name,
+          moduleNo: t.moduleNo,
+          subtopics: (t as any).subtopics?.map((st: any) => ({ id: st.id, name: st.name })) || [],
+        })),
           },
           section: {
             id: a.section.id,
@@ -87,7 +108,15 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
     if (!faculty || faculty.assignments.length === 0) {
       const allSubjects = await prisma.subject.findMany({
         include: {
-          topics: true,
+          topics: {
+            include: {
+              subtopics: {
+                select: { id: true, name: true },
+                orderBy: { id: 'asc' },
+              },
+            },
+            orderBy: { moduleNo: 'asc' },
+          },
           department: true,
           assignments: {
             include: {
@@ -120,7 +149,12 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
             code: s.code,
             semester: s.semester || 1,
             department: s.department?.name || 'Artificial Intelligence and Machine Learning',
-            topics: s.topics.map(t => ({ id: t.id, name: t.name })),
+            topics: s.topics.map(t => ({
+              id: t.id,
+              name: t.name,
+              moduleNo: t.moduleNo,
+              subtopics: (t as any).subtopics?.map((st: any) => ({ id: st.id, name: st.name })) || [],
+            })),
           },
           section: {
             id: s.assignments[0]?.section?.id || 'default_sec',
@@ -148,7 +182,12 @@ router.get('/faculty-curriculum', authenticateJWT, async (req: AuthRequest, res)
         code: a.subject.code,
         semester: a.subject.semester || a.section.semester || 1,
         department: a.subject.department?.name || 'Artificial Intelligence and Machine Learning',
-        topics: a.subject.topics.map(t => ({ id: t.id, name: t.name })),
+        topics: a.subject.topics.map(t => ({
+          id: t.id,
+          name: t.name,
+          moduleNo: t.moduleNo,
+          subtopics: (t as any).subtopics?.map((st: any) => ({ id: st.id, name: st.name })) || [],
+        })),
       },
       section: {
         id: a.section.id,
@@ -204,7 +243,15 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
       where,
       include: {
         department: true,
-        topics: true,
+        topics: {
+          include: {
+            subtopics: {
+              select: { id: true, name: true },
+              orderBy: { id: 'asc' },
+            },
+          },
+          orderBy: { moduleNo: 'asc' },
+        },
         assignments: {
           include: {
             faculty: {
@@ -243,7 +290,12 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
         departmentId: s.departmentId,
         departmentName: s.department?.name,
         departmentCode: s.department?.code,
-        topics: s.topics.map(t => ({ id: t.id, name: t.name })),
+        topics: s.topics.map(t => ({
+          id: t.id,
+          name: t.name,
+          moduleNo: t.moduleNo,
+          subtopics: (t as any).subtopics?.map((st: any) => ({ id: st.id, name: st.name })) || [],
+        })),
         assignments: s.assignments.map(a => ({
           id: a.id,
           facultyId: a.facultyId,

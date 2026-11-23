@@ -4,6 +4,7 @@ import { clsx } from 'clsx';
 import type { ChatMessage } from '../../types/department';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { stripChatMarkdown } from '../../utils/chatFormat';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -122,7 +123,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   : 'bg-white border border-[#E1D4CA] text-[#302A2B] rounded-tl-xs font-normal'
               )}
             >
-              {msg.content}
+              {msg.role === 'assistant' ? stripChatMarkdown(msg.content) : msg.content}
             </div>
           </div>
         ))}

@@ -8,11 +8,14 @@ import { CURRICULUM_DATA } from '../constants/curriculumData';
 export interface DynamicTopic {
   id: string;
   name: string;
+  subtopicId?: string;
+  topicId?: string;
 }
 
 export interface DynamicUnit {
   id: string;
   name: string;
+  moduleNo?: number;
   topics: DynamicTopic[];
 }
 
@@ -38,7 +41,12 @@ export interface FacultyCurriculumResponse {
       code: string;
       semester: number;
       department: string;
-      topics: { id: string; name: string }[];
+      topics: {
+        id: string;
+        name: string;
+        moduleNo?: number;
+        subtopics?: { id: string; name: string }[];
+      }[];
     };
     section: {
       id: string;
@@ -53,37 +61,65 @@ export interface FacultyCurriculumResponse {
 
 /**
  * Transforms raw topics from the database into structured units.
- * If topics have a "Unit X: ..." prefix, they are grouped by that unit.
- * Otherwise, topics are grouped into clean, logical units.
+ * If raw topics contain subtopics (syllabus taxonomy modules),
+ * each topic is treated as a Module and its subtopics as Topics.
+ * Otherwise, topics are grouped logically into units.
  */
 export function buildUnitsFromTopics(
   subjectId: string,
   subjectName: string,
-  rawTopics: { id: string; name: string }[]
+  rawTopics: any[]
 ): DynamicUnit[] {
   if (!rawTopics || rawTopics.length === 0) {
     return [
       {
         id: `u_${subjectId}_core`,
-        name: 'Unit 1: Core Syllabus Topics',
+        name: 'Module 1: Core Syllabus Topics',
+        moduleNo: 1,
         topics: [
-          { id: `top_${subjectId}_1`, name: `${subjectName} Fundamentals` },
-          { id: `top_${subjectId}_2`, name: `${subjectName} Applications` },
+          { id: `top_${subjectId}_1`, name: `${subjectName} Fundamentals`, topicId: `top_${subjectId}_1` },
+          { id: `top_${subjectId}_2`, name: `${subjectName} Applications`, topicId: `top_${subjectId}_2` },
         ],
       },
     ];
   }
 
-  // Check if topics have a Unit prefix like "Unit 1: Linear Data Structures" or "Unit 2 - Non-Linear Trees"
-  const hasUnitPrefix = rawTopics.some(t => /^unit\s*\d+/i.test(t.name));
+  // 1. If topics have subtopics attached (the syllabus taxonomy structure: Module -> Subtopics)
+  const hasSubtopics = rawTopics.some(t => Array.isArray(t.subtopics) && t.subtopics.length > 0);
+  if (hasSubtopics) {
+    return rawTopics.map((t, idx) => {
+      const modNo = t.moduleNo || (idx + 1);
+      const cleanName = t.name.replace(/^(module|unit)\s*\d+[:\-–]?\s*/i, '').trim();
+      const unitName = `Module ${modNo}: ${cleanName || t.name}`;
+
+      const topicsList: DynamicTopic[] = (Array.isArray(t.subtopics) && t.subtopics.length > 0)
+        ? t.subtopics.map((st: any) => ({
+            id: st.id,
+            name: st.name,
+            subtopicId: st.id,
+            topicId: t.id,
+          }))
+        : [{ id: t.id, name: t.name, topicId: t.id }];
+
+      return {
+        id: t.id,
+        name: unitName,
+        moduleNo: modNo,
+        topics: topicsList,
+      };
+    });
+  }
+
+  // 2. Check if topics have a Unit/Module prefix like "Unit 1: Linear Data Structures" or "Module 2 - ..."
+  const hasUnitPrefix = rawTopics.some(t => /^(unit|module)\s*\d+/i.test(t.name));
   if (hasUnitPrefix) {
     const unitMap = new Map<string, DynamicTopic[]>();
     rawTopics.forEach(t => {
-      const match = t.name.match(/^(unit\s*\d+[^:\-–]*)[:\-–]?\s*(.*)/i);
-      const unitKey = match ? match[1].trim() : 'Unit 1: Core Topics';
+      const match = t.name.match(/^((?:unit|module)\s*\d+[^:\-–]*)[:\-–]?\s*(.*)/i);
+      const unitKey = match ? match[1].trim() : 'Module 1: Core Topics';
       const topicName = match && match[2] ? match[2].trim() : t.name;
       if (!unitMap.has(unitKey)) unitMap.set(unitKey, []);
-      unitMap.get(unitKey)!.push({ id: t.id, name: topicName || t.name });
+      unitMap.get(unitKey)!.push({ id: t.id, name: topicName || t.name, topicId: t.id });
     });
 
     const units: DynamicUnit[] = [];
@@ -98,13 +134,14 @@ export function buildUnitsFromTopics(
     return units;
   }
 
-  // If topics are individual topics like "Arrays", "Trees", "Stacks & Queues":
+  // 3. Fallback: individual topics
   if (rawTopics.length <= 4) {
     return [
       {
         id: `u_${subjectId}_1`,
-        name: 'Unit 1: Core Curriculum Topics',
-        topics: rawTopics,
+        name: 'Module 1: Core Curriculum Topics',
+        moduleNo: 1,
+        topics: rawTopics.map(t => ({ id: t.id, name: t.name, topicId: t.id })),
       },
     ];
   }
@@ -114,13 +151,15 @@ export function buildUnitsFromTopics(
   return [
     {
       id: `u_${subjectId}_1`,
-      name: 'Unit 1: Foundational Topics',
-      topics: rawTopics.slice(0, midpoint),
+      name: 'Module 1: Foundational Topics',
+      moduleNo: 1,
+      topics: rawTopics.slice(0, midpoint).map(t => ({ id: t.id, name: t.name, topicId: t.id })),
     },
     {
       id: `u_${subjectId}_2`,
-      name: 'Unit 2: Advanced Topics & Applications',
-      topics: rawTopics.slice(midpoint),
+      name: 'Module 2: Advanced Topics & Applications',
+      moduleNo: 2,
+      topics: rawTopics.slice(midpoint).map(t => ({ id: t.id, name: t.name, topicId: t.id })),
     },
   ];
 }

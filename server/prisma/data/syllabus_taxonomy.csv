@@ -1,0 +1,148 @@
+course_code,course_name,module_no,topic,subtopic_id,subtopic
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-01,Introduction to Digital Image Processing and System Components
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-02,Elements of Visual Perception
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-03,Image Sensing and Acquisition
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-04,Image Sampling and Quantization
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-05,Basic Relationships between Pixels
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-06,Intensity Transformation Functions
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-07,Histogram Processing
+CV,Computer Vision,1,Fundamentals of Digital Imaging and Transformations,CV-M1-08,Color Spaces
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-01,Spatial Domain Smoothing Filters
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-02,Spatial Domain Sharpening Filters
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-03,Fourier Transform Concepts
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-04,Frequency Domain Smoothing and Sharpening
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-05,Noise Models
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-06,Image Restoration (Overview)
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-07,Harris Corner Detector
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-08,SIFT
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-09,HOG
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-10,ORB
+CV,Computer Vision,2,"Filtering, Enhancement and Feature Extraction",CV-M2-11,Feature Matching
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-01,Fundamentals of Image Segmentation
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-02,Thresholding and Otsu's Method
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-03,Region-Based Segmentation
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-04,Watershed Segmentation
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-05,K-Means Segmentation
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-06,"Structuring Elements, Erosion and Dilation"
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-07,Opening and Closing
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-08,"Hit-or-Miss Transform, Boundary Extraction and Region Filling"
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-09,Pinhole Camera Model and Perspective Projection
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-10,Geometric Transformation
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-11,Intrinsic and Extrinsic Parameters
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-12,Radial Distortion and Correction
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-13,Camera Calibration (Zhang's Method)
+CV,Computer Vision,3,"Image Segmentation, Morphological Processing and 3D Vision",CV-M3-14,Vanishing Points and RANSAC
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-01,Viola-Jones Face Detection and Cascade Classifier
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-02,HOG + SVM Pedestrian Detection and Sliding Window
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-03,"YOLO (Confidence Threshold, NMS, mAP)"
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-04,Eigenfaces and PCA-based Face Recognition
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-05,Bag of Visual Words
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-06,OCR Case Study
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-07,Scene Classification
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-08,Content-Based Image Retrieval (CBIR)
+CV,Computer Vision,4,"Object Detection, Recognition and Scene Understanding",CV-M4-09,Lucas-Kanade Optical Flow and Object Tracking
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-01,Overview and Applications of Automata Theory
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-02,"Central Concepts (Alphabets, Strings, Languages)"
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-03,Deterministic Finite Automata (DFA)
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-04,Nondeterministic Finite Automata (NFA)
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-05,Equivalence of DFA and NFA
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-06,Application of Finite Automata: Text Search
+ATC,Automata Theory and Computability,1,Introduction to Automata Theory and Finite Automata,ATC-M1-07,Finite Automata with Epsilon-Transitions
+ATC,Automata Theory and Computability,2,Regular Expressions and Properties of Regular Languages,ATC-M2-01,Regular Expressions
+ATC,Automata Theory and Computability,2,Regular Expressions and Properties of Regular Languages,ATC-M2-02,Finite Automata and Regular Expressions
+ATC,Automata Theory and Computability,2,Regular Expressions and Properties of Regular Languages,ATC-M2-03,Applications of Regular Expressions
+ATC,Automata Theory and Computability,2,Regular Expressions and Properties of Regular Languages,ATC-M2-04,Proving Languages Not Regular (Pumping Lemma)
+ATC,Automata Theory and Computability,2,Regular Expressions and Properties of Regular Languages,ATC-M2-05,Closure Properties of Regular Languages
+ATC,Automata Theory and Computability,2,Regular Expressions and Properties of Regular Languages,ATC-M2-06,Equivalence and Minimization of Automata
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-01,Context-Free Grammars
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-02,Parse Trees
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-03,Applications of Context-Free Grammars
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-04,Ambiguity in Grammars and Languages
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-05,Pushdown Automaton: Definition and Languages of a PDA
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-06,Design of PDA
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-07,Equivalence of PDA and CFG
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-08,Deterministic Pushdown Automata
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-09,Normal Forms for CFG
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-10,Pumping Lemma for CFL
+ATC,Automata Theory and Computability,3,"Context-Free Grammars, Pushdown Automata and CFL Properties",ATC-M3-11,Closure Properties of CFL
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-01,Turing Machine Model and Representation
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-02,Language Acceptability and Design of Turing Machines
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-03,Techniques for Turing Machine Construction
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-04,Nondeterministic and Multi-Tape Turing Machines
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-05,Linear Bounded Automaton
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-06,Decidability and Decidable Languages
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-07,Undecidable Languages and Halting Problem
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-08,Post Correspondence Problem
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-09,Growth Rate of Functions
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-10,Classes P and NP
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-11,Quantum Computation
+ATC,Automata Theory and Computability,4,"Turing Machines, Decidability and Complexity",ATC-M4-12,Church-Turing Thesis
+CN,Computer Networks,1,Introduction to Networks and Physical Layer,CN-M1-01,Network Hardware
+CN,Computer Networks,1,Introduction to Networks and Physical Layer,CN-M1-02,Network Software
+CN,Computer Networks,1,Introduction to Networks and Physical Layer,CN-M1-03,Reference Models (OSI and TCP/IP)
+CN,Computer Networks,1,Introduction to Networks and Physical Layer,CN-M1-04,Guided Transmission Media
+CN,Computer Networks,1,Introduction to Networks and Physical Layer,CN-M1-05,Wireless Transmission
+CN,Computer Networks,2,Data Link Layer and MAC Sublayer,CN-M2-01,Data Link Layer Design Issues
+CN,Computer Networks,2,Data Link Layer and MAC Sublayer,CN-M2-02,Error Detection and Correction
+CN,Computer Networks,2,Data Link Layer and MAC Sublayer,CN-M2-03,Sliding Window Protocols
+CN,Computer Networks,2,Data Link Layer and MAC Sublayer,CN-M2-04,Channel Allocation Problem
+CN,Computer Networks,2,Data Link Layer and MAC Sublayer,CN-M2-05,Multiple Access Protocols
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-01,Network Layer Design Issues
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-02,Link-State Routing
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-03,Distance-Vector Routing
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-04,Hierarchical Routing
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-05,Transport Service
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-06,Elements of Transport Protocols
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-07,Congestion Control
+CN,Computer Networks,3,Network Layer and Transport Layer,CN-M3-08,Internet Transport Protocols (TCP and UDP)
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-01,Principles of Network Applications
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-02,The Web and HTTP
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-03,Electronic Mail
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-04,DNS
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-05,AI and its Relevance to Networking
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-06,AI in SDN and Self-Healing Networks
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-07,Heuristic Search for Intelligent Routing
+CN,Computer Networks,4,Application Layer and AI in Computer Networks,CN-M4-08,Knowledge Representation for Network Security and Management
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-01,ML Definition and Types
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-02,ML Pipeline
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-03,Simple Linear Regression
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-04,Multiple Linear Regression
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-05,Logistic Regression
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-06,K-Nearest Neighbors (KNN)
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-07,Naive Bayes Classifier
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-08,Bias-Variance Trade-off
+ML,Machine Learning,1,Introduction and Basic Supervised Learning,ML-M1-09,"Cross-Validation (LOO, K-Fold)"
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-01,Ridge Regression
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-02,Linear Discriminant Analysis (LDA)
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-03,Support Vector Machine (SVM)
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-04,Decision Trees
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-05,"Precision, Recall and F1-Score"
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-06,ROC Curve and AUC
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-07,"Regularization (L1, L2)"
+ML,Machine Learning,2,"Advanced Regression, Classification and Model Evaluation",ML-M2-08,Hyperparameter Tuning
+ML,Machine Learning,3,Clustering and Dimensionality Reduction,ML-M3-01,K-Means Clustering
+ML,Machine Learning,3,Clustering and Dimensionality Reduction,ML-M3-02,K-Medoid Clustering
+ML,Machine Learning,3,Clustering and Dimensionality Reduction,ML-M3-03,Hierarchical Clustering (Agglomerative and Divisive)
+ML,Machine Learning,3,Clustering and Dimensionality Reduction,ML-M3-04,Dendrogram and Linkage Methods
+ML,Machine Learning,3,Clustering and Dimensionality Reduction,ML-M3-05,Principal Component Analysis (PCA)
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-01,"Biological Inspiration, ANN and Perceptron"
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-02,Multi-Layer Perceptron and Feedforward Networks
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-03,Activation Functions
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-04,Backpropagation
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-05,"Bagging, Pasting and Random Forests"
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-06,"Boosting (Gradient Boosting, AdaBoost)"
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-07,Stacking
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-08,Overfitting and Underfitting
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-09,Grid Search and Random Search
+ML,Machine Learning,4,"Neural Networks, Ensembles and Model Optimization",ML-M4-10,Model Selection in Practice
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-01,Understanding OCR
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-02,Tesseract and UiPath OCR Activities
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-03,Extracting Text from Scanned PDFs and Images
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-04,Introduction to NLP
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-05,Chatbots using Google Dialogflow
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-06,Integrating Chatbot with UiPath Workflows
+IPA,Intelligent Process Automation,3,"OCR, NLP and Chatbots",IPA-M3-07,AI for Text Classification and Task Routing
+IPA,Intelligent Process Automation,4,Bot Lifecycle and Orchestrator,IPA-M4-01,Event Triggers in Bots
+IPA,Intelligent Process Automation,4,Bot Lifecycle and Orchestrator,IPA-M4-02,Debugging and Testing Bots
+IPA,Intelligent Process Automation,4,Bot Lifecycle and Orchestrator,IPA-M4-03,Publishing and Managing Bots
+IPA,Intelligent Process Automation,4,Bot Lifecycle and Orchestrator,IPA-M4-04,Orchestrator (Cloud-based Management)

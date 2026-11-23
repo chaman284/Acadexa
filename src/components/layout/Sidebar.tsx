@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
   MessageSquare, Building2, User, Settings, LogOut,
   GraduationCap, BarChart3, X, TrendingUp,
-  PanelLeftClose, PanelLeftOpen, Users, Bell, ArrowLeft,
+  PanelLeftClose, PanelLeftOpen, Users, Bell, ArrowLeft, FileText,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
@@ -60,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const facultyNav: NavItem[] = classId
     ? [
         { to: `/faculty/class/${classId}`, label: 'Overview', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
+        { to: `/faculty/class/${classId}/syllabus`, label: 'Syllabus', icon: <FileText className="w-4.5 h-4.5 flex-shrink-0" /> },
         { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="w-4.5 h-4.5 flex-shrink-0" /> },
       ]
     : [

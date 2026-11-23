@@ -13,6 +13,7 @@ export interface AiGenerationConfig {
   unitId: string;
   unitName: string;
   topicId: string;
+  subtopicId?: string;
   topicName: string;
   questionCount: number;
   questionTypes: QuestionType[];
@@ -132,6 +133,7 @@ export const aiQuestionService = {
         topic: config.topicName,
         subjectId: config.subjectId,
         topicId: config.topicId,
+        subtopicId: config.subtopicId,
         difficulty: (config.difficulty || 'medium').toUpperCase(),
         bloomsLevel: blooms,
         count: config.questionCount,

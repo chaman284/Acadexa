@@ -190,8 +190,12 @@ router.get('/', authenticateJWT, async (req, res) => {
         },
         include: {
           options: true,
+          subtopic: { select: { id: true, name: true } },
           topic: {
-            include: { subject: true },
+            include: {
+              subject: true,
+              subtopics: { select: { id: true, name: true }, orderBy: { id: 'asc' } },
+            },
           },
         },
         orderBy: { id: 'desc' },
@@ -290,6 +294,7 @@ router.get('/topics', authenticateJWT, async (req, res) => {
       where: subjectId ? { subjectId: String(subjectId) } : {},
       include: {
         subject: { select: { id: true, name: true, code: true } },
+        subtopics: { select: { id: true, name: true }, orderBy: { id: 'asc' } },
       },
       orderBy: { name: 'asc' },
     });
@@ -316,10 +321,25 @@ router.post(
         bloomsLevel,
         count = 3,
         topicId,
+        subtopicId,
         subjectId,
         autoApprove = false,
         status: reqStatus,
       } = req.body;
+
+      if (subtopicId && topicId) {
+        const subtopic = await prisma.subtopic.findUnique({
+          where: { id: String(subtopicId) },
+        });
+        if (!subtopic) {
+          return res.status(400).json({ message: `Subtopic with ID '${subtopicId}' does not exist.` });
+        }
+        if (subtopic.topicId !== topicId) {
+          return res.status(400).json({
+            message: `Subtopic '${subtopicId}' belongs to topic '${subtopic.topicId}', not question topic '${topicId}'.`,
+          });
+        }
+      }
 
       const normCognitiveLevel = normalizeCognitiveLevel(bloomsLevel || cognitiveLevel);
       const normDifficulty = normalizeDifficulty(difficulty);
@@ -432,6 +452,7 @@ router.post(
                 status: initialStatus,
                 explanation: item.explanation || null,
                 topicId: targetTopic.id,
+                subtopicId: subtopicId || null,
                 options: {
                   create: (item.options || []).map((opt: any) => ({
                     text: opt.text,
@@ -441,8 +462,12 @@ router.post(
               },
               include: {
                 options: true,
+                subtopic: { select: { id: true, name: true } },
                 topic: {
-                  include: { subject: true },
+                  include: {
+                    subject: true,
+                    subtopics: { select: { id: true, name: true } },
+                  },
                 },
               },
             });
@@ -588,7 +613,25 @@ router.post(
   requireRole(['FACULTY', 'ADMIN']),
   async (req, res) => {
     try {
-      const { text, type, difficulty, cognitiveLevel, bloomsLevel, status, topicId, options, explanation } = req.body;
+      const { text, type, difficulty, cognitiveLevel, bloomsLevel, status, topicId, subtopicId, options, explanation } = req.body;
+
+      if (!topicId) {
+        return res.status(400).json({ message: 'topicId is required.' });
+      }
+
+      if (subtopicId) {
+        const subtopic = await prisma.subtopic.findUnique({
+          where: { id: String(subtopicId) },
+        });
+        if (!subtopic) {
+          return res.status(400).json({ message: `Subtopic with ID '${subtopicId}' does not exist.` });
+        }
+        if (subtopic.topicId !== topicId) {
+          return res.status(400).json({
+            message: `Subtopic '${subtopicId}' belongs to topic '${subtopic.topicId}', not question topic '${topicId}'.`,
+          });
+        }
+      }
 
       const question = await prisma.question.create({
         data: {
@@ -599,6 +642,7 @@ router.post(
           status: normalizeStatus(status),
           explanation: explanation || null,
           topicId,
+          subtopicId: subtopicId || null,
           options: {
             create: (options || []).map((opt: { text: string; isCorrect: boolean }) => ({
               text: opt.text,
@@ -608,8 +652,12 @@ router.post(
         },
         include: {
           options: true,
+          subtopic: { select: { id: true, name: true } },
           topic: {
-            include: { subject: true },
+            include: {
+              subject: true,
+              subtopics: { select: { id: true, name: true }, orderBy: { id: 'asc' } },
+            },
           },
         },
       });
@@ -631,7 +679,28 @@ router.put(
   async (req, res) => {
     try {
       const id = req.params.id as string;
-      const { text, type, difficulty, cognitiveLevel, bloomsLevel, status, topicId, options, explanation } = req.body;
+      const { text, type, difficulty, cognitiveLevel, bloomsLevel, status, topicId, subtopicId, options, explanation } = req.body;
+
+      const existing = await prisma.question.findUnique({ where: { id } });
+      if (!existing) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      const targetTopicId = topicId || existing.topicId;
+
+      if (subtopicId) {
+        const subtopic = await prisma.subtopic.findUnique({
+          where: { id: String(subtopicId) },
+        });
+        if (!subtopic) {
+          return res.status(400).json({ message: `Subtopic with ID '${subtopicId}' does not exist.` });
+        }
+        if (subtopic.topicId !== targetTopicId) {
+          return res.status(400).json({
+            message: `Subtopic '${subtopicId}' belongs to topic '${subtopic.topicId}', not question topic '${targetTopicId}'.`,
+          });
+        }
+      }
 
       await prisma.question.update({
         where: { id },
@@ -643,6 +712,7 @@ router.put(
           status: status ? normalizeStatus(status) : undefined,
           explanation,
           topicId,
+          subtopicId: subtopicId !== undefined ? (subtopicId || null) : undefined,
         },
       });
 
@@ -662,7 +732,16 @@ router.put(
 
       const updated = await prisma.question.findUnique({
         where: { id },
-        include: { options: true, topic: { include: { subject: true } } },
+        include: {
+          options: true,
+          subtopic: { select: { id: true, name: true } },
+          topic: {
+            include: {
+              subject: true,
+              subtopics: { select: { id: true, name: true }, orderBy: { id: 'asc' } },
+            },
+          },
+        },
       });
 
       res.json(updated);

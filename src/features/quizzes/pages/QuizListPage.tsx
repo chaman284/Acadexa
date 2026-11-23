@@ -151,15 +151,9 @@ export const QuizListPage: React.FC = () => {
       <header className="h-16 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-3.5">
           <button
-            onClick={() => {
-              if (window.history.length > 1) {
-                navigate(-1);
-              } else {
-                navigate('/faculty/select-class');
-              }
-            }}
+            onClick={() => navigate('/faculty/select-class')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--color-border)] text-[var(--color-oxblood)] hover:bg-[var(--color-oxblood)]/10 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
-            title="Return to Class Selection / Overview"
+            title="Return to Dashboard"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>

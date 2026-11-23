@@ -153,7 +153,8 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
         department: currentSubject.department,
         unitId: currentUnit.id,
         unitName: currentUnit.name,
-        topicId: currentTopic.id,
+        topicId: currentTopic.topicId || currentUnit.id,
+        subtopicId: currentTopic.subtopicId || currentTopic.id,
         topicName: currentTopic.name,
         questionCount,
         questionTypes: selectedTypes,
@@ -271,7 +272,7 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Unit</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Module</label>
                     <select
                       value={selectedUnitId}
                       onChange={e => handleUnitChange(e.target.value)}
