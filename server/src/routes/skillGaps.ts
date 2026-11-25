@@ -18,6 +18,17 @@ const subjectQ = (req: Request): string | undefined => {
   return undefined;
 };
 
+/** Faculty analytics only count attempts from quizzes that faculty created. */
+const facultyIdQ = async (req: Request): Promise<string | undefined> => {
+  const user = (req as any).user;
+  if (user?.role !== 'FACULTY') return undefined;
+  const faculty = await prisma.faculty.findUnique({
+    where: { userId: user.id },
+    select: { id: true },
+  });
+  return faculty?.id;
+};
+
 /** Faculty may only view sections they are assigned to; admins can view all. */
 async function canViewSection(req: Request, sectionId: string): Promise<boolean> {
   const user = (req as any).user;
@@ -48,7 +59,7 @@ router.get('/student/:studentId', requireRole(['FACULTY', 'ADMIN']), async (req:
     const student = await prisma.student.findUnique({ where: { id: studentId } });
     if (!student) return res.status(404).json({ error: 'Student not found' });
     if (!(await canViewSection(req, student.sectionId))) return res.status(403).json({ error: 'Forbidden' });
-    res.json(await getStudentSkillReport(student.id, subjectQ(req)));
+    res.json(await getStudentSkillReport(student.id, subjectQ(req), await facultyIdQ(req)));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to compute skill gaps' });
@@ -60,7 +71,7 @@ router.get('/section/:sectionId', requireRole(['FACULTY', 'ADMIN']), async (req:
   try {
     const sectionId = paramStr(req.params.sectionId);
     if (!(await canViewSection(req, sectionId))) return res.status(403).json({ error: 'Forbidden' });
-    res.json(await getSectionSkillReport(sectionId, subjectQ(req)));
+    res.json(await getSectionSkillReport(sectionId, subjectQ(req), await facultyIdQ(req)));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to compute skill gaps' });

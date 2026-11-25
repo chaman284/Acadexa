@@ -13,6 +13,7 @@ import { ControlledTabs } from '../../components/ui/Tabs';
 import { LeaderboardTable } from '../../components/leaderboard/LeaderboardTable';
 import { studentService } from '../../services/studentService';
 import { courseService } from '../../services/courseService';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/apiClient';
 import type { Student, LeaderboardEntry } from '../../types/student';
 import type { Course } from '../../types/course';
@@ -44,12 +45,43 @@ const mostImprovedData: { rank: number; studentId: string; studentName: string; 
 
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [nextQuiz, setNextQuiz] = useState<DashboardQuiz | null>(null);
   const [liveLeaderboard, setLiveLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [leaderboardTab, setLeaderboardTab] = useState('weekly');
+
+  // Typewriter effect for welcome back message
+  const studentFullName = student?.name?.trim() || user?.name?.trim() || 'Student';
+  const fullGreeting = `Welcome back, ${studentFullName}`;
+  const [displayedGreeting, setDisplayedGreeting] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    setDisplayedGreeting('');
+    setIsTyping(true);
+    setCursorVisible(true);
+
+    const startTimeout = setTimeout(() => {
+      let currentIndex = 0;
+      const interval = setInterval(() => {
+        currentIndex++;
+        setDisplayedGreeting(fullGreeting.slice(0, currentIndex));
+        if (currentIndex >= fullGreeting.length) {
+          clearInterval(interval);
+          setIsTyping(false);
+          setTimeout(() => setCursorVisible(false), 2500);
+        }
+      }, 65);
+
+      return () => clearInterval(interval);
+    }, 250);
+
+    return () => clearTimeout(startTimeout);
+  }, [fullGreeting]);
 
   const leaderboardTabs = [
     { id: 'weekly', label: 'Weekly' },
@@ -277,10 +309,15 @@ export const StudentDashboard: React.FC = () => {
           </div>
           <div>
             <h1
-              className="text-[26px] font-normal text-[#302A2B] tracking-tight leading-tight"
+              className="text-[26px] font-normal text-[#302A2B] tracking-tight leading-tight flex items-center"
               style={{ fontFamily: '"DM Serif Display", Georgia, serif' }}
             >
-              Welcome back{student?.name ? `, ${student.name.split(' ')[0]}` : ''}
+              <span>{displayedGreeting}</span>
+              <span
+                className={`inline-block w-[2px] h-[0.85em] bg-[#542536] ml-1.5 align-middle transition-opacity duration-150 ${
+                  isTyping ? 'opacity-100 animate-pulse' : cursorVisible ? 'opacity-70 animate-pulse' : 'opacity-0'
+                }`}
+              />
             </h1>
             <p className="text-sm text-[#79666A] font-medium mt-1">
               {student?.department

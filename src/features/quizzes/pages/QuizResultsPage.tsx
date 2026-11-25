@@ -23,6 +23,7 @@ export const QuizResultsPage: React.FC = () => {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [expandedAttemptId, setExpandedAttemptId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -190,47 +191,95 @@ export const QuizResultsPage: React.FC = () => {
                     <th className="py-3 px-4">Score</th>
                     <th className="py-3 px-4">Evaluation Status</th>
                     <th className="py-3 px-4">Submitted At</th>
+                    <th className="py-3 px-4">Integrity</th>
+                    <th className="py-3 px-4">Violations</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredAttempts.map(att => (
-                    <tr key={att.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-900">{att.studentName}</td>
-                      <td className="py-3 px-4 font-mono text-slate-600">{att.studentRollNo}</td>
-                      <td className="py-3 px-4 text-slate-600">{att.className}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`font-black text-sm ${
-                            att.percentage >= 75
-                              ? 'text-emerald-600'
-                              : att.percentage >= 50
-                              ? 'text-amber-600'
-                              : 'text-rose-600'
-                          }`}
-                        >
-                          {att.percentage}%
-                        </span>{' '}
-                        <span className="text-[11px] text-slate-400">
-                          ({att.totalScore}/{att.maxPossibleScore})
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {att.hasPendingManualEvaluation ? (
-                          <Badge color="amber">Manual Review Pending</Badge>
-                        ) : (
-                          <Badge color="green">Graded</Badge>
+                  {filteredAttempts.map(att => {
+                    const violations = att.violations || [];
+                    const isExpanded = expandedAttemptId === att.id;
+                    return (
+                      <React.Fragment key={att.id}>
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 font-bold text-slate-900">{att.studentName}</td>
+                          <td className="py-3 px-4 font-mono text-slate-600">{att.studentRollNo}</td>
+                          <td className="py-3 px-4 text-slate-600">{att.className}</td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`font-black text-sm ${
+                                att.percentage >= 75
+                                  ? 'text-emerald-600'
+                                  : att.percentage >= 50
+                                  ? 'text-amber-600'
+                                  : 'text-rose-600'
+                              }`}
+                            >
+                              {att.percentage}%
+                            </span>{' '}
+                            <span className="text-[11px] text-slate-400">
+                              ({att.totalScore}/{att.maxPossibleScore})
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {att.hasPendingManualEvaluation ? (
+                              <Badge color="amber">Manual Review Pending</Badge>
+                            ) : (
+                              <Badge color="green">Graded</Badge>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-slate-500">
+                            {new Date(att.submittedAt || att.startedAt).toLocaleString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="font-semibold text-slate-700">
+                                Tab switches: {att.tabSwitchCount || 0}/2
+                              </span>
+                              {att.autoSubmitted && <Badge color="red">Auto-submitted</Badge>}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedAttemptId(isExpanded ? null : att.id)}
+                              className="text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
+                            >
+                              {isExpanded ? 'Hide' : `View (${violations.length})`}
+                            </button>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan={8} className="bg-slate-50 px-4 py-3">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">
+                                Violation log
+                              </p>
+                              {violations.length === 0 ? (
+                                <p className="text-xs text-slate-400">No violations recorded.</p>
+                              ) : (
+                                <ul className="space-y-1">
+                                  {violations.map((violation, index) => (
+                                    <li key={`${att.id}-${index}`} className="text-xs text-slate-600 flex flex-wrap gap-x-3">
+                                      <span className="font-mono font-semibold text-slate-800">
+                                        {violation.type}
+                                      </span>
+                                      <span>{new Date(violation.timestamp).toLocaleString('en-IN')}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">
-                        {new Date(att.submittedAt || att.startedAt).toLocaleString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </td>
-                    </tr>
-                  ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

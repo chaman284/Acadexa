@@ -59,8 +59,8 @@ export const ClassSelection: React.FC = () => {
   }, []);
 
   // Typewriter effect for welcome back message
-  const facultyFirstName = user?.name ? user.name.split(' ')[0] : 'Faculty';
-  const fullGreeting = `Welcome back, ${facultyFirstName}`;
+  const facultyFullName = user?.name?.trim() || 'Faculty';
+  const fullGreeting = `Welcome back, ${facultyFullName}`;
   const [displayedGreeting, setDisplayedGreeting] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [cursorVisible, setCursorVisible] = useState(true);
@@ -149,7 +149,7 @@ export const ClassSelection: React.FC = () => {
             <Avatar name={user?.name || 'User'} src={user?.avatarUrl} size="sm" />
             <div className="hidden md:block text-left">
               <p className="text-sm font-semibold text-[#302A2B] leading-none mb-1">
-                {user?.name?.split(' ')[0] || 'User'}
+                {user?.name || 'User'}
               </p>
               <Badge color="forest" className="text-[10px] py-0 px-1.5 font-bold">
                 Faculty

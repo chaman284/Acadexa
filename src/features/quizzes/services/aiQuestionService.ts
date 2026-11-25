@@ -3,7 +3,15 @@
 // Replaceable provider for syllabus-aligned assessment item generation
 // ============================================================================
 import api from '../../../lib/apiClient';
-import type { Question, QuestionType, Difficulty, CognitiveLevel } from '../types/quizTypes';
+import type {
+  Question,
+  QuestionType,
+  Difficulty,
+  CognitiveLevel,
+  SkillGapTopicSelection,
+} from '../types/quizTypes';
+
+type GenerationTopic = SkillGapTopicSelection & { subtopicId?: string };
 
 export interface AiGenerationConfig {
   subjectId: string;
@@ -21,6 +29,8 @@ export interface AiGenerationConfig {
   marksPerQuestion: number;
   skillFocus: 'conceptual' | 'application' | 'problem_solving' | 'recall';
   includeExplanations: boolean;
+  /** Topics locked from the faculty's skill-gap selection. */
+  topics?: GenerationTopic[];
   customPrompt?: string;
 }
 
@@ -109,13 +119,40 @@ const AI_QUESTION_TEMPLATES: Record<string, Partial<Question>[]> = {
 
 export const aiQuestionService = {
   /**
-   * Generate questions from configured topic & parameters
+   * Generate questions from configured topics & parameters.
+   * When `topics` is supplied, every generated item is locked to that list.
    */
   generateQuestions: async (config: AiGenerationConfig): Promise<Question[]> => {
-    // Validate required metadata
-    if (!config.topicName || !config.subjectName) {
+    const selectedTopics: GenerationTopic[] =
+      config.topics && config.topics.length > 0
+        ? config.topics
+        : [
+            {
+              topicId: config.topicId,
+              topicName: config.topicName,
+              subtopicId: config.subtopicId,
+              courseId: config.subjectId,
+              courseName: config.subjectName,
+              unitName: config.unitName,
+            },
+          ];
+
+    if (!config.subjectName || selectedTopics.some(topic => !topic.topicName)) {
       throw new Error('Subject and Topic metadata are required for curriculum question generation.');
     }
+
+    const matchTopic = (q: any, index: number): GenerationTopic => {
+      const topicId = q?.topicId || q?.topic?.id;
+      const topicName =
+        typeof q?.topic === 'string'
+          ? q.topic.trim().toLowerCase()
+          : String(q?.topic?.name || '').trim().toLowerCase();
+      return (
+        selectedTopics.find(topic => topic.topicId && topic.topicId === String(topicId)) ||
+        selectedTopics.find(topic => topic.topicName.trim().toLowerCase() === topicName) ||
+        selectedTopics[index % selectedTopics.length]
+      );
+    };
 
     // Try backend AI generator (powered by Gemini API or curriculum engine)
     try {
@@ -130,48 +167,62 @@ export const aiQuestionService = {
 
       const res = await api.post('/questions/generate', {
         subject: config.subjectName,
-        topic: config.topicName,
+        topic: selectedTopics[0].topicName,
+        topics: selectedTopics.map(topic => ({
+          topicId: topic.topicId,
+          topicName: topic.topicName,
+          subtopicId: topic.subtopicId,
+          courseId: topic.courseId,
+          courseName: topic.courseName,
+          unitName: topic.unitName,
+          averageScore: topic.averageScore,
+          pctNeedsAttention: topic.pctNeedsAttention,
+        })),
+        topicIds: selectedTopics.map(topic => topic.topicId).filter(Boolean),
         subjectId: config.subjectId,
-        topicId: config.topicId,
-        subtopicId: config.subtopicId,
+        topicId: selectedTopics[0].topicId,
+        subtopicId: selectedTopics.length === 1 ? selectedTopics[0].subtopicId : undefined,
         difficulty: (config.difficulty || 'medium').toUpperCase(),
         bloomsLevel: blooms,
         count: config.questionCount,
       });
 
       if (res.data?.questions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
-        return res.data.questions.map((q: any, i: number) => ({
-          id: q.id || `ai_gen_${Date.now()}_${i}`,
-          text: q.text,
-          type: (q.type || 'mcq').toLowerCase().replace('_', '-') as QuestionType,
-          difficulty: (q.difficulty || config.difficulty || 'medium').toLowerCase() as Difficulty,
-          marks: config.marksPerQuestion || 2,
-          options: (q.options || []).map((opt: any, optIdx: number) => ({
-            id: opt.id || `opt_${i}_${optIdx}`,
-            text: opt.text,
-            isCorrect: Boolean(opt.isCorrect),
-          })),
-          explanation: config.includeExplanations
-            ? q.explanation || `Derived from ${config.subjectName} curriculum: applies standard ${config.topicName} theorems.`
-            : undefined,
-          metadata: {
-            department: config.department || 'Artificial Intelligence and Machine Learning',
-            semester: config.semester || 3,
-            subjectId: config.subjectId,
-            subjectCode: config.subjectName,
-            subjectName: config.subjectName,
-            unitId: config.unitId,
-            unitName: config.unitName,
-            topicId: config.topicId,
-            topicName: config.topicName,
-            cognitiveLevel: (q.cognitiveLevel || blooms) as CognitiveLevel,
-            learningObjective: `Demonstrate ${config.skillFocus} in ${config.topicName}`,
-          },
-          source: 'ai' as const,
-          createdBy: 'Acadexa AI Generator (Gemini Curriculum Engine)',
-          createdAt: new Date().toISOString(),
-          hasValidAnswerKey: true,
-        }));
+        return res.data.questions.map((q: any, i: number) => {
+          const topic = matchTopic(q, i);
+          return {
+            id: q.id || `ai_gen_${Date.now()}_${i}`,
+            text: q.text,
+            type: (q.type || 'mcq').toLowerCase().replace('_', '-') as QuestionType,
+            difficulty: (q.difficulty || config.difficulty || 'medium').toLowerCase() as Difficulty,
+            marks: config.marksPerQuestion || 2,
+            options: (q.options || []).map((opt: any, optIdx: number) => ({
+              id: opt.id || `opt_${i}_${optIdx}`,
+              text: opt.text,
+              isCorrect: Boolean(opt.isCorrect),
+            })),
+            explanation: config.includeExplanations
+              ? q.explanation || `Derived from ${config.subjectName} curriculum: applies standard ${topic.topicName} concepts.`
+              : undefined,
+            metadata: {
+              department: config.department || 'Artificial Intelligence and Machine Learning',
+              semester: config.semester || 3,
+              subjectId: topic.courseId || config.subjectId,
+              subjectCode: config.subjectName,
+              subjectName: topic.courseName || config.subjectName,
+              unitId: config.unitId,
+              unitName: topic.unitName || config.unitName,
+              topicId: topic.topicId,
+              topicName: topic.topicName,
+              cognitiveLevel: (q.cognitiveLevel || blooms) as CognitiveLevel,
+              learningObjective: `Demonstrate ${config.skillFocus} in ${topic.topicName}`,
+            },
+            source: 'ai' as const,
+            createdBy: 'Acadexa AI Generator (Gemini Curriculum Engine)',
+            createdAt: new Date().toISOString(),
+            hasValidAnswerKey: true,
+          };
+        });
       }
     } catch (apiErr) {
       console.warn('Backend question generator call failed, continuing with client template engine:', apiErr);
@@ -180,15 +231,35 @@ export const aiQuestionService = {
     // Realistic API generation delay simulation (800ms - 1500ms)
     await new Promise(r => setTimeout(r, 800));
 
+    const lockedFallbackTemplates: Partial<Question>[] = selectedTopics.map(topic => ({
+      text: `In ${config.subjectName}, a case study on ${topic.topicName} asks you to choose the statement that best demonstrates correct application of ${topic.topicName}. Which response is accurate?`,
+      type: 'mcq',
+      difficulty: config.difficulty || 'medium',
+      marks: config.marksPerQuestion || 2,
+      options: [
+        {
+          id: 'opt_locked_1',
+          text: `It correctly applies ${topic.topicName} concepts and validates the result against the stated conditions.`,
+          isCorrect: true,
+        },
+        { id: 'opt_locked_2', text: 'It ignores the stated conditions and relies on an unrelated heuristic.', isCorrect: false },
+        { id: 'opt_locked_3', text: 'It assumes the result without checking any assumptions or constraints.', isCorrect: false },
+        { id: 'opt_locked_4', text: 'It substitutes an out-of-scope concept, so the conclusion cannot be derived.', isCorrect: false },
+      ],
+      explanation: `This item assesses ${topic.topicName} within ${config.subjectName}; the correct option is the only one that stays within that topic and respects its constraints.`,
+    }));
+
     const availableTemplates =
-      AI_QUESTION_TEMPLATES[config.topicId] ||
-      AI_QUESTION_TEMPLATES['top_bst'];
+      config.topics && config.topics.length > 0
+        ? lockedFallbackTemplates
+        : AI_QUESTION_TEMPLATES[config.topicId] || AI_QUESTION_TEMPLATES['top_bst'];
 
     const count = Math.min(Math.max(1, config.questionCount), 6);
     const generated: Question[] = [];
 
     for (let i = 0; i < count; i++) {
       const template = availableTemplates[i % availableTemplates.length];
+      const topic = selectedTopics[i % selectedTopics.length];
       const qType = config.questionTypes.length > 0 ? config.questionTypes[i % config.questionTypes.length] : (template.type || 'mcq');
 
       let cognitiveLevel: CognitiveLevel = 'CL2_UNDERSTAND';
@@ -200,18 +271,18 @@ export const aiQuestionService = {
         id: `ai_gen_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
         text: template.text
           ? template.text
-          : `Analyze the core principles of ${config.topicName}: How does ${config.skillFocus} impact efficiency when applied to ${config.unitName}?`,
+          : `Analyze the core principles of ${topic.topicName}: How does ${config.skillFocus} impact efficiency when applied to ${topic.unitName || config.unitName}?`,
         type: qType,
         difficulty: config.difficulty || template.difficulty || 'medium',
         marks: config.marksPerQuestion || template.marks || 2,
         options: template.options || [
-          { id: `opt_ai_${i}_1`, text: `Directly optimizes runtime complexity for ${config.topicName}`, isCorrect: true },
+          { id: `opt_ai_${i}_1`, text: `Directly optimizes runtime complexity for ${topic.topicName}`, isCorrect: true },
           { id: `opt_ai_${i}_2`, text: `Has no measurable effect on computational overhead`, isCorrect: false },
           { id: `opt_ai_${i}_3`, text: `Guarantees O(1) space across all arbitrary inputs`, isCorrect: false },
           { id: `opt_ai_${i}_4`, text: `Restricts concurrent access within memory bounds`, isCorrect: false },
         ],
         explanation: config.includeExplanations
-          ? template.explanation || `Derived from ${config.subjectName} curriculum: applies standard ${config.topicName} theorems.`
+          ? template.explanation || `Derived from ${config.subjectName} curriculum: applies standard ${topic.topicName} concepts.`
           : undefined,
         hint: template.hint,
         acceptedAnswers: template.acceptedAnswers,
@@ -219,15 +290,15 @@ export const aiQuestionService = {
         metadata: {
           department: config.department || 'Artificial Intelligence and Machine Learning',
           semester: config.semester || 3,
-          subjectId: config.subjectId,
-          subjectCode: config.subjectId.toUpperCase(),
-          subjectName: config.subjectName,
+          subjectId: topic.courseId || config.subjectId,
+          subjectCode: (topic.courseId || config.subjectId).toUpperCase(),
+          subjectName: topic.courseName || config.subjectName,
           unitId: config.unitId,
-          unitName: config.unitName,
-          topicId: config.topicId,
-          topicName: config.topicName,
+          unitName: topic.unitName || config.unitName,
+          topicId: topic.topicId,
+          topicName: topic.topicName,
           cognitiveLevel,
-          learningObjective: `Demonstrate ${config.skillFocus} in ${config.topicName}`,
+          learningObjective: `Demonstrate ${config.skillFocus} in ${topic.topicName}`,
         },
         source: 'ai',
         createdBy: 'Acadexa AI Generator (Gemini Curriculum Engine)',

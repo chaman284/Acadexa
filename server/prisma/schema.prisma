@@ -74,6 +74,7 @@ model Faculty {
   userId      String          @unique
   user        User            @relation(fields: [userId], references: [id])
   assignments FacultySubject[]
+  quizzes     Quiz[]
 }
 
 model FacultySubject {
@@ -167,12 +168,16 @@ model Quiz {
   duration    Int
   scheduledAt DateTime?
   createdAt   DateTime       @default(now())
+  facultyId   String?
+  faculty     Faculty?       @relation(fields: [facultyId], references: [id])
   subjectId   String
   subject     Subject        @relation(fields: [subjectId], references: [id])
   sectionId   String
   section     Section        @relation(fields: [sectionId], references: [id])
   questions   QuizQuestion[]
   attempts    QuizAttempt[]
+
+  @@index([facultyId])
 }
 
 enum QuizType {
@@ -197,15 +202,24 @@ model QuizQuestion {
 }
 
 model QuizAttempt {
-  id          String          @id @default(cuid())
-  studentId   String
-  student     Student         @relation(fields: [studentId], references: [id])
-  quizId      String
-  quiz        Quiz            @relation(fields: [quizId], references: [id])
-  score       Float
-  timeTaken   Int
-  submittedAt DateTime        @default(now())
-  answers     AttemptAnswer[]
+  id              String          @id @default(cuid())
+  studentId       String
+  student         Student         @relation(fields: [studentId], references: [id])
+  quizId          String
+  quiz            Quiz            @relation(fields: [quizId], references: [id])
+  score           Float
+  timeTaken       Int
+  startedAt       DateTime        @default(now())
+  submittedAt     DateTime        @default(now())
+  isSubmitted     Boolean         @default(true)
+  tabSwitchCount  Int             @default(0)
+  autoSubmitted   Boolean         @default(false)
+  autoSubmitReason String?
+  violations      Json            @default("[]")
+  answerDrafts    Json            @default("{}")
+  answers         AttemptAnswer[]
+
+  @@index([isSubmitted, startedAt])
 }
 
 model AttemptAnswer {

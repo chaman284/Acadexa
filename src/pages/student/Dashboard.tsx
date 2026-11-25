@@ -167,7 +167,7 @@ export const Dashboard: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
-              Welcome back, {user?.name?.split(' ')[0] || studentDetails?.name?.split(' ')[0] || 'Student'}! 👋
+              Welcome back, {user?.name || studentDetails?.name || 'Student'}! 👋
             </h1>
             <Badge color="indigo" className="text-xs">Semester 5 · Sec A</Badge>
           </div>

@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/error';
 import authRoutes from './routes/auth';
 import usersRoutes from './routes/users';
 import quizzesRoutes from './routes/quizzes';
+import attemptsRoutes from './routes/attempts';
 import questionsRoutes from './routes/questions';
 import analyticsRoutes from './routes/analytics';
 import chatbotRoutes from './routes/chatbot';
@@ -47,6 +48,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/quizzes', quizzesRoutes);
+app.use('/api/attempts', attemptsRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/skill-gaps', skillGapRoutes);

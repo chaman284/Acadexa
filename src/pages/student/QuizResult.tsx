@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, ArrowRight, RotateCcw, TrendingUp, Trophy, Star, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowRight, RotateCcw, TrendingUp, Trophy, Star, Loader2, AlertTriangle, Shield } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import api from '../../lib/apiClient';
 import { motion } from 'framer-motion';
@@ -88,13 +88,19 @@ export const QuizResult: React.FC = () => {
     }
   }, [id, attemptData]);
 
-  const score = attemptData ? Math.round(attemptData.score) : 80;
-  const timeTaken = attemptData?.timeTaken ?? 120;
-  const totalQuestions = attemptData?.answers?.length || 5;
-  const correctCount = attemptData?.answers
-    ? attemptData.answers.filter((a: any) => a.isCorrect).length
+  const answerRows: any[] = Array.isArray(attemptData?.answers)
+    ? attemptData.answers
+    : Object.values(attemptData?.responses || {});
+  const score = attemptData
+    ? Math.round(attemptData.score ?? attemptData.percentage ?? 80)
+    : 80;
+  const timeTaken = attemptData?.timeTaken ?? attemptData?.durationSeconds ?? 120;
+  const totalQuestions = answerRows.length || 5;
+  const correctCount = Array.isArray(attemptData?.answers)
+    ? answerRows.filter((a: any) => a.isCorrect).length
     : Math.round((score / 100) * totalQuestions);
-  const incorrectCount = totalQuestions - correctCount;
+  const incorrectCount = Math.max(0, totalQuestions - correctCount);
+  const tabSwitchCount = Number(attemptData?.tabSwitchCount || 0);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -143,6 +149,29 @@ export const QuizResult: React.FC = () => {
       <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-oxblood/30 blur-[120px] rounded-full pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="w-full max-w-3xl space-y-6 relative z-10">
+        {attemptData?.autoSubmitted && (
+          <div className="bg-rose-100/15 border border-rose-300/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-left">
+            <AlertTriangle className="w-5 h-5 text-rose-300 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-white">
+                Your test was auto-submitted due to repeated tab switching
+              </p>
+              <p className="text-xs text-ivory/70 mt-0.5">
+                Your answers were saved and evaluated up to the final switch.
+              </p>
+            </div>
+            <span className="text-xs font-bold text-rose-200 bg-rose-500/15 border border-rose-300/30 px-3 py-1 rounded-full whitespace-nowrap">
+              Tab switches: {tabSwitchCount}/2
+            </span>
+          </div>
+        )}
+
+        {!attemptData?.autoSubmitted && tabSwitchCount > 0 && (
+          <div className="flex items-center justify-end gap-2 text-xs text-ivory/70">
+            <Shield className="w-3.5 h-3.5" />
+            <span>Tab switches: {tabSwitchCount}/2</span>
+          </div>
+        )}
         {/* Score card */}
         <motion.div
           variants={itemVariants}

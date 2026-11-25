@@ -33,8 +33,8 @@ export const ClassDashboard: React.FC = () => {
 
   // Typewriter effect for welcome back message
   const { user } = useAuth();
-  const facultyFirstName = user?.name ? user.name.split(' ')[0] : 'Faculty';
-  const fullGreeting = `Welcome back, ${facultyFirstName}`;
+  const facultyFullName = user?.name?.trim() || 'Faculty';
+  const fullGreeting = `Welcome back, ${facultyFullName}`;
   const [displayedGreeting, setDisplayedGreeting] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [cursorVisible, setCursorVisible] = useState(true);

@@ -877,6 +877,11 @@ router.delete('/courses/:id', async (req, res) => {
           });
         }
 
+        // Delete subtopics linked to topics
+        await tx.subtopic.deleteMany({
+          where: { topicId: { in: topicIds } },
+        });
+
         await tx.topic.deleteMany({
           where: { id: { in: topicIds } },
         });

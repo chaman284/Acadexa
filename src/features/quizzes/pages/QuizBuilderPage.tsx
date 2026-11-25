@@ -12,7 +12,7 @@ import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import type {
   Quiz, QuizQuestion, Question, QuizCategory, QuizMode,
-  AssignedClass, QuizSettings,
+  AssignedClass, QuizSettings, SkillGapTopicSelection,
 } from '../types/quizTypes';
 import { quizService } from '../services/quizService';
 import { CURRICULUM_DATA, MOCK_CLASSES } from '../constants/curriculumData';
@@ -40,9 +40,30 @@ export const QuizBuilderPage: React.FC = () => {
     topicId?: string;
     topicName?: string;
     subjectId?: string;
+    courseId?: string;
+    courseName?: string;
+    subject?: string;
+    sectionId?: string;
+    section?: string;
+    semester?: number | string;
     remedial?: boolean;
     title?: string;
+    skillGapTopics?: SkillGapTopicSelection[];
   } | null;
+
+  const skillGapTopics: SkillGapTopicSelection[] =
+    locationState?.skillGapTopics && locationState.skillGapTopics.length > 0
+      ? locationState.skillGapTopics
+      : locationState?.topicId
+        ? [
+            {
+              topicId: locationState.topicId,
+              topicName: locationState.topicName || 'Selected Skill-Gap Topic',
+              courseId: locationState.courseId || locationState.subjectId,
+              courseName: locationState.courseName || locationState.subject,
+            },
+          ]
+        : [];
 
   // Active step index (0 - 3)
   const [step, setStep] = useState(0);
@@ -58,12 +79,22 @@ export const QuizBuilderPage: React.FC = () => {
     locationState?.remedial ? 'Remedial Practice' : 'Weekly Assessment'
   );
   const [mode, setMode] = useState<QuizMode>(locationState?.remedial ? 'practice' : 'exam');
-  const [semester, setSemester] = useState<number>(3);
-  const [subjectId, setSubjectId] = useState<string>(locationState?.subjectId || CURRICULUM_DATA[0].id);
+  const parsedSemester = locationState?.semester
+    ? parseInt(String(locationState.semester).replace(/[^0-9]/g, ''), 10)
+    : NaN;
+  const [semester, setSemester] = useState<number>(
+    Number.isFinite(parsedSemester) && parsedSemester > 0 ? parsedSemester : 3
+  );
+  const [subjectId, setSubjectId] = useState<string>(
+    locationState?.subjectId || locationState?.courseId || CURRICULUM_DATA[0].id
+  );
   const [unitIds, setUnitIds] = useState<string[]>([CURRICULUM_DATA[0].units[0]?.id || '']);
-  const [topicIds, setTopicIds] = useState<string[]>([
-    locationState?.topicId || CURRICULUM_DATA[0].units[0]?.topics[0]?.id || '',
-  ]);
+  const [topicIds, setTopicIds] = useState<string[]>(() => {
+    if (skillGapTopics.length > 0) {
+      return skillGapTopics.map(topic => topic.topicId).filter(Boolean);
+    }
+    return [locationState?.topicId || CURRICULUM_DATA[0].units[0]?.topics[0]?.id || ''];
+  });
   const [assignedClasses, setAssignedClasses] = useState<AssignedClass[]>([]);
   const [scheduledStart, setScheduledStart] = useState<string>('');
   const [scheduledEnd, setScheduledEnd] = useState<string>('');
@@ -558,7 +589,13 @@ export const QuizBuilderPage: React.FC = () => {
       {showAiModal && (
         <AiQuestionGeneratorModal
           defaultSubjectId={subjectId}
+          defaultSubjectName={
+            locationState?.courseName ||
+            locationState?.subject ||
+            CURRICULUM_DATA.find(course => course.id === subjectId)?.name
+          }
           defaultSemester={semester}
+          lockedTopics={skillGapTopics}
           onAddQuestions={generated => {
             handleAddQuestionFromSource(generated);
             setShowAiModal(false);

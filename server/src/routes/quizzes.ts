@@ -5,11 +5,33 @@ import { prisma } from '../prisma';
 
 const router = Router();
 
+const getFacultyIdForUser = async (req: AuthRequest): Promise<string | null> => {
+  if (req.user?.role !== 'FACULTY') return null;
+  const faculty = await prisma.faculty.findUnique({
+    where: { userId: req.user.id },
+    select: { id: true },
+  });
+  return faculty?.id || null;
+};
+
+/** Faculty may only reach quizzes they created; admins may manage all quizzes. */
+const canAccessQuiz = async (req: AuthRequest, quizId: string): Promise<boolean> => {
+  if (req.user?.role === 'ADMIN') return true;
+  const facultyId = await getFacultyIdForUser(req);
+  if (!facultyId) return false;
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    select: { facultyId: true },
+  });
+  return quiz?.facultyId === facultyId;
+};
+
 // List quizzes (filtered by user section for students or query params for faculty)
 router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
   try {
     let sectionId = req.query.sectionId as string | undefined;
     let studentId: string | undefined;
+    let facultyId: string | undefined;
 
     if (req.user?.role === 'STUDENT') {
       const student = await prisma.student.findUnique({
@@ -19,6 +41,9 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
         sectionId = student.sectionId;
         studentId = student.id;
       }
+    } else if (req.user?.role === 'FACULTY') {
+      facultyId = (await getFacultyIdForUser(req)) || undefined;
+      if (!facultyId) return res.json([]);
     }
 
     const quizzes = await quizService.getQuizzes({
@@ -26,6 +51,7 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
       subjectId: req.query.subjectId as string,
       status: req.query.status as string,
       studentId,
+      facultyId,
     });
     res.json(quizzes);
   } catch (error: any) {
@@ -37,15 +63,20 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
 router.post('/', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req: AuthRequest, res) => {
   try {
     const { subjectId, sectionId } = req.body;
+    let ownerFacultyId: string | null = null;
 
     // Validate faculty teaching authorization if user is faculty
-    if (req.user?.role === 'FACULTY' && subjectId && sectionId) {
+    if (req.user?.role === 'FACULTY') {
       const faculty = await prisma.faculty.findUnique({
         where: { userId: req.user.id },
         include: { assignments: true },
       });
+      if (!faculty) {
+        return res.status(403).json({ message: 'Faculty profile not found' });
+      }
+      ownerFacultyId = faculty.id;
 
-      if (faculty && faculty.assignments.length > 0) {
+      if (subjectId && sectionId && faculty.assignments.length > 0) {
         const isAuthorized = faculty.assignments.some(
           a => a.subjectId === subjectId && a.sectionId === sectionId
         );
@@ -55,9 +86,15 @@ router.post('/', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req:
           });
         }
       }
+    } else if (req.body.facultyId) {
+      const target = await prisma.faculty.findUnique({
+        where: { id: String(req.body.facultyId) },
+        select: { id: true },
+      });
+      if (target) ownerFacultyId = target.id;
     }
 
-    const quiz = await quizService.createQuiz(req.body);
+    const quiz = await quizService.createQuiz({ ...req.body, facultyId: ownerFacultyId });
     res.status(201).json(quiz);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -65,9 +102,13 @@ router.post('/', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req:
 });
 
 // Get quiz details
-router.get('/:id', authenticateJWT, async (req, res) => {
+router.get('/:id', authenticateJWT, async (req: AuthRequest, res) => {
   try {
-    const quiz = await quizService.getQuizById(req.params.id as string);
+    const quizId = req.params.id as string;
+    if (req.user?.role === 'FACULTY' && !(await canAccessQuiz(req, quizId))) {
+      return res.status(404).json({ message: 'Quiz not found' });
+    }
+    const quiz = await quizService.getQuizById(quizId);
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
     }
@@ -112,6 +153,9 @@ router.post('/:id/attempt', authenticateJWT, requireRole(['STUDENT']), async (re
       studentId,
       timeTaken: req.body.timeTaken || 0,
       answers: req.body.answers || [],
+      attemptId: req.body.attemptId || undefined,
+      autoSubmitted: Boolean(req.body.autoSubmitted),
+      autoSubmitReason: req.body.autoSubmitReason || undefined,
     });
 
     res.status(201).json(attempt);
@@ -121,14 +165,23 @@ router.post('/:id/attempt', authenticateJWT, requireRole(['STUDENT']), async (re
 });
 
 // Get results / student responses of a quiz
-router.get('/:id/results', authenticateJWT, async (req, res) => {
-  try {
-    const results = await quizService.getQuizResults(req.params.id as string);
-    res.json(results);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+router.get(
+  '/:id/results',
+  authenticateJWT,
+  requireRole(['FACULTY', 'ADMIN']),
+  async (req: AuthRequest, res) => {
+    try {
+      const quizId = req.params.id as string;
+      if (!(await canAccessQuiz(req, quizId))) {
+        return res.status(403).json({ message: 'You can only view results for your own quizzes.' });
+      }
+      const results = await quizService.getQuizResults(quizId);
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   }
-});
+);
 
 // Get current student's attempt for a quiz
 router.get('/:id/my-attempt', authenticateJWT, requireRole(['STUDENT']), async (req: AuthRequest, res) => {
@@ -139,8 +192,35 @@ router.get('/:id/my-attempt', authenticateJWT, requireRole(['STUDENT']), async (
     if (!student) {
       return res.status(404).json({ message: 'Student profile not found' });
     }
-    const attempt = await prisma.quizAttempt.findFirst({
-      where: { quizId: req.params.id as string, studentId: student.id },
+    const quizId = req.params.id as string;
+
+    // A submitted attempt always wins over an abandoned draft. Draft rows keep
+    // submittedAt populated for schema compatibility, so ordering by that field
+    // alone could surface an in-progress attempt as the student's final result.
+    const submitted = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "QuizAttempt"
+      WHERE "quizId" = ${quizId} AND "studentId" = ${student.id} AND "isSubmitted" = true
+      ORDER BY "submittedAt" DESC
+      LIMIT 1
+    `;
+    const active = submitted.length > 0
+      ? []
+      : await prisma.$queryRaw<Array<{ id: string }>>`
+          SELECT "id" FROM "QuizAttempt"
+          WHERE "quizId" = ${quizId} AND "studentId" = ${student.id} AND "isSubmitted" = false
+          ORDER BY "startedAt" DESC
+          LIMIT 1
+        `;
+
+    const attemptId = submitted[0]?.id || active[0]?.id;
+    if (!attemptId) {
+      // No attempt exists yet. Returning a payload here would make the client
+      // treat the empty response as a completed exam.
+      return res.json(null);
+    }
+
+    const attempt = await prisma.quizAttempt.findUnique({
+      where: { id: attemptId },
       include: {
         answers: {
           include: {
@@ -158,22 +238,37 @@ router.get('/:id/my-attempt', authenticateJWT, requireRole(['STUDENT']), async (
           },
         },
       },
-      orderBy: { submittedAt: 'desc' },
     });
-    res.json(attempt);
+    if (!attempt) return res.json(null);
+
+    const integrity = await quizService.getAttemptIntegrity(attempt.id);
+    res.json({
+      ...attempt,
+      isSubmitted: integrity?.isSubmitted ?? submitted.length > 0,
+      startedAt: integrity?.startedAt || null,
+      answerDrafts: integrity?.answerDrafts || {},
+      tabSwitchCount: integrity?.tabSwitchCount || 0,
+      autoSubmitted: integrity?.autoSubmitted || false,
+      autoSubmitReason: integrity?.autoSubmitReason || null,
+      violations: integrity?.violations || [],
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
 // Update quiz status (e.g. End open quiz to COMPLETED)
-router.patch('/:id/status', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req, res) => {
+router.patch('/:id/status', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req: AuthRequest, res) => {
   try {
+    const quizId = req.params.id as string;
+    if (!(await canAccessQuiz(req, quizId))) {
+      return res.status(403).json({ message: 'You can only manage your own quizzes.' });
+    }
     const { status } = req.body;
     if (!status) {
       return res.status(400).json({ message: 'Status is required' });
     }
-    const updated = await quizService.updateQuizStatus(req.params.id as string, status);
+    const updated = await quizService.updateQuizStatus(quizId, status);
     res.json(updated);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -181,10 +276,14 @@ router.patch('/:id/status', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), 
 });
 
 // Update quiz schedule
-router.patch('/:id/schedule', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req, res) => {
+router.patch('/:id/schedule', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req: AuthRequest, res) => {
   try {
+    const quizId = req.params.id as string;
+    if (!(await canAccessQuiz(req, quizId))) {
+      return res.status(403).json({ message: 'You can only manage your own quizzes.' });
+    }
     const quiz = await prisma.quiz.findUnique({
-      where: { id: req.params.id as string },
+      where: { id: quizId },
     });
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
@@ -195,7 +294,7 @@ router.patch('/:id/schedule', authenticateJWT, requireRole(['FACULTY', 'ADMIN'])
 
     const { scheduledAt, status } = req.body;
     const dateVal = scheduledAt ? new Date(scheduledAt) : null;
-    const updated = await quizService.updateQuizSchedule(req.params.id as string, dateVal, status);
+    const updated = await quizService.updateQuizSchedule(quizId, dateVal, status);
     res.json(updated);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -203,9 +302,13 @@ router.patch('/:id/schedule', authenticateJWT, requireRole(['FACULTY', 'ADMIN'])
 });
 
 // Delete quiz
-router.delete('/:id', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req, res) => {
+router.delete('/:id', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req: AuthRequest, res) => {
   try {
-    await quizService.deleteQuiz(req.params.id as string);
+    const quizId = req.params.id as string;
+    if (!(await canAccessQuiz(req, quizId))) {
+      return res.status(403).json({ message: 'You can only manage your own quizzes.' });
+    }
+    await quizService.deleteQuiz(quizId);
     res.json({ message: 'Quiz deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

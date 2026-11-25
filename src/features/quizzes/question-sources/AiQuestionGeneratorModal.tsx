@@ -13,25 +13,32 @@ import type {
   Question,
   QuestionType,
   Difficulty,
+  SkillGapTopicSelection,
 } from '../types/quizTypes';
 import { aiQuestionService } from '../services/aiQuestionService';
 import { fetchDynamicCurriculum, type DynamicSubject } from '../services/curriculumService';
 
 interface AiQuestionGeneratorModalProps {
   defaultSubjectId?: string;
+  defaultSubjectName?: string;
   defaultSemester?: number;
+  /** When supplied by skill-gap analysis, generation is locked to these topics only. */
+  lockedTopics?: SkillGapTopicSelection[];
   onAddQuestions: (generatedQuestions: Question[]) => void;
   onClose: () => void;
 }
 
 export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> = ({
   defaultSubjectId,
+  defaultSubjectName,
   defaultSemester,
+  lockedTopics,
   onAddQuestions,
   onClose,
 }) => {
   // Step 1: Configuration; Step 2: Review generated questions
   const [currentStep, setCurrentStep] = useState<'configure' | 'review'>('configure');
+  const isTopicLocked = Boolean(lockedTopics && lockedTopics.length > 0);
 
   // Database-backed curriculum data
   const [subjects, setSubjects] = useState<DynamicSubject[]>([]);
@@ -57,13 +64,18 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
             (defaultSemester && dynamicList.find(s => s.semester === defaultSemester)) ||
             dynamicList[0];
 
-          setSelectedSubjectId(matched.id);
-          const firstUnit = matched.units[0];
-          if (firstUnit) {
-            setSelectedUnitId(firstUnit.id);
-            if (firstUnit.topics[0]) {
-              setSelectedTopicId(firstUnit.topics[0].id);
+          if (!isTopicLocked) {
+            setSelectedSubjectId(matched.id);
+            const firstUnit = matched.units[0];
+            if (firstUnit) {
+              setSelectedUnitId(firstUnit.id);
+              if (firstUnit.topics[0]) {
+                setSelectedTopicId(firstUnit.topics[0].id);
+              }
             }
+          } else if (defaultSubjectId && !dynamicList.some(s => s.id === defaultSubjectId)) {
+            // Keep the skill-gap course ID; currentSubject falls back to locked metadata.
+            setSelectedSubjectId(defaultSubjectId);
           }
         }
       } catch (err) {
@@ -77,11 +89,23 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
     return () => {
       isMounted = false;
     };
-  }, [defaultSubjectId, defaultSemester]);
+  }, [defaultSubjectId, defaultSemester, isTopicLocked]);
+
+  const lockedSubject = useMemo<DynamicSubject>(
+    () => ({
+      id: defaultSubjectId || 'skill-gap-course',
+      code: 'GAP',
+      name: defaultSubjectName || 'Selected Skill-Gap Course',
+      semester: defaultSemester || 3,
+      department: 'Curriculum Remediation',
+      units: [],
+    }),
+    [defaultSubjectId, defaultSubjectName, defaultSemester]
+  );
 
   const currentSubject = useMemo(() => {
-    return subjects.find(s => s.id === selectedSubjectId) || subjects[0];
-  }, [subjects, selectedSubjectId]);
+    return subjects.find(s => s.id === selectedSubjectId) || (isTopicLocked ? lockedSubject : subjects[0]);
+  }, [subjects, selectedSubjectId, isTopicLocked, lockedSubject]);
 
   const currentUnit = useMemo(() => {
     if (!currentSubject || !currentSubject.units || currentSubject.units.length === 0) return undefined;
@@ -139,10 +163,24 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
   };
 
   const handleGenerate = async () => {
-    if (!currentSubject || !currentUnit || !currentTopic) {
+    if (!currentSubject || (!isTopicLocked && (!currentUnit || !currentTopic))) {
       setErrorMsg('Please select a valid Subject and Topic from the database.');
       return;
     }
+
+    const generationTopics: SkillGapTopicSelection[] = isTopicLocked
+      ? lockedTopics!.map(topic => ({ ...topic }))
+      : [
+          {
+            topicId: currentTopic!.topicId || currentTopic!.id,
+            subtopicId: currentTopic!.subtopicId || currentTopic!.id,
+            topicName: currentTopic!.name,
+            courseId: currentSubject.id,
+            courseName: currentSubject.name,
+            unitName: currentUnit!.name,
+          },
+        ];
+
     setErrorMsg(null);
     setIsGenerating(true);
     try {
@@ -151,11 +189,12 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
         subjectName: currentSubject.name,
         semester: currentSubject.semester,
         department: currentSubject.department,
-        unitId: currentUnit.id,
-        unitName: currentUnit.name,
-        topicId: currentTopic.topicId || currentUnit.id,
-        subtopicId: currentTopic.subtopicId || currentTopic.id,
-        topicName: currentTopic.name,
+        unitId: isTopicLocked ? '' : currentUnit!.id,
+        unitName: isTopicLocked ? 'Skill-Gap Remediation' : currentUnit!.name,
+        topicId: generationTopics[0].topicId,
+        subtopicId: generationTopics.length === 1 ? generationTopics[0].subtopicId : undefined,
+        topicName: generationTopics[0].topicName,
+        topics: generationTopics,
         questionCount,
         questionTypes: selectedTypes,
         difficulty,
@@ -237,74 +276,101 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
         {currentStep === 'configure' ? (
           <div className="p-6 overflow-y-auto space-y-6 flex-1">
             {/* Syllabus Target Grid */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-purple-600" />
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                  1. Target Syllabus Topic
-                </h4>
-              </div>
-
-              {isLoadingCurriculum ? (
-                <div className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
-                  <span>Loading syllabus topics from database...</span>
+            {isTopicLocked ? (
+              <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 space-y-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-purple-600" />
+                  <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wide">
+                    1. Locked Skill-Gap Topics
+                  </h4>
                 </div>
-              ) : subjects.length === 0 ? (
-                <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
-                  No courses or topics found in the database.
+                <p className="text-xs text-purple-900/80">
+                  Questions will be generated only from the topics selected in Learning Gap Analytics.
                 </p>
-              ) : (
-                <div className="grid sm:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Subject</label>
-                    <select
-                      value={selectedSubjectId}
-                      onChange={e => handleSubjectChange(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                <div className="flex flex-wrap gap-2">
+                  {lockedTopics!.map(topic => (
+                    <div
+                      key={topic.topicId || topic.topicName}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-purple-200 text-xs text-purple-900"
                     >
-                      {subjects.map(s => (
-                        <option key={s.id} value={s.id}>
-                          [{s.code}] {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Module</label>
-                    <select
-                      value={selectedUnitId}
-                      onChange={e => handleUnitChange(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2 bg-white"
-                      disabled={!currentSubject || !currentSubject.units || currentSubject.units.length === 0}
-                    >
-                      {currentSubject?.units?.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Topic</label>
-                    <select
-                      value={selectedTopicId}
-                      onChange={e => setSelectedTopicId(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-2 bg-white"
-                      disabled={!currentUnit || !currentUnit.topics || currentUnit.topics.length === 0}
-                    >
-                      {currentUnit?.topics?.map(t => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <span className="font-semibold">{topic.topicName}</span>
+                      {typeof topic.averageScore === 'number' && (
+                        <span className="text-[10px] font-bold text-purple-600">{topic.averageScore}%</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-purple-600" />
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    1. Target Syllabus Topic
+                  </h4>
+                </div>
+
+                {isLoadingCurriculum ? (
+                  <div className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                    <span>Loading syllabus topics from database...</span>
+                  </div>
+                ) : subjects.length === 0 ? (
+                  <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                    No courses or topics found in the database.
+                  </p>
+                ) : (
+                  <div className="grid sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Subject</label>
+                      <select
+                        value={selectedSubjectId}
+                        onChange={e => handleSubjectChange(e.target.value)}
+                        className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                      >
+                        {subjects.map(s => (
+                          <option key={s.id} value={s.id}>
+                            [{s.code}] {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Module</label>
+                      <select
+                        value={selectedUnitId}
+                        onChange={e => handleUnitChange(e.target.value)}
+                        className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                        disabled={!currentSubject || !currentSubject.units || currentSubject.units.length === 0}
+                      >
+                        {currentSubject?.units?.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Topic</label>
+                      <select
+                        value={selectedTopicId}
+                        onChange={e => setSelectedTopicId(e.target.value)}
+                        className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                        disabled={!currentUnit || !currentUnit.topics || currentUnit.topics.length === 0}
+                      >
+                        {currentUnit?.topics?.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pedagogy & Difficulty Configuration */}
             <div className="grid sm:grid-cols-2 gap-4">
@@ -438,7 +504,11 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
           <div className="p-6 overflow-y-auto space-y-4 flex-1">
             <div className="flex items-center justify-between bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs text-purple-900">
               <span className="font-semibold">
-                Generated {generatedBatch.length} questions for {currentTopic?.name} ({skillFocus}). Review and select before adding to quiz.
+                Generated {generatedBatch.length} questions for{' '}
+                {isTopicLocked
+                  ? lockedTopics!.map(topic => topic.topicName).join(', ')
+                  : currentTopic?.name}{' '}
+                ({skillFocus}). Review and select before adding to quiz.
               </span>
               <button
                 onClick={handleGenerate}

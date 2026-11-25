@@ -35,10 +35,126 @@ function normalizeStatus(st?: string): QuestionStatus {
   return 'APPROVED';
 }
 
+interface GenerationTopic {
+  id?: string;
+  name: string;
+  subtopicId?: string;
+  record?: any;
+}
+
+function toArray(value: any): any[] {
+  if (Array.isArray(value)) return value;
+  return value === undefined || value === null ? [] : [value];
+}
+
+/**
+ * Resolve every topic the faculty selected in skill-gap analysis.
+ * Names are accepted directly so a locked selection can still be honoured if
+ * the curriculum lookup is unavailable; IDs are resolved against the database.
+ */
+async function resolveGenerationTopics(
+  body: any,
+  fallbackTopic: string,
+  fallbackTopicId?: string
+): Promise<GenerationTopic[]> {
+  const topics = new Map<string, GenerationTopic>();
+  const addTopic = (topic: GenerationTopic) => {
+    const key = topic.id || topic.name.trim().toLowerCase();
+    if (key && !topics.has(key)) topics.set(key, topic);
+  };
+
+  const requestedTopics = toArray(body.topics);
+  for (const item of requestedTopics) {
+    if (typeof item === 'string') {
+      if (item.trim()) addTopic({ name: item.trim() });
+      continue;
+    }
+    if (!item || typeof item !== 'object') continue;
+
+    const id = item.id || item.topicId || item._id;
+    const name = item.topicName || item.name || item.subtopicName;
+    const subtopicId = item.subtopicId || (item.subtopic && item.subtopic.id);
+    if (name || id) {
+      addTopic({
+        id: id ? String(id) : undefined,
+        name: name ? String(name) : '',
+        subtopicId: subtopicId ? String(subtopicId) : undefined,
+      });
+    }
+  }
+
+  const ids: string[] = Array.from(
+    new Set(
+      [
+        ...toArray(body.topicIds).map(id => String(id)),
+        ...requestedTopics
+          .map(item => (item && typeof item === 'object' ? item.id || item.topicId || item._id : null))
+          .map(id => (id ? String(id) : undefined)),
+        fallbackTopicId ? String(fallbackTopicId) : undefined,
+      ].filter((id): id is string => Boolean(id))
+    )
+  );
+
+  const unresolvedIds = ids.filter(id =>
+    !Array.from(topics.values()).some(topic => topic.id === id && topic.name)
+  );
+
+  if (unresolvedIds.length > 0) {
+    try {
+      const dbTopics = await prisma.topic.findMany({
+        where: { id: { in: unresolvedIds } },
+        include: { subject: true },
+      });
+      const resolvedTopicIds = new Set<string>();
+      for (const dbTopic of dbTopics) {
+        resolvedTopicIds.add(dbTopic.id);
+        addTopic({ id: dbTopic.id, name: dbTopic.name, record: dbTopic });
+      }
+
+      const remainingIds = unresolvedIds.filter(id => !resolvedTopicIds.has(id));
+      if (remainingIds.length > 0) {
+        const dbSubtopics = await prisma.subtopic.findMany({
+          where: { id: { in: remainingIds } },
+        });
+        const parentTopics = await prisma.topic.findMany({
+          where: { id: { in: dbSubtopics.map(subtopic => subtopic.topicId) } },
+          include: { subject: true },
+        });
+        const parentById = new Map(parentTopics.map(topic => [topic.id, topic]));
+        for (const subtopic of dbSubtopics) {
+          addTopic({
+            id: subtopic.topicId,
+            name: subtopic.name,
+            subtopicId: subtopic.id,
+            record: parentById.get(subtopic.topicId),
+          });
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Topic resolution in /questions/generate failed:', dbErr);
+    }
+  }
+
+  for (const topic of topics.values()) {
+    if (!topic.name && topic.record?.name) topic.name = topic.record.name;
+  }
+
+  if (topics.size === 0) {
+    addTopic({ id: fallbackTopicId ? String(fallbackTopicId) : undefined, name: fallbackTopic });
+  }
+
+  if (body.subtopicId && topics.size === 1) {
+    const only = topics.values().next().value as GenerationTopic | undefined;
+    if (only && !only.subtopicId) only.subtopicId = String(body.subtopicId);
+  }
+
+  return Array.from(topics.values()).filter(topic => topic.name).slice(0, 10);
+}
+
 // Fallback question generator when Gemini API is offline or key is unset
 function generateFallbackQuestions(
   subject: string,
-  topic: string,
+  topics: GenerationTopic[],
   difficulty: string,
   cognitiveLevel: CognitiveLevel,
   count: number
@@ -54,13 +170,17 @@ function generateFallbackQuestions(
 
   const descriptor = bloomDescriptors[cognitiveLevel] || bloomDescriptors.CL2_UNDERSTAND;
   const questions = [];
+  const safeTopics = topics.length > 0 ? topics : [{ name: 'Binary Search Trees' }];
 
   for (let i = 1; i <= count; i++) {
+    const topic = safeTopics[(i - 1) % safeTopics.length];
     questions.push({
-      text: `In ${subject}, considering ${topic} under ${difficulty.toLowerCase()} conditions (Bloom's ${cognitiveLevel}): Which of the following best allows an engineer to ${descriptor.verb} ${topic}?`,
+      text: `In ${subject}, considering ${topic.name} under ${difficulty.toLowerCase()} conditions (Bloom's ${cognitiveLevel}): Which of the following best allows an engineer to ${descriptor.verb} ${topic.name}?`,
+      topicId: topic.id,
+      topic: topic.name,
       options: [
         {
-          text: `Optimal approach: Leverages ${topic} properties with correct bounds and invariants (${descriptor.context}).`,
+          text: `Optimal approach: Leverages ${topic.name} properties with correct bounds and invariants (${descriptor.context}).`,
           isCorrect: true,
         },
         {
@@ -76,27 +196,30 @@ function generateFallbackQuestions(
           isCorrect: false,
         },
       ],
-      explanation: `According to university curriculum standards for ${subject} (${topic}), evaluating ${descriptor.context} ensures that ${cognitiveLevel} competencies are verified correctly.`,
+      explanation: `According to university curriculum standards for ${subject} (${topic.name}), evaluating ${descriptor.context} ensures that ${cognitiveLevel} competencies are verified correctly.`,
     });
   }
 
   return questions;
 }
 
-// Gemini 1.5 Flash MCQ generator
+// Gemini MCQ generator. Every item is constrained to the faculty's allowed topics.
 async function generateQuestionsWithGemini(
   subject: string,
-  topic: string,
+  topics: GenerationTopic[],
   difficulty: Difficulty,
   cognitiveLevel: CognitiveLevel,
   count: number
 ) {
+  const topicLines = topics
+    .map((topic, index) => `${index + 1}. ${topic.name}${topic.id ? ` (topicId: ${topic.id})` : ''}`)
+    .join('\n');
+
   if (config.geminiApiKey) {
     try {
       const prompt = `You are a distinguished university professor designing rigorous Multiple Choice Questions (MCQs) for university engineering examinations.
-Generate ${count} high-quality MCQs covering:
+Generate ${count} high-quality MCQs for:
 - Course/Subject: ${subject}
-- Topic: ${topic}
 - Difficulty Level: ${difficulty}
 - Bloom's Taxonomy Cognitive Level: ${cognitiveLevel}
   * CL1_REMEMBER: Recall facts, terms, basic definitions
@@ -106,17 +229,25 @@ Generate ${count} high-quality MCQs covering:
   * CL5_EVALUATE: Justify selections, critique alternatives, compare optimal solutions
   * CL6_CREATE: Formulate hybrid designs, synthesize novel algorithmic architectures
 
+ALLOWED TOPICS — the ONLY topics you may use:
+${topicLines}
+
 Strict Requirements:
 1. Every question must strictly reflect the cognitive depth of Bloom's Level: ${cognitiveLevel}.
-2. Provide exactly 4 options per question.
-3. Exactly ONE option must have "isCorrect": true, and the other 3 must have "isCorrect": false.
-4. Include an informative pedagogical explanation for why the correct option is right.
-5. Return ONLY a valid JSON array of question objects without markdown backticks or commentary.
+2. Every question MUST be scoped to exactly one topic from the ALLOWED TOPICS list. Do not mention, imply, or depend on any other topic.
+3. Distribute the questions as evenly as possible across the ALLOWED TOPICS.
+4. Provide exactly 4 options per question.
+5. Exactly ONE option must have "isCorrect": true, and the other 3 must have "isCorrect": false.
+6. Include an informative pedagogical explanation for why the correct option is right.
+7. Copy "topicId" and "topic" exactly from the ALLOWED TOPICS entry used for that question.
+8. Return ONLY a valid JSON array of question objects without markdown backticks or commentary.
 
 JSON format:
 [
   {
     "text": "Question text here?",
+    "topicId": "exact-topic-id-from-allowed-list",
+    "topic": "Exact allowed topic name",
     "options": [
       { "text": "Option A", "isCorrect": true },
       { "text": "Option B", "isCorrect": false },
@@ -127,38 +258,64 @@ JSON format:
   }
 ]`;
 
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              responseMimeType: 'application/json',
-            },
-          }),
-        }
+      const models = Array.from(
+        new Set([config.geminiModel, 'gemini-flash-lite-latest', 'gemini-3.5-flash'])
       );
 
-      if (resp.ok) {
-        const data = await resp.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+      for (const model of models) {
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  temperature: 0.7,
+                  responseMimeType: 'application/json',
+                },
+              }),
+            }
+          );
+
+          if (resp.ok) {
+            const data = await resp.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+              const parsed = JSON.parse(cleaned);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed.slice(0, count).map((item: any, index: number) => {
+                  const requestedId = item.topicId ? String(item.topicId) : undefined;
+                  const requestedName = item.topic ? String(item.topic).trim().toLowerCase() : undefined;
+                  const matched =
+                    topics.find(topic => topic.id && topic.id === requestedId) ||
+                    topics.find(topic => topic.name.trim().toLowerCase() === requestedName) ||
+                    topics[index % topics.length];
+
+                  return {
+                    ...item,
+                    topicId: matched.id,
+                    topic: matched.name,
+                  };
+                });
+              }
+            }
+          } else {
+            const errorText = await resp.text();
+            console.warn(`Gemini ${model} request failed:`, errorText.slice(0, 300));
           }
+        } catch (err) {
+          console.warn(`Gemini ${model} call failed:`, err);
         }
       }
     } catch (err) {
-      console.warn('Gemini 1.5 Flash call failed, using high-fidelity fallback generator:', err);
+      console.warn('Gemini call failed, using high-fidelity fallback generator:', err);
     }
   }
 
-  return generateFallbackQuestions(subject, topic, difficulty, cognitiveLevel, count);
+  return generateFallbackQuestions(subject, topics, difficulty, cognitiveLevel, count);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -305,7 +462,7 @@ router.get('/topics', authenticateJWT, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. AIG: Automated Item Generation with Gemini 1.5 API
+// 2. AIG: Automated Item Generation with Gemini API
 // ─────────────────────────────────────────────────────────────────────────────
 router.post(
   '/generate',
@@ -326,17 +483,34 @@ router.post(
         autoApprove = false,
         status: reqStatus,
       } = req.body;
+      const subjectText = String(subject || 'Data Structures & Algorithms');
+      const fallbackTopicText = String(topic || 'Binary Search Trees');
 
-      if (subtopicId && topicId) {
+      const selectedTopics = await resolveGenerationTopics(
+        req.body,
+        fallbackTopicText,
+        topicId ? String(topicId) : undefined
+      );
+      const hasExplicitTopics =
+        toArray(req.body.topicIds).length > 0 || toArray(req.body.topics).length > 0;
+
+      if (hasExplicitTopics && selectedTopics.length === 0) {
+        return res.status(400).json({
+          message: 'None of the selected skill-gap topics could be resolved. Please select topics again.',
+        });
+      }
+
+      const validationTopicId = selectedTopics.length === 1 ? selectedTopics[0].id : topicId;
+      if (subtopicId && validationTopicId) {
         const subtopic = await prisma.subtopic.findUnique({
           where: { id: String(subtopicId) },
         });
         if (!subtopic) {
           return res.status(400).json({ message: `Subtopic with ID '${subtopicId}' does not exist.` });
         }
-        if (subtopic.topicId !== topicId) {
+        if (subtopic.topicId !== validationTopicId) {
           return res.status(400).json({
-            message: `Subtopic '${subtopicId}' belongs to topic '${subtopic.topicId}', not question topic '${topicId}'.`,
+            message: `Subtopic '${subtopicId}' belongs to topic '${subtopic.topicId}', not question topic '${validationTopicId}'.`,
           });
         }
       }
@@ -347,102 +521,125 @@ router.post(
       const isApproved = Boolean(autoApprove) || reqStatus === 'APPROVED';
       const initialStatus = isApproved ? 'APPROVED' : 'PENDING_APPROVAL';
 
-      // Generate MCQs with Gemini 1.5 API (or fallback generator)
+      // Generate MCQs with Gemini (or fallback generator), locked to selected topics
       const rawGenerated = await generateQuestionsWithGemini(
-        subject,
-        topic,
+        subjectText,
+        selectedTopics,
         normDifficulty,
         normCognitiveLevel,
         numQuestions
       );
 
-      // Resolve Topic and Subject in database (if connected)
-      let targetTopic: any = null;
-      try {
-        if (topicId) {
-          targetTopic = await prisma.topic.findUnique({
-            where: { id: topicId },
-            include: { subject: true },
-          });
-        }
-
-        if (!targetTopic && subjectId) {
-          targetTopic = await prisma.topic.findFirst({
-            where: {
-              subjectId: String(subjectId),
-              name: { equals: topic, mode: 'insensitive' },
-            },
-            include: { subject: true },
-          });
-        }
-
-        if (!targetTopic) {
-          targetTopic = await prisma.topic.findFirst({
-            where: {
-              name: { equals: topic, mode: 'insensitive' },
-            },
-            include: { subject: true },
-          });
-        }
-
-        if (!targetTopic) {
-          let targetSubject: any = null;
+      let cachedSubject: any = null;
+      const resolveSubjectRecord = async () => {
+        if (cachedSubject) return cachedSubject;
+        try {
           if (subjectId) {
-            targetSubject = await prisma.subject.findUnique({
-              where: { id: String(subjectId) },
-            });
+            cachedSubject = await prisma.subject.findUnique({ where: { id: String(subjectId) } });
           }
-
-          if (!targetSubject) {
-            targetSubject = await prisma.subject.findFirst({
+          if (!cachedSubject) {
+            cachedSubject = await prisma.subject.findFirst({
               where: {
                 OR: [
-                  { name: { equals: subject, mode: 'insensitive' } },
-                  { code: { equals: subject, mode: 'insensitive' } },
+                  { name: { equals: subjectText, mode: 'insensitive' } },
+                  { code: { equals: subjectText, mode: 'insensitive' } },
                 ],
               },
             });
           }
-
-          if (!targetSubject) {
+          if (!cachedSubject) {
             let dept = await prisma.department.findFirst();
             if (!dept) {
               dept = await prisma.department.create({
                 data: { name: 'Artificial Intelligence and Machine Learning', code: 'AIML' },
               });
             }
-            targetSubject = await prisma.subject.create({
+            const prefix = subjectText.replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase() || 'GEN';
+            cachedSubject = await prisma.subject.create({
               data: {
-                name: subject,
-                code: (subject.substring(0, 4) + '-' + Math.floor(100 + Math.random() * 900)).toUpperCase(),
+                name: subjectText,
+                code: `${prefix}-${Math.floor(100 + Math.random() * 900)}`,
                 departmentId: dept.id,
               },
             });
           }
-
-          targetTopic = await prisma.topic.create({
-            data: {
-              name: topic,
-              subjectId: targetSubject.id,
-            },
-            include: { subject: true },
-          });
+        } catch (dbErr) {
+          console.warn('Subject resolution fallback in /generate:', dbErr);
+          cachedSubject = { id: subjectId ? String(subjectId) : 's1', name: subjectText };
         }
-      } catch (dbErr) {
-        console.warn('Database Topic resolution fallback in /generate:', dbErr);
-        targetTopic = {
-          id: topicId || `t_${Date.now()}`,
-          name: topic,
-          subject: { name: subject, id: subjectId || 's1' },
-        };
-      }
+        return cachedSubject;
+      };
 
-      // Save questions into database with determined status
+      const resolveTopicRecord = async (selection: GenerationTopic) => {
+        try {
+          if (selection.record?.id && !String(selection.record.id).startsWith('t_')) {
+            return selection.record;
+          }
+          if (selection.id && !String(selection.id).startsWith('t_')) {
+            const existingById = await prisma.topic.findUnique({
+              where: { id: selection.id },
+              include: { subject: true },
+            });
+            if (existingById) return existingById;
+          }
+
+          const resolvedSubject = await resolveSubjectRecord();
+          if (resolvedSubject?.id && !String(resolvedSubject.id).startsWith('s_')) {
+            const existingByName = await prisma.topic.findFirst({
+              where: {
+                subjectId: resolvedSubject.id,
+                name: { equals: selection.name, mode: 'insensitive' },
+              },
+              include: { subject: true },
+            });
+            if (existingByName) return existingByName;
+
+            return await prisma.topic.create({
+              data: { name: selection.name, subjectId: resolvedSubject.id },
+              include: { subject: true },
+            });
+          }
+        } catch (dbErr) {
+          console.warn('Database Topic resolution fallback in /generate:', dbErr);
+        }
+
+        return {
+          id: selection.id || `t_${Date.now()}`,
+          name: selection.name,
+          subject: cachedSubject || { name: subjectText },
+        };
+      };
+
+      // Save questions into database with determined status, each under its selected topic
       const createdQuestions: any[] = [];
-      for (const item of rawGenerated) {
+      for (let index = 0; index < rawGenerated.length; index++) {
+        const item = rawGenerated[index];
+        const requestedId = item.topicId ? String(item.topicId) : undefined;
+        const requestedName = item.topic ? String(item.topic).trim().toLowerCase() : undefined;
+        const chosenTopic =
+          selectedTopics.find(topic => topic.id && topic.id === requestedId) ||
+          selectedTopics.find(topic => topic.name.trim().toLowerCase() === requestedName) ||
+          selectedTopics[index % selectedTopics.length] || { name: fallbackTopicText };
+        const targetTopic = await resolveTopicRecord(chosenTopic);
+
+        let subtopicForQuestion = chosenTopic.subtopicId ||
+          (selectedTopics.length === 1 && subtopicId ? String(subtopicId) : undefined);
+        if (subtopicForQuestion && targetTopic?.id && !String(targetTopic.id).startsWith('t_')) {
+          try {
+            const linkedSubtopic = await prisma.subtopic.findUnique({
+              where: { id: subtopicForQuestion },
+            });
+            if (!linkedSubtopic || linkedSubtopic.topicId !== targetTopic.id) {
+              subtopicForQuestion = undefined;
+            }
+          } catch {
+            subtopicForQuestion = undefined;
+          }
+        }
+
         let createdRecord: any = null;
         try {
-          if (targetTopic?.id && !targetTopic.id.startsWith('t_')) {
+          if (targetTopic?.id && !String(targetTopic.id).startsWith('t_')) {
             createdRecord = await prisma.question.create({
               data: {
                 text: item.text,
@@ -452,7 +649,7 @@ router.post(
                 status: initialStatus,
                 explanation: item.explanation || null,
                 topicId: targetTopic.id,
-                subtopicId: subtopicId || null,
+                subtopicId: subtopicForQuestion || null,
                 options: {
                   create: (item.options || []).map((opt: any) => ({
                     text: opt.text,
@@ -488,8 +685,8 @@ router.post(
             topicId: targetTopic?.id || 't1',
             topic: {
               id: targetTopic?.id || 't1',
-              name: targetTopic?.name || topic,
-              subject: { name: subject },
+              name: targetTopic?.name || chosenTopic.name,
+              subject: { name: subjectText },
             },
             options: (item.options || []).map((opt: any, optIdx: number) => ({
               id: `opt_${Date.now()}_${optIdx}`,
@@ -507,8 +704,9 @@ router.post(
         message: isApproved
           ? `Successfully generated and approved ${createdQuestions.length} questions for quiz`
           : `Successfully generated ${createdQuestions.length} questions awaiting faculty review`,
-        subject: targetTopic?.subject?.name || subject,
-        topic: targetTopic?.name || topic,
+        subject: cachedSubject?.name || selectedTopics[0]?.record?.subject?.name || subjectText,
+        topic: selectedTopics.map(topic => topic.name).join(', '),
+        topics: selectedTopics.map(topic => ({ id: topic.id, name: topic.name })),
         cognitiveLevel: normCognitiveLevel,
         difficulty: normDifficulty,
         questions: createdQuestions,

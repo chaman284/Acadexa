@@ -247,6 +247,17 @@ export const QuizDetailsForm: React.FC<QuizDetailsFormProps> = ({
     };
   }, [subjectId, activeDbSubject, semester]);
 
+  // Auto-select first module if none selected or selection invalid for current subject
+  useEffect(() => {
+    if (currentSubject && currentSubject.units && currentSubject.units.length > 0) {
+      const validUnitIds = currentSubject.units.map(u => u.id);
+      const hasValidUnit = unitIds.some(id => validUnitIds.includes(id));
+      if (!hasValidUnit) {
+        setUnitIds([currentSubject.units[0].id]);
+      }
+    }
+  }, [currentSubject, unitIds, setUnitIds]);
+
   const toggleClass = (cls: AssignedClass) => {
     const exists = assignedClasses.some(c => c.id === cls.id);
     if (exists) {
@@ -471,9 +482,16 @@ export const QuizDetailsForm: React.FC<QuizDetailsFormProps> = ({
 
             {/* Topics multi-select */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                Target Topics for Learning-Gap Tracking
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  Target Topics for Learning-Gap Tracking
+                </label>
+                {topicIds.length > 0 && (
+                  <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                    {topicIds.length} topic{topicIds.length !== 1 ? 's' : ''} selected
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {currentSubject.units
                   .filter(u => unitIds.length === 0 || unitIds.includes(u.id))

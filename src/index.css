@@ -31,6 +31,7 @@
   --color-background:   #F7F1E8;
   --color-surface:      #FFFFFF;
   --color-primary:      #542536;
+  --color-accent:       #542536;
   --color-primary-light:#EEE3E0;
   --color-success:      #34483A;
   --color-success-light:#e8f0ea;
@@ -106,6 +107,15 @@ h1, h2, .serif { font-family: 'DM Serif Display', Georgia, serif; }
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-rose); }
+
+/* Formal exam lock: applied only to the exam container in Formal mode. */
+.exam-locked,
+.exam-locked * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 
 /* ============================================
    LAYOUT UTILITIES

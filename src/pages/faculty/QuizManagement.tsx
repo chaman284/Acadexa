@@ -72,6 +72,10 @@ interface AttemptItem {
   submittedAt: string;
   totalAnswers: number;
   correctAnswers: number;
+  tabSwitchCount?: number;
+  autoSubmitted?: boolean;
+  autoSubmitReason?: string | null;
+  violations?: { type: string; timestamp: string }[];
 }
 
 interface QuizResultsData {
@@ -103,6 +107,7 @@ export const QuizManagement: React.FC = () => {
   const [responsesData, setResponsesData] = useState<QuizResultsData | null>(null);
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [searchStudent, setSearchStudent] = useState('');
+  const [expandedAttemptId, setExpandedAttemptId] = useState<string | null>(null);
 
   // Schedule Modal State
   const [scheduleModalQuiz, setScheduleModalQuiz] = useState<DbQuiz | null>(null);
@@ -170,6 +175,7 @@ export const QuizManagement: React.FC = () => {
     setSelectedQuizForResponses(quiz);
     setLoadingResponses(true);
     setSearchStudent('');
+    setExpandedAttemptId(null);
     try {
       const res = await api.get(`/quizzes/${quiz.id}/results`);
       setResponsesData(res.data);
@@ -511,7 +517,8 @@ export const QuizManagement: React.FC = () => {
                         {/* View Responses Button (Always available) */}
                         <Button
                           size="sm"
-                          className="flex-1 !bg-[var(--color-accent)] !text-white hover:!opacity-95"
+                          variant="primary"
+                          className="flex-1"
                           leftIcon={<Eye className="w-3.5 h-3.5" />}
                           onClick={() => handleOpenResponses(q)}
                         >
@@ -795,6 +802,8 @@ export const QuizManagement: React.FC = () => {
                               <th className="py-2.5 px-4">Correct / Total</th>
                               <th className="py-2.5 px-4">Time Taken</th>
                               <th className="py-2.5 px-4">Submitted At</th>
+                              <th className="py-2.5 px-4">Integrity</th>
+                              <th className="py-2.5 px-4">Log</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -814,35 +823,89 @@ export const QuizManagement: React.FC = () => {
                                     ? 'bg-amber-50 text-amber-700 border-amber-200'
                                     : 'bg-red-50 text-red-700 border-red-200';
 
+                                const violations = attempt.violations || [];
+                                const isExpanded = expandedAttemptId === attempt.id;
+
                                 return (
-                                  <tr key={attempt.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="py-2.5 px-4">
-                                      <p className="font-semibold text-slate-800">{attempt.studentName}</p>
-                                      <p className="text-[11px] text-slate-400">{attempt.studentEmail}</p>
-                                    </td>
-                                    <td className="py-2.5 px-4 font-mono text-slate-600">{attempt.rollNo}</td>
-                                    <td className="py-2.5 px-4">
-                                      <span
-                                        className={`inline-block px-2.5 py-0.5 rounded-full font-bold border text-xs ${scoreColor}`}
-                                      >
-                                        {attempt.score}%
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 px-4 text-slate-600">
-                                      {attempt.correctAnswers} / {attempt.totalAnswers} correct
-                                    </td>
-                                    <td className="py-2.5 px-4 text-slate-600">
-                                      {formatTime(attempt.timeTaken)}
-                                    </td>
-                                    <td className="py-2.5 px-4 text-slate-500">
-                                      {new Date(attempt.submittedAt).toLocaleString('en-IN', {
-                                        day: 'numeric',
-                                        month: 'short',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
-                                    </td>
-                                  </tr>
+                                  <React.Fragment key={attempt.id}>
+                                    <tr className="hover:bg-slate-50 transition-colors">
+                                      <td className="py-2.5 px-4">
+                                        <p className="font-semibold text-slate-800">{attempt.studentName}</p>
+                                        <p className="text-[11px] text-slate-400">{attempt.studentEmail}</p>
+                                      </td>
+                                      <td className="py-2.5 px-4 font-mono text-slate-600">{attempt.rollNo}</td>
+                                      <td className="py-2.5 px-4">
+                                        <span
+                                          className={`inline-block px-2.5 py-0.5 rounded-full font-bold border text-xs ${scoreColor}`}
+                                        >
+                                          {attempt.score}%
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-4 text-slate-600">
+                                        {attempt.correctAnswers} / {attempt.totalAnswers} correct
+                                      </td>
+                                      <td className="py-2.5 px-4 text-slate-600">
+                                        {formatTime(attempt.timeTaken)}
+                                      </td>
+                                      <td className="py-2.5 px-4 text-slate-500">
+                                        {new Date(attempt.submittedAt).toLocaleString('en-IN', {
+                                          day: 'numeric',
+                                          month: 'short',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </td>
+                                      <td className="py-2.5 px-4">
+                                        <div className="flex flex-col items-start gap-1">
+                                          <span className="font-semibold text-slate-700">
+                                            Tab switches: {attempt.tabSwitchCount || 0}/2
+                                          </span>
+                                          {attempt.autoSubmitted && (
+                                            <Badge color="red">Auto-submitted</Badge>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 px-4">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setExpandedAttemptId(isExpanded ? null : attempt.id)
+                                          }
+                                          className="text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
+                                        >
+                                          {isExpanded ? 'Hide log' : `View log (${violations.length})`}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                    {isExpanded && (
+                                      <tr>
+                                        <td colSpan={8} className="bg-slate-50 px-4 py-3">
+                                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">
+                                            Violation log
+                                          </p>
+                                          {violations.length === 0 ? (
+                                            <p className="text-xs text-slate-400">No violations recorded.</p>
+                                          ) : (
+                                            <ul className="space-y-1">
+                                              {violations.map((violation, index) => (
+                                                <li
+                                                  key={`${attempt.id}-${index}`}
+                                                  className="text-xs text-slate-600 flex flex-wrap gap-x-3"
+                                                >
+                                                  <span className="font-mono font-semibold text-slate-800">
+                                                    {violation.type}
+                                                  </span>
+                                                  <span>
+                                                    {new Date(violation.timestamp).toLocaleString('en-IN')}
+                                                  </span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </React.Fragment>
                                 );
                               })}
                           </tbody>

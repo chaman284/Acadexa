@@ -10,6 +10,7 @@ import {
   analyticsService,
   type SectionTopicSkill,
 } from '../../services/analyticsService';
+import type { SkillGapTopicSelection } from '../../features/quizzes/types/quizTypes';
 import {
   TrendingUp,
   TrendingDown,
@@ -30,6 +31,7 @@ export const LearningGapAnalytics: React.FC = () => {
   const [classes, setClasses] = useState<AssignedClassExtended[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [topics, setTopics] = useState<SectionTopicSkill[]>([]);
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [reteachTopics, setReteachTopics] = useState<Array<{ id: string; name: string; pctNeedsAttention: number }>>([]);
   const [atRiskCount, setAtRiskCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -67,6 +69,7 @@ export const LearningGapAnalytics: React.FC = () => {
           activeClass.subjectId
         );
         setTopics(report.topics);
+        setSelectedTopicIds(report.reteachTopics.map(item => item.id));
         setReteachTopics(report.reteachTopics);
         setAtRiskCount(report.atRiskCount);
         setIsFallback(!!report.isFallback);
@@ -106,7 +109,61 @@ export const LearningGapAnalytics: React.FC = () => {
     });
   };
 
+  const toggleTopicSelection = (topicId: string) => {
+    setSelectedTopicIds(previous =>
+      previous.includes(topicId)
+        ? previous.filter(id => id !== topicId)
+        : [...previous, topicId]
+    );
+  };
+
+  const handleGenerateWithAi = () => {
+    const selected = topics.filter(topic => selectedTopicIds.includes(topic.topicId));
+    if (selected.length === 0) return;
+
+    const skillGapTopics: SkillGapTopicSelection[] = selected.map(topic => ({
+      topicId: topic.topicId,
+      topicName: topic.topicName,
+      courseId: topic.courseId || selectedClass?.subjectId,
+      courseName: topic.courseName || selectedClass?.subject,
+      unitName: topic.unitName,
+      averageScore: topic.averageScore,
+      pctNeedsAttention: topic.pctNeedsAttention,
+      isReteachRecommended: topic.isReteachRecommended,
+    }));
+
+    navigate('/faculty/quiz/create', {
+      state: {
+        remedial: true,
+        skillGapTopics,
+        topicId: skillGapTopics[0].topicId,
+        topicName: skillGapTopics[0].topicName,
+        subjectId: skillGapTopics[0].courseId,
+        courseId: skillGapTopics[0].courseId,
+        courseName: skillGapTopics[0].courseName,
+        subject: selectedClass?.subject,
+        sectionId: selectedClass?.sectionId,
+        section: selectedClass?.section,
+        semester: selectedClass?.semester,
+        title: `AI Remedial Quiz: ${skillGapTopics.length} Skill Gap Topic${skillGapTopics.length > 1 ? 's' : ''}`,
+      },
+    });
+  };
+
   const columns = [
+    {
+      key: 'select',
+      header: 'Select',
+      render: (t: SectionTopicSkill) => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${t.topicName} for AI generation`}
+          checked={selectedTopicIds.includes(t.topicId)}
+          onChange={() => toggleTopicSelection(t.topicId)}
+          className="w-4 h-4 rounded text-oxblood focus:ring-oxblood cursor-pointer"
+        />
+      ),
+    },
     {
       key: 'topicName',
       header: 'Curriculum Topic',
@@ -303,9 +360,20 @@ export const LearningGapAnalytics: React.FC = () => {
               subtitle={selectedClass ? `${selectedClass.subject} · ${selectedClass.semester}` : undefined}
               className="p-5 pb-0"
               action={
-                <span className="text-xs text-[var(--color-text-muted)] font-medium">
-                  {topics.length} Curriculum Units Analyzed
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-[var(--color-text-muted)] font-medium">
+                    {selectedTopicIds.length} of {topics.length} selected
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Sparkles className="w-4 h-4" />}
+                    onClick={handleGenerateWithAi}
+                    disabled={selectedTopicIds.length === 0}
+                  >
+                    Generate with AI
+                  </Button>
+                </div>
               }
             />
             <DataTable columns={columns} data={topics} keyField="topicId" />

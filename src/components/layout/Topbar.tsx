@@ -43,7 +43,7 @@ export const Topbar: React.FC<TopbarProps> = ({ user, onMenuToggle }) => {
           <Avatar name={user?.name || 'User'} src={user?.avatarUrl} size="sm" />
           <div className="hidden md:block text-left">
             <p className="text-sm font-semibold text-[#302A2B] leading-none mb-1">
-              {user?.name?.split(' ')[0] || 'User'}
+              {user?.name || 'User'}
             </p>
             <Badge color={roleBadgeColor} className="text-[10px] py-0 px-1.5">
               {user?.role === 'admin' ? 'Admin' : user?.role === 'faculty' ? 'Faculty' : 'Student'}

@@ -29,6 +29,33 @@ export const CONFIG = {
   MIN_ANSWERS_CONFIDENT: 2, // below this → lowData flag
 };
 
+export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type DiagnosisType =
+  | 'FOUNDATION_GAP'
+  | 'APPLICATION_GAP'
+  | 'EDGE_CASE_ONLY'
+  | 'MASTERED'
+  | 'INSUFFICIENT_DATA';
+
+export interface Band {
+  correct: number;
+  total: number;
+}
+export type BandStats = Record<Difficulty, Band>;
+
+export const DIAG_CONFIG = {
+  MIN_TOTAL_ANSWERS: 4, // fewer answers than this across all bands -> INSUFFICIENT_DATA
+  BAND_PASS_AT: 0.5, // a band is "passed" if correct/total >= this
+};
+
+export interface Diagnosis {
+  diagnosis: DiagnosisType;
+  guessingSuspected: boolean; // true when EASY failed but HARD passed
+  missingBands: Difficulty[]; // bands with total === 0
+  bands: Record<Difficulty, { accuracy: number | null; total: number; passed: boolean | null }>;
+  startDifficulty: Difficulty | null; // where a remedial quiz should start
+}
+
 export type Status = 'MASTERED' | 'MODERATE' | 'NEEDS_ATTENTION';
 export type Level = 'OVERALL' | 'SUBJECT' | 'TOPIC' | 'SUBTOPIC';
 
@@ -37,6 +64,7 @@ export interface Scope {
   sectionId?: string;
   year?: number; // 1..4  → semesters (2y-1, 2y)
   subjectId?: string;
+  facultyId?: string; // restrict evidence to quizzes created by this faculty
 }
 
 interface Evidence {
@@ -123,6 +151,65 @@ export function scoreFromAcc(a: Acc): Score {
 /** Ranking helper: weak AND well-evidenced floats to the top */
 export const priority = (s: Score) => (1 - s.mastery) * s.confidence;
 
+export function diagnoseSubtopic(stats: BandStats, cfg = DIAG_CONFIG): Diagnosis {
+  const diffs: Difficulty[] = ['EASY', 'MEDIUM', 'HARD'];
+  const missingBands: Difficulty[] = [];
+  const bands = {} as Record<Difficulty, { accuracy: number | null; total: number; passed: boolean | null }>;
+
+  let totalAnswers = 0;
+  for (const d of diffs) {
+    const b = stats[d] ?? { correct: 0, total: 0 };
+    totalAnswers += b.total;
+    if (b.total === 0) {
+      missingBands.push(d);
+      bands[d] = { accuracy: null, total: 0, passed: null };
+    } else {
+      const accuracy = b.correct / b.total;
+      const passed = accuracy >= cfg.BAND_PASS_AT;
+      bands[d] = { accuracy, total: b.total, passed };
+    }
+  }
+
+  // 1. total = EASY.total + MEDIUM.total + HARD.total. If total < MIN_TOTAL_ANSWERS -> INSUFFICIENT_DATA
+  let diagnosis: DiagnosisType;
+  if (totalAnswers < cfg.MIN_TOTAL_ANSWERS) {
+    diagnosis = 'INSUFFICIENT_DATA';
+  } else if (bands.EASY.passed === false) {
+    // 3. If EASY is assessed and failed -> FOUNDATION_GAP
+    diagnosis = 'FOUNDATION_GAP';
+  } else if (bands.MEDIUM.passed === false) {
+    // 4. Else if MEDIUM is assessed and failed -> APPLICATION_GAP
+    diagnosis = 'APPLICATION_GAP';
+  } else if (bands.HARD.passed === false) {
+    // 5. Else if HARD is assessed and failed -> EDGE_CASE_ONLY
+    diagnosis = 'EDGE_CASE_ONLY';
+  } else {
+    // 6. Else -> MASTERED
+    diagnosis = 'MASTERED';
+  }
+
+  // 7. guessingSuspected = EASY failed && HARD passed
+  const guessingSuspected = bands.EASY.passed === false && bands.HARD.passed === true;
+
+  // 8. startDifficulty: FOUNDATION_GAP -> 'EASY', APPLICATION_GAP -> 'MEDIUM', EDGE_CASE_ONLY -> 'HARD', otherwise null
+  let startDifficulty: Difficulty | null = null;
+  if (diagnosis === 'FOUNDATION_GAP') {
+    startDifficulty = 'EASY';
+  } else if (diagnosis === 'APPLICATION_GAP') {
+    startDifficulty = 'MEDIUM';
+  } else if (diagnosis === 'EDGE_CASE_ONLY') {
+    startDifficulty = 'HARD';
+  }
+
+  return {
+    diagnosis,
+    guessingSuspected,
+    missingBands,
+    bands,
+    startDifficulty,
+  };
+}
+
 // ───────────── Data loading ─────────────
 function studentWhere(scope: Scope): Prisma.StudentWhereInput {
   if (scope.studentId) return { id: scope.studentId };
@@ -132,9 +219,13 @@ function studentWhere(scope: Scope): Prisma.StudentWhereInput {
 }
 
 async function loadEvidence(scope: Scope): Promise<Evidence[]> {
+  const attemptWhere: Prisma.QuizAttemptWhereInput = {
+    student: studentWhere(scope),
+    ...(scope.facultyId ? { quiz: { is: { facultyId: scope.facultyId } } } : {}),
+  };
   const rows = await prisma.attemptAnswer.findMany({
     where: {
-      attempt: { student: studentWhere(scope) },
+      attempt: attemptWhere,
       ...(scope.subjectId ? { question: { topic: { subjectId: scope.subjectId } } } : {}),
     },
     select: {
@@ -179,14 +270,18 @@ async function loadEvidence(scope: Scope): Promise<Evidence[]> {
   }));
 }
 
-/** Smoothed wrong-rate per (section, question), computed over the WHOLE section, not just the scope */
-async function loadCohortRates(evs: Evidence[]) {
+/** Smoothed wrong-rate per (section, question), scoped to the faculty's quizzes when provided */
+async function loadCohortRates(evs: Evidence[], facultyId?: string) {
   const tally = new Map<string, { n: number; wrong: number }>();
   const qIds = [...new Set(evs.map((e) => e.questionId))];
   const sIds = [...new Set(evs.map((e) => e.sectionId))];
   if (qIds.length) {
+    const attemptWhere: Prisma.QuizAttemptWhereInput = {
+      student: { sectionId: { in: sIds } },
+      ...(facultyId ? { quiz: { is: { facultyId } } } : {}),
+    };
     const rows = await prisma.attemptAnswer.findMany({
-      where: { questionId: { in: qIds }, attempt: { student: { sectionId: { in: sIds } } } },
+      where: { questionId: { in: qIds }, attempt: attemptWhere },
       select: {
         questionId: true,
         isCorrect: true,
@@ -217,6 +312,7 @@ function buildAccumulators(
   const meta = new Map<string, NodeMeta>();
   const perStudent = new Map<string, Map<string, Acc>>();
   const studentSection = new Map<string, { sectionId: string; label: string; semester: number }>();
+  const subtopicBandStats = new Map<string, Map<string, BandStats>>();
 
   const reg = (key: string, level: Level, id: string, name: string, parentKey: string | null) => {
     if (!meta.has(key)) meta.set(key, { key, level, id, name, parentKey });
@@ -240,6 +336,29 @@ function buildAccumulators(
       const uKey = `SUBTOPIC:${e.subtopicId}`;
       reg(uKey, 'SUBTOPIC', e.subtopicId, e.subtopicName ?? 'Subtopic', tKey);
       keys.push(uKey);
+
+      // Raw per-difficulty counts per student per subtopic
+      const diffUpper = (e.difficulty || '').toUpperCase();
+      if (diffUpper === 'EASY' || diffUpper === 'MEDIUM' || diffUpper === 'HARD') {
+        let studentMap = subtopicBandStats.get(e.studentId);
+        if (!studentMap) {
+          studentMap = new Map<string, BandStats>();
+          subtopicBandStats.set(e.studentId, studentMap);
+        }
+        let stats = studentMap.get(e.subtopicId);
+        if (!stats) {
+          stats = {
+            EASY: { correct: 0, total: 0 },
+            MEDIUM: { correct: 0, total: 0 },
+            HARD: { correct: 0, total: 0 },
+          };
+          studentMap.set(e.subtopicId, stats);
+        }
+        stats[diffUpper as Difficulty].total++;
+        if (e.isCorrect) {
+          stats[diffUpper as Difficulty].correct++;
+        }
+      }
     }
 
     let m = perStudent.get(e.studentId);
@@ -253,7 +372,7 @@ function buildAccumulators(
       m.set(k, a);
     }
   }
-  return { meta, perStudent, studentSection };
+  return { meta, perStudent, studentSection, subtopicBandStats };
 }
 
 export type Tree<T> = T & { id: string; name: string; level: Level; children: Tree<T>[] };
@@ -279,13 +398,13 @@ function toTree<T>(payload: Map<string, T>, meta: Map<string, NodeMeta>, sortFn:
 }
 
 // ───────────── Public API ─────────────
-export async function getStudentSkillReport(studentId: string, subjectId?: string) {
+export async function getStudentSkillReport(studentId: string, subjectId?: string, facultyId?: string) {
   const now = new Date();
-  const evs = await loadEvidence({ studentId, subjectId });
+  const evs = await loadEvidence({ studentId, subjectId, facultyId });
   if (!evs.length) return { studentId, empty: true as const };
 
-  const rate = await loadCohortRates(evs);
-  const { meta, perStudent } = buildAccumulators(evs, rate, now);
+  const rate = await loadCohortRates(evs, facultyId);
+  const { meta, perStudent, subtopicBandStats } = buildAccumulators(evs, rate, now);
   const accs = perStudent.get(studentId)!;
 
   const scores = new Map<string, Score>();
@@ -293,14 +412,26 @@ export async function getStudentSkillReport(studentId: string, subjectId?: strin
 
   const tree = toTree(scores, meta, (a, b) => a.mastery - b.mastery); // weakest first
 
+  const studentSubtopics = subtopicBandStats.get(studentId) ?? new Map<string, BandStats>();
+  const subtopicDiagnoses: Record<string, Diagnosis> = {};
+  for (const [subId, stats] of studentSubtopics) {
+    subtopicDiagnoses[subId] = diagnoseSubtopic(stats);
+  }
+
   const weakestSubtopics = [...scores.entries()]
     .filter(([k, s]) => meta.get(k)!.level === 'SUBTOPIC' && s.status !== 'MASTERED')
     .sort((a, b) => priority(b[1]) - priority(a[1]))
     .slice(0, 5)
     .map(([k, s]) => {
       const m = meta.get(k)!;
-      const parentTopic = meta.get(m.parentKey!)!;
-      return { subtopicId: m.id, subtopic: m.name, topic: parentTopic.name, ...s };
+      const parentTopic = m.parentKey ? meta.get(m.parentKey) : null;
+      const stats = studentSubtopics.get(m.id) ?? {
+        EASY: { correct: 0, total: 0 },
+        MEDIUM: { correct: 0, total: 0 },
+        HARD: { correct: 0, total: 0 },
+      };
+      const diagnosis = subtopicDiagnoses[m.id] ?? diagnoseSubtopic(stats);
+      return { subtopicId: m.id, subtopic: m.name, topic: parentTopic?.name ?? 'Topic', ...s, diagnosis };
     });
 
   const topicIds = [...scores.entries()]
@@ -339,7 +470,7 @@ export async function getStudentSkillReport(studentId: string, subjectId?: strin
       };
     });
 
-  return { studentId, empty: false as const, tree, weakestSubtopics, weakestTopics };
+  return { studentId, empty: false as const, tree, weakestSubtopics, weakestTopics, subtopicDiagnoses };
 }
 
 export interface CohortStat {
@@ -355,7 +486,7 @@ async function cohortReport(scope: Scope) {
   const evs = await loadEvidence(scope);
   if (!evs.length) return null;
 
-  const rate = await loadCohortRates(evs);
+  const rate = await loadCohortRates(evs, scope.facultyId);
   const { meta, perStudent, studentSection } = buildAccumulators(evs, rate, now);
 
   // per node: collect each student's score
@@ -399,15 +530,15 @@ async function cohortReport(scope: Scope) {
   return { tree, reteach, atRisk, perStudent, studentSection };
 }
 
-export async function getSectionSkillReport(sectionId: string, subjectId?: string) {
-  const r = await cohortReport({ sectionId, subjectId });
+export async function getSectionSkillReport(sectionId: string, subjectId?: string, facultyId?: string) {
+  const r = await cohortReport({ sectionId, subjectId, facultyId });
   if (!r) return { sectionId, empty: true as const };
   const { tree, reteach, atRisk } = r;
   return { sectionId, empty: false as const, tree, reteach, atRisk };
 }
 
-export async function getYearSkillReport(year: number, subjectId?: string) {
-  const r = await cohortReport({ year, subjectId });
+export async function getYearSkillReport(year: number, subjectId?: string, facultyId?: string) {
+  const r = await cohortReport({ year, subjectId, facultyId });
   if (!r) return { year, empty: true as const };
   const { tree, reteach, atRisk, perStudent, studentSection } = r;
 

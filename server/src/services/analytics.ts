@@ -370,9 +370,12 @@ export const analytics = {
     }));
   },
 
-  async getSectionAnalytics(sectionId: string) {
+  async getSectionAnalytics(sectionId: string, facultyId?: string) {
     const quizzes = await prisma.quiz.findMany({
-      where: { sectionId },
+      where: {
+        sectionId,
+        ...(facultyId ? { facultyId } : {}),
+      },
       include: { attempts: true, subject: true },
     });
 
@@ -433,12 +436,13 @@ export const analytics = {
    * Aggregates all student knowledge tracing data across the section to identify
    * the most missed topics (Class Learning Gaps).
    */
-  async computeClassGaps(sectionId: string = 'section-5a', _subjectId?: string) {
+  async computeClassGaps(sectionId: string = 'section-5a', _subjectId?: string, facultyId?: string) {
     try {
       const answers = await prisma.attemptAnswer.findMany({
         where: {
           attempt: {
             student: { sectionId },
+            ...(facultyId ? { quiz: { facultyId } } : {}),
           },
         },
         include: {

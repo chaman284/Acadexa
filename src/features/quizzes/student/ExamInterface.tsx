@@ -10,14 +10,42 @@ import {
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import type { Quiz, QuizQuestion, QuestionResponse, QuizAttempt } from '../types/quizTypes';
+import type {
+  Quiz, QuizQuestion, QuestionResponse, QuizAttempt, ExamViolationType, ExamFinishMeta,
+} from '../types/quizTypes';
+import { isFormalExamMode } from '../types/quizTypes';
 import { quizEvaluationService } from '../services/quizEvaluationService';
+import { attemptService } from '../services/attemptService';
+import { useExamProctor } from '../../../hooks/useExamProctor';
+
+const COPY_LOCK_TOAST = 'Copy/paste is disabled during the exam';
+const AUTO_SUBMIT_MESSAGE = 'Your test was auto-submitted due to repeated tab switching';
+const WARNING_MESSAGES: Record<number, string> = {
+  1: "Warning 1 of 2: Don't switch tabs. One more and your test will be auto-submitted.",
+  2: 'Final warning (2 of 2). The next switch will auto-submit your test.',
+};
+
+const getStartedAtMs = (startedAt?: string | null): number | null => {
+  if (!startedAt) return null;
+  const parsed = Date.parse(startedAt);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getInitialSecondsRemaining = (durationMinutes: number | undefined, startedAt?: string | null) => {
+  const total = (durationMinutes || 20) * 60;
+  const startedMs = getStartedAtMs(startedAt);
+  if (startedMs === null) return total;
+  return Math.max(0, total - Math.round((Date.now() - startedMs) / 1000));
+};
 
 interface ExamInterfaceProps {
   quiz: Quiz;
   studentName?: string;
   studentRollNo?: string;
-  onFinish: (attempt: QuizAttempt) => void;
+  attemptId?: string | null;
+  initialResponses?: Record<string, QuestionResponse>;
+  startedAt?: string | null;
+  onFinish: (attempt: QuizAttempt, meta?: ExamFinishMeta) => void;
   onExit: () => void;
   isPreview?: boolean;
 }
@@ -26,6 +54,9 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
   quiz,
   studentName = 'Demo Student',
   studentRollNo = 'CS23B101',
+  attemptId,
+  initialResponses,
+  startedAt,
   onFinish,
   onExit,
   isPreview = false,
@@ -34,22 +65,56 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
   const questions = quiz.questions;
   const currentQuestion = questions[currentIndex];
 
-  // User responses keyed by question.id
-  const [responses, setResponses] = useState<Record<string, QuestionResponse>>({});
-  const [secondsRemaining, setSecondsRemaining] = useState(
-    (quiz.settings.exam.durationMinutes || 20) * 60
+  // User responses keyed by question.id. The ref keeps timer/auto-submit paths
+  // on the latest answers without changing the evaluation logic.
+  const [responses, setResponses] = useState<Record<string, QuestionResponse>>(
+    () => ({ ...(initialResponses || {}) })
+  );
+  const responsesRef = useRef<Record<string, QuestionResponse>>({ ...(initialResponses || {}) });
+  const [secondsRemaining, setSecondsRemaining] = useState(() =>
+    getInitialSecondsRemaining(quiz.settings.exam.durationMinutes, startedAt)
   );
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const startTimeRef = useRef(Date.now());
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const [autoSubmitMessage, setAutoSubmitMessage] = useState<string | null>(null);
+  const [lockToast, setLockToast] = useState<string | null>(null);
+  const startTimeRef = useRef(getStartedAtMs(startedAt) ?? Date.now());
+  const isSubmittingRef = useRef(false);
+  const backendAttemptIdRef = useRef<string | null>(attemptId || null);
+  const submitRef = useRef<(reason?: string, guarded?: boolean) => void>(() => {});
+  const autoSubmitHandlerRef = useRef<() => void>(() => {});
+  const autoSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const pendingSavesRef = useRef<Promise<unknown>[]>([]);
 
-  // Timer countdown
+  // The database stores Formal Exam as `exam`; `formal` is accepted as an alias.
+  // Practice mode and previews never enter this branch.
+  const proctorEnabled = isFormalExamMode(quiz.mode) && !isPreview;
+
+  const proctor = useExamProctor({
+    enabled: proctorEnabled,
+    attemptId: attemptId || null,
+    storageKey: `acadexa:exam-proctor:${quiz.id}:${attemptId || 'preview'}`,
+    maxSwitches: 2,
+    onWarning: count => {
+      setWarningMessage(WARNING_MESSAGES[count] || WARNING_MESSAGES[2]);
+    },
+    onAutoSubmit: () => autoSubmitHandlerRef.current(),
+    beforeViolation: () => Promise.allSettled(pendingSavesRef.current),
+  });
+
+  useEffect(() => {
+    backendAttemptIdRef.current = attemptId || null;
+  }, [attemptId]);
+
+  // Timer countdown — one-shot guard prevents timer and proctor double submits.
   useEffect(() => {
     const timer = setInterval(() => {
       setSecondsRemaining(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleSubmitAttempt();
+          submitRef.current();
           return 0;
         }
         return prev - 1;
@@ -58,71 +123,98 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(
+    () => () => {
+      if (autoSubmitTimerRef.current) clearTimeout(autoSubmitTimerRef.current);
+    },
+    []
+  );
+
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const commitResponse = (questionId: string, response: QuestionResponse) => {
+    const next = { ...responsesRef.current, [questionId]: response };
+    responsesRef.current = next;
+    setResponses(next);
+
+    const savedAttemptId = backendAttemptIdRef.current;
+    if (proctorEnabled && savedAttemptId) {
+      let savePromise: Promise<unknown>;
+      savePromise = attemptService
+        .saveAnswer(savedAttemptId, questionId, response)
+        .catch(error => {
+          console.warn('Failed to save answer draft:', error);
+        })
+        .finally(() => {
+          pendingSavesRef.current = pendingSavesRef.current.filter(p => p !== savePromise);
+        });
+      pendingSavesRef.current.push(savePromise);
+    }
+  };
+
   // Response handlers
   const handleSingleSelect = (optionId: string) => {
-    setResponses(prev => ({
-      ...prev,
-      [currentQuestion.id]: {
-        questionId: currentQuestion.id,
-        selectedOptionIds: [optionId],
-        timeTakenSeconds: 0,
-        isAnswered: true,
-        isFlaggedForReview: prev[currentQuestion.id]?.isFlaggedForReview,
-      },
-    }));
+    if (!currentQuestion) return;
+    commitResponse(currentQuestion.id, {
+      questionId: currentQuestion.id,
+      selectedOptionIds: [optionId],
+      timeTakenSeconds: 0,
+      isAnswered: true,
+      isFlaggedForReview: responsesRef.current[currentQuestion.id]?.isFlaggedForReview,
+    });
   };
 
   const handleMultiSelect = (optionId: string) => {
-    const existing = responses[currentQuestion.id]?.selectedOptionIds || [];
+    if (!currentQuestion) return;
+    const existing = responsesRef.current[currentQuestion.id]?.selectedOptionIds || [];
     const updated = existing.includes(optionId)
       ? existing.filter(x => x !== optionId)
       : [...existing, optionId];
 
-    setResponses(prev => ({
-      ...prev,
-      [currentQuestion.id]: {
-        questionId: currentQuestion.id,
-        selectedOptionIds: updated,
-        timeTakenSeconds: 0,
-        isAnswered: updated.length > 0,
-        isFlaggedForReview: prev[currentQuestion.id]?.isFlaggedForReview,
-      },
-    }));
+    commitResponse(currentQuestion.id, {
+      questionId: currentQuestion.id,
+      selectedOptionIds: updated,
+      timeTakenSeconds: 0,
+      isAnswered: updated.length > 0,
+      isFlaggedForReview: responsesRef.current[currentQuestion.id]?.isFlaggedForReview,
+    });
   };
 
   const handleTextAnswerChange = (val: string) => {
-    setResponses(prev => ({
-      ...prev,
-      [currentQuestion.id]: {
-        questionId: currentQuestion.id,
-        textResponse: val,
-        timeTakenSeconds: 0,
-        isAnswered: val.trim().length > 0,
-        isFlaggedForReview: prev[currentQuestion.id]?.isFlaggedForReview,
-      },
-    }));
+    if (!currentQuestion) return;
+    commitResponse(currentQuestion.id, {
+      questionId: currentQuestion.id,
+      textResponse: val,
+      timeTakenSeconds: 0,
+      isAnswered: val.trim().length > 0,
+      isFlaggedForReview: responsesRef.current[currentQuestion.id]?.isFlaggedForReview,
+    });
   };
 
   const toggleFlagForReview = () => {
-    setResponses(prev => ({
-      ...prev,
-      [currentQuestion.id]: {
-        ...prev[currentQuestion.id],
-        questionId: currentQuestion.id,
-        timeTakenSeconds: 0,
-        isAnswered: !!prev[currentQuestion.id]?.isAnswered,
-        isFlaggedForReview: !prev[currentQuestion.id]?.isFlaggedForReview,
-      },
-    }));
+    if (!currentQuestion) return;
+    const previous = responsesRef.current[currentQuestion.id];
+    commitResponse(currentQuestion.id, {
+      ...previous,
+      questionId: currentQuestion.id,
+      timeTakenSeconds: previous?.timeTakenSeconds || 0,
+      isAnswered: !!previous?.isAnswered,
+      isFlaggedForReview: !previous?.isFlaggedForReview,
+    });
   };
 
-  const handleSubmitAttempt = () => {
+  // Original submit evaluation is preserved; only the guard, refs and integrity
+  // metadata around it are new.
+  const performSubmit = (reason?: string, guarded = true) => {
+    if (guarded && isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    proctor.stop();
+    setWarningMessage(null);
+
     const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
     const attempt = quizEvaluationService.evaluateAttempt(
       quiz,
@@ -132,12 +224,79 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
         rollNo: studentRollNo,
         className: quiz.assignedClasses[0]?.name || 'Section A',
       },
-      responses,
+      responsesRef.current,
       'exam',
       totalDuration
     );
-    onFinish(attempt);
+
+    const integrityMeta: ExamFinishMeta = {
+      attemptId: backendAttemptIdRef.current || undefined,
+      tabSwitchCount: proctor.tabSwitchCount,
+      violations: proctor.violations,
+      ...(reason
+        ? { autoSubmitted: true, autoSubmitReason: reason }
+        : {}),
+    };
+    Object.assign(attempt, integrityMeta);
+    onFinish(attempt, integrityMeta);
   };
+  submitRef.current = performSubmit;
+
+  autoSubmitHandlerRef.current = () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    proctor.stop();
+    setWarningMessage(null);
+    setAutoSubmitMessage(AUTO_SUBMIT_MESSAGE);
+    autoSubmitTimerRef.current = setTimeout(() => {
+      submitRef.current('TAB_SWITCH_LIMIT', false);
+    }, 1200);
+  };
+
+  // Formal-only interaction lock. These listeners show a toast and log the
+  // attempt, but never touch the tab-switch counter.
+  useEffect(() => {
+    const element = rootRef.current;
+    if (!proctorEnabled || !element) return;
+
+    let toastTimer: ReturnType<typeof setTimeout> | null = null;
+    const showLockToast = () => {
+      setLockToast(COPY_LOCK_TOAST);
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => setLockToast(null), 2200);
+    };
+    const block = (event: Event, type: ExamViolationType) => {
+      event.preventDefault();
+      showLockToast();
+      proctor.logViolation(type);
+    };
+
+    const handlers: Array<[keyof HTMLElementEventMap | string, EventListener]> = [
+      ['copy', event => block(event, 'COPY')],
+      ['cut', event => block(event, 'CUT')],
+      ['paste', event => block(event, 'PASTE')],
+      ['contextmenu', event => block(event, 'CONTEXT_MENU')],
+      ['selectstart', event => block(event, 'SELECT_START')],
+      ['dragstart', event => block(event, 'DRAG_START')],
+    ];
+    handlers.forEach(([eventName, handler]) => element.addEventListener(eventName, handler));
+
+    const keydownHandler = (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (!keyboardEvent.ctrlKey && !keyboardEvent.metaKey) return;
+      const key = String(keyboardEvent.key || '').toLowerCase();
+      const type: ExamViolationType | null =
+        key === 'c' ? 'COPY' : key === 'v' ? 'PASTE' : key === 'x' ? 'CUT' : key === 'a' ? 'SELECT_ALL' : null;
+      if (type) block(event, type);
+    };
+    element.addEventListener('keydown', keydownHandler);
+
+    return () => {
+      handlers.forEach(([eventName, handler]) => element.removeEventListener(eventName, handler));
+      element.removeEventListener('keydown', keydownHandler);
+      if (toastTimer) clearTimeout(toastTimer);
+    };
+  }, [proctor.logViolation, proctorEnabled]);
 
   // Metrics for submission summary
   const answeredCount = questions.filter(q => responses[q.id]?.isAnswered).length;
@@ -145,7 +304,12 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
   const unansweredCount = questions.length - answeredCount;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none">
+    <div
+      ref={rootRef}
+      className={`min-h-screen bg-slate-100 flex flex-col font-sans select-none ${
+        proctorEnabled ? 'exam-locked' : ''
+      }`}
+    >
       {/* Top Formal Exam Bar */}
       <header className="h-16 bg-slate-900 text-white flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 border-b border-slate-800 shadow-md">
         <div className="flex items-center gap-3 min-w-0">
@@ -169,6 +333,11 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
               <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-800 text-emerald-400 px-2 py-0.5 rounded-full border border-slate-700 hidden sm:inline">
                 Exam Mode
               </span>
+              {proctorEnabled && (
+                <span className="text-[10px] font-bold text-amber-300 bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  Tab switches: {proctor.tabSwitchCount}/2
+                </span>
+              )}
               {isPreview && (
                 <Badge color="amber" className="text-[10px]">Preview</Badge>
               )}
@@ -516,7 +685,7 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
               </Button>
               <Button
                 size="sm"
-                onClick={handleSubmitAttempt}
+                onClick={() => submitRef.current()}
                 className="!bg-emerald-600 hover:!bg-emerald-700 !text-white font-bold"
               >
                 Submit &amp; End Exam
@@ -558,6 +727,54 @@ export const ExamInterface: React.FC<ExamInterfaceProps> = ({
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Formal-exam tab-switch warning (shown when the student returns) */}
+      {warningMessage && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-amber-200">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-base text-slate-900">Tab Switch Warning</h4>
+                <p className="text-sm text-slate-700 mt-1 leading-relaxed">{warningMessage}</p>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={() => setWarningMessage(null)}
+                className="!bg-amber-600 hover:!bg-amber-700 !text-white font-bold"
+              >
+                I Understand
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-submit notice shown briefly before redirecting to the result page */}
+      {autoSubmitMessage && (
+        <div className="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center shadow-2xl space-y-4 border border-rose-200">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
+              <Shield className="w-7 h-7" />
+            </div>
+            <h4 className="font-bold text-base text-slate-900">Exam Finalized</h4>
+            <p className="text-sm text-slate-700 leading-relaxed">{autoSubmitMessage}</p>
+            <p className="text-xs text-slate-500">Redirecting to your result...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Copy/paste lock toast */}
+      {lockToast && (
+        <div className="fixed bottom-6 right-6 z-[80] bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 animate-fade-in-up flex items-center gap-2">
+          <Shield className="w-4 h-4 text-amber-300" />
+          <span>{lockToast}</span>
         </div>
       )}
     </div>

@@ -13,7 +13,15 @@ router.get(
   async (req: AuthRequest, res) => {
     try {
       const classId = req.query.classId as string | undefined;
-      const data = await analyticsService.getFacultyLearningGaps(req.user!.id, classId);
+      const faculty = await prisma.faculty.findUnique({
+        where: { userId: req.user!.id },
+        select: { id: true },
+      });
+      const data = await analyticsService.getFacultyLearningGaps(
+        req.user!.id,
+        classId,
+        faculty?.id
+      );
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -88,9 +96,16 @@ router.get(
   '/section/:id',
   authenticateJWT,
   requireRole(['FACULTY', 'ADMIN']),
-  async (req, res) => {
+  async (req: AuthRequest, res) => {
     try {
-      const data = await analyticsService.getSectionAnalytics(req.params.id as string);
+      const faculty = await prisma.faculty.findUnique({
+        where: { userId: req.user!.id },
+        select: { id: true },
+      });
+      const data = await analyticsService.getSectionAnalytics(
+        req.params.id as string,
+        faculty?.id
+      );
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -127,8 +142,14 @@ router.get('/class-gaps', authenticateJWT, async (req: AuthRequest, res) => {
   try {
     const sectionId = (req.query.sectionId as string) || 'section-5a';
     const subjectId = req.query.subjectId as string | undefined;
+    const faculty = req.user?.role === 'FACULTY'
+      ? await prisma.faculty.findUnique({
+          where: { userId: req.user.id },
+          select: { id: true },
+        })
+      : null;
 
-    const data = await analyticsService.computeClassGaps(sectionId, subjectId);
+    const data = await analyticsService.computeClassGaps(sectionId, subjectId, faculty?.id);
     res.json(data);
   } catch (error: any) {
     console.error('Error computing class gaps:', error);

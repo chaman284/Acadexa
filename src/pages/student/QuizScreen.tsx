@@ -12,8 +12,27 @@ import { quizService } from '../../features/quizzes/services/quizService';
 import { quizAnalyticsService } from '../../features/quizzes/services/quizAnalyticsService';
 import { ExamInterface } from '../../features/quizzes/student/ExamInterface';
 import { PracticeInterface } from '../../features/quizzes/student/PracticeInterface';
-import type { Quiz, QuizAttempt } from '../../features/quizzes/types/quizTypes';
+import type {
+  ExamFinishMeta,
+  QuestionResponse,
+  Quiz,
+  QuizAttempt,
+} from '../../features/quizzes/types/quizTypes';
+import { isFormalExamMode } from '../../features/quizzes/types/quizTypes';
 import { useAuth } from '../../context/AuthContext';
+
+const responsesFromDrafts = (value: unknown): Record<string, QuestionResponse> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.values(value as Record<string, any>).reduce<Record<string, QuestionResponse>>(
+    (responses, draft) => {
+      if (draft?.questionId) {
+        responses[draft.questionId] = draft as QuestionResponse;
+      }
+      return responses;
+    },
+    {}
+  );
+};
 
 export const QuizScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -22,34 +41,52 @@ export const QuizScreen: React.FC = () => {
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [existingAttempt, setExistingAttempt] = useState<QuizAttempt | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [initialResponses, setInitialResponses] = useState<Record<string, QuestionResponse>>({});
+  const [resumedStartedAt, setResumedStartedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
 
-    const checkExistingAttempt = async () => {
+    const checkExistingAttempt = async (): Promise<{ hasSubmittedAttempt: boolean; resumedDraft: boolean }> => {
       try {
         const res = await api.get(`/quizzes/${id}/my-attempt`);
-        if (res.data) {
-          setExistingAttempt(res.data);
-          return;
+        const attempt = res.data;
+        if (attempt?.id && attempt.isSubmitted === true) {
+          setExistingAttempt(attempt);
+          return { hasSubmittedAttempt: true, resumedDraft: false };
         }
-      } catch (_) {}
+        if (attempt?.id && attempt.isSubmitted === false) {
+          // A draft is an in-progress formal exam: resume it instead of
+          // treating it as a completed attempt.
+          setAttemptId(attempt.id);
+          setInitialResponses(responsesFromDrafts(attempt.answerDrafts));
+          setResumedStartedAt(attempt.startedAt || null);
+          return { hasSubmittedAttempt: false, resumedDraft: true };
+        }
+      } catch (error) {
+        console.warn('Could not check for an existing attempt:', error);
+      }
 
+      // Formal exam attempts are authoritative on the backend. A stale local
+      // record must never block a fresh exam or override a resumable draft.
+      return { hasSubmittedAttempt: false, resumedDraft: false };
+    };
+
+    const ensureDraftAttempt = async (assessment: Quiz) => {
+      if (!isFormalExamMode(assessment.mode)) return;
       try {
-        const localAttempts = await quizAnalyticsService.getQuizAttempts(id);
-        const myAttempt = localAttempts.find(
-          a => a.studentId === user?.id || a.studentRollNo === 'CS23B101'
-        ) || (localAttempts.length > 0 ? localAttempts[0] : null);
-        if (myAttempt) {
-          setExistingAttempt(myAttempt);
-        }
-      } catch (_) {}
+        const res = await api.post('/attempts', { quizId: assessment.id });
+        setAttemptId(res.data?.attemptId || null);
+      } catch (error) {
+        console.warn('Could not start a backend-tracked attempt:', error);
+      }
     };
 
     const fetchAssessment = async () => {
-      await checkExistingAttempt();
+      const { hasSubmittedAttempt, resumedDraft } = await checkExistingAttempt();
 
       try {
         const res = await api.get(`/quizzes/${id}`);
@@ -143,6 +180,7 @@ export const QuizScreen: React.FC = () => {
           };
 
           setQuiz(normalized);
+          if (!hasSubmittedAttempt && !resumedDraft) await ensureDraftAttempt(normalized);
           setLoading(false);
           return;
         }
@@ -155,6 +193,7 @@ export const QuizScreen: React.FC = () => {
         const local = await quizService.getQuizById(id);
         if (local) {
           setQuiz(local);
+          if (!hasSubmittedAttempt && !resumedDraft) await ensureDraftAttempt(local);
         }
       } catch (e) {
         console.warn('Failed to load quiz from local store:', e);
@@ -166,11 +205,15 @@ export const QuizScreen: React.FC = () => {
     fetchAssessment();
   }, [id, user?.id]);
 
-  const handleFinish = async (attempt: QuizAttempt) => {
-    // Record in local analytics service
-    await quizAnalyticsService.recordAttempt(attempt);
+  const handleFinish = async (attempt: QuizAttempt, meta?: ExamFinishMeta) => {
+    const finalAttempt: QuizAttempt = { ...attempt, ...(meta || {}) };
 
-    // Also attempt posting to backend API if available
+    // Record in local analytics service
+    await quizAnalyticsService.recordAttempt(finalAttempt);
+
+    // Also attempt posting to backend API if available. Formal attempts reuse
+    // the draft started when the exam opened; the submit endpoint remains the
+    // single source of scoring/finalization.
     try {
       await api.post(`/quizzes/${id}/attempt`, {
         timeTaken: attempt.durationSeconds,
@@ -178,6 +221,9 @@ export const QuizScreen: React.FC = () => {
           questionId: r.questionId,
           optionId: r.selectedOptionIds?.[0] || '',
         })),
+        attemptId: meta?.attemptId || attemptId || undefined,
+        autoSubmitted: Boolean(meta?.autoSubmitted),
+        autoSubmitReason: meta?.autoSubmitReason,
       });
     } catch (err) {
       console.warn('Backend attempt synchronization offline, persisted locally:', err);
@@ -187,7 +233,7 @@ export const QuizScreen: React.FC = () => {
     navigate(`/student/quiz/${id}/result`, {
       replace: true,
       state: {
-        attempt,
+        attempt: finalAttempt,
         quizTitle: quiz?.title || 'Assessment',
       },
     });
@@ -223,8 +269,8 @@ export const QuizScreen: React.FC = () => {
     );
   }
 
-  // Already submitted check for Exam mode (only 1 attempt allowed)
-  if (quiz.mode === 'exam' && existingAttempt) {
+  // Already submitted check for Formal Exam mode (only 1 attempt allowed)
+  if (isFormalExamMode(quiz.mode) && existingAttempt) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex flex-col items-center justify-center text-[#302A2B] p-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4 border border-emerald-300 shadow-sm">
@@ -295,6 +341,9 @@ export const QuizScreen: React.FC = () => {
   return (
     <ExamInterface
       quiz={quiz}
+      attemptId={attemptId}
+      initialResponses={initialResponses}
+      startedAt={resumedStartedAt}
       studentName={user?.name || 'Student'}
       studentRollNo="CS23B101"
       onFinish={handleFinish}

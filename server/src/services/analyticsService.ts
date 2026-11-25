@@ -31,9 +31,12 @@ export const analyticsService = {
   },
 
   // Section-level analytics
-  async getSectionAnalytics(sectionId: string) {
+  async getSectionAnalytics(sectionId: string, facultyId?: string) {
     const quizzes = await prisma.quiz.findMany({
-      where: { sectionId },
+      where: {
+        sectionId,
+        ...(facultyId ? { facultyId } : {}),
+      },
       include: {
         attempts: true,
         subject: true,
@@ -145,7 +148,7 @@ export const analyticsService = {
   },
 
   // Faculty learning gap analytics for assigned classes and topics
-  async getFacultyLearningGaps(userId: string, classId?: string) {
+  async getFacultyLearningGaps(userId: string, classId?: string, facultyId?: string) {
     let faculty = await prisma.faculty.findUnique({
       where: { userId },
       include: {
@@ -229,6 +232,7 @@ export const analyticsService = {
               quiz: {
                 sectionId: selectedClass.sectionId,
                 subjectId: selectedClass.subjectId,
+                ...(facultyId ? { facultyId } : {}),
               },
             },
           },

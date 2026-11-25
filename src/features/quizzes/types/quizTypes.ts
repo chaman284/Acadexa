@@ -17,6 +17,37 @@ export type QuestionSource = 'manual' | 'library' | 'ai' | 'document';
 
 export type QuizMode = 'exam' | 'practice';
 
+/**
+ * The codebase stores Formal Exam mode as `exam` (the UI label is "Formal").
+ * `formal` is accepted as an alias so proctoring can be gated on the formal
+ * mode without breaking existing saved quizzes or Practice mode.
+ */
+export const isFormalExamMode = (mode: QuizMode | string | null | undefined): boolean =>
+  mode === 'exam' || mode === 'formal';
+
+export type ExamViolationType =
+  | 'TAB_SWITCH'
+  | 'COPY'
+  | 'CUT'
+  | 'PASTE'
+  | 'SELECT_ALL'
+  | 'CONTEXT_MENU'
+  | 'SELECT_START'
+  | 'DRAG_START';
+
+export interface ExamViolation {
+  type: ExamViolationType;
+  timestamp: string;
+}
+
+export interface ExamFinishMeta {
+  attemptId?: string;
+  autoSubmitted?: boolean;
+  autoSubmitReason?: string;
+  tabSwitchCount?: number;
+  violations?: ExamViolation[];
+}
+
 export type QuizCategory =
   | 'Weekly Assessment'
   | 'Practice Quiz'
@@ -54,6 +85,19 @@ export interface AcademicMetadata {
   subtopicName?: string;
   cognitiveLevel?: CognitiveLevel;
   learningObjective?: string;
+}
+
+/** A topic explicitly selected by faculty in Learning Gap Analytics. */
+export interface SkillGapTopicSelection {
+  topicId: string;
+  topicName: string;
+  subtopicId?: string;
+  courseId?: string;
+  courseName?: string;
+  unitName?: string;
+  averageScore?: number;
+  pctNeedsAttention?: number;
+  isReteachRecommended?: boolean;
 }
 
 export interface Question {
@@ -214,6 +258,10 @@ export interface QuizAttempt {
   maxPossibleScore: number;
   percentage: number;
   hasPendingManualEvaluation: boolean;
+  tabSwitchCount?: number;
+  autoSubmitted?: boolean;
+  autoSubmitReason?: string;
+  violations?: ExamViolation[];
 }
 
 export interface TopicPerformance {

@@ -44,8 +44,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role, user, ch
         </main>
       </div>
 
-      {/* Floating Nexus Department AI Assistant */}
-      <NexusFloatingWidget />
+      {/* Floating Nexus Department AI Assistant (hidden for student portal) */}
+      {role !== 'student' && <NexusFloatingWidget />}
     </div>
   );
 };

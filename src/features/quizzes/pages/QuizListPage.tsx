@@ -357,7 +357,8 @@ export const QuizListPage: React.FC = () => {
                       ) : (
                         <Button
                           size="sm"
-                          className="flex-1 !bg-[var(--color-accent)] hover:!opacity-95 !text-white"
+                          variant="primary"
+                          className="flex-1"
                           onClick={() => navigate(`/faculty/quiz/${q.id}/results`)}
                           leftIcon={<Eye className="w-3.5 h-3.5" />}
                         >
