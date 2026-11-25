@@ -291,6 +291,7 @@ export const quizService = {
               include: {
                 options: true,
                 topic: true,
+                subtopic: true,
               },
             },
           },
@@ -308,7 +309,27 @@ export const quizService = {
     type?: 'WEEKLY' | 'REMEDIAL' | 'PRACTICE';
     scheduledAt?: Date;
     questionIds?: string[];
-    questions?: { id?: string; text: string; difficulty?: string; topicName?: string }[];
+    questions?: Array<{
+      id?: string;
+      text: string;
+      difficulty?: string;
+      topicName?: string;
+      explanation?: string;
+      cognitiveLevel?: string;
+      options?: Array<{ text?: string; isCorrect?: boolean }>;
+      metadata?: {
+        topicId?: string;
+        topicName?: string;
+        subtopicId?: string;
+        subtopicName?: string;
+        cognitiveLevel?: string;
+      };
+      documentSource?: { fileName?: string; page?: number | string; snippet?: string };
+      sourceDocumentName?: string;
+      sourcePageNumber?: number | string;
+      sourceSnippet?: string;
+      source?: string;
+    }>;
     facultyId?: string | null;
   }) {
     // 1. Validate section or find fallback
@@ -322,7 +343,8 @@ export const quizService = {
       targetSectionId = anySection.id;
     }
 
-    // 2. Resolve question IDs
+    // 2. Resolve question IDs. Client-only questions (AI/document sources) are
+    // created on save so their options, subtopic, difficulty and provenance persist.
     let finalQuestionIds: string[] = [];
     const rawIds = Array.isArray(data.questionIds) ? data.questionIds : [];
 
@@ -333,6 +355,7 @@ export const quizService = {
       });
       const dbIds = new Set(existingInDb.map(q => q.id));
       const missingIds = rawIds.filter(id => !dbIds.has(id));
+      const createdIds = new Map<string, string>();
 
       if (missingIds.length > 0) {
         // Find or create default topic for this subject
@@ -349,11 +372,92 @@ export const quizService = {
           });
         }
 
+        const questionsById = new Map(data.questions?.map(q => [q.id, q]) || []);
+
         for (let i = 0; i < missingIds.length; i++) {
-          const clientQ = data.questions?.find(q => q.id === missingIds[i]);
+          const clientQ = questionsById.get(missingIds[i]);
           const qText = clientQ?.text || `Assessment Question ${i + 1} for curriculum evaluation`;
           const rawDiff = clientQ?.difficulty?.toUpperCase();
           const qDiff = rawDiff === 'HARD' ? 'HARD' : rawDiff === 'EASY' ? 'EASY' : 'MEDIUM';
+
+          let topicId = topic.id;
+          let subtopicId: string | null = null;
+          const metadataTopicId = clientQ?.metadata?.topicId;
+          const metadataSubtopicId = clientQ?.metadata?.subtopicId;
+
+          if (metadataSubtopicId) {
+            const subtopic = await prisma.subtopic.findUnique({
+              where: { id: metadataSubtopicId },
+              select: { id: true, topicId: true },
+            });
+            if (subtopic) {
+              subtopicId = subtopic.id;
+              topicId = subtopic.topicId;
+            }
+          }
+
+          if (!subtopicId && metadataTopicId) {
+            const topicCandidate = await prisma.topic.findUnique({
+              where: { id: metadataTopicId },
+              select: { id: true },
+            });
+            if (topicCandidate) {
+              topicId = topicCandidate.id;
+            } else {
+              // Dynamic curriculum may treat a subtopic tag as the selected topic.
+              const subtopicCandidate = await prisma.subtopic.findUnique({
+                where: { id: metadataTopicId },
+                select: { id: true, topicId: true },
+              });
+              if (subtopicCandidate) {
+                subtopicId = subtopicCandidate.id;
+                topicId = subtopicCandidate.topicId;
+              }
+            }
+          }
+
+          if (!metadataTopicId && !metadataSubtopicId && clientQ?.metadata?.topicName) {
+            const namedTopic = await prisma.topic.findFirst({
+              where: { subjectId: data.subjectId, name: clientQ.metadata.topicName },
+              select: { id: true },
+            });
+            if (namedTopic) topicId = namedTopic.id;
+          }
+
+          const clientOptions = Array.isArray(clientQ?.options) ? clientQ.options : [];
+          const optionData = clientOptions.length > 0
+            ? clientOptions
+                .filter(opt => String(opt?.text || '').trim().length > 0)
+                .map(opt => ({
+                  text: String(opt.text).trim(),
+                  isCorrect: Boolean(opt.isCorrect),
+                }))
+            : [];
+          if (optionData.length === 0) {
+            optionData.push(
+              { text: 'Option A (Correct answer)', isCorrect: true },
+              { text: 'Option B', isCorrect: false },
+              { text: 'Option C', isCorrect: false },
+              { text: 'Option D', isCorrect: false }
+            );
+          } else if (!optionData.some(opt => opt.isCorrect)) {
+            optionData[0].isCorrect = true;
+          }
+
+          const provenance = clientQ?.documentSource
+            ? {
+                fileName: String(clientQ.documentSource.fileName || ''),
+                page: clientQ.documentSource.page ?? null,
+                snippet: String(clientQ.documentSource.snippet || ''),
+              }
+            : clientQ?.source === 'document' &&
+              (clientQ.sourceDocumentName || clientQ.sourcePageNumber !== undefined)
+              ? {
+                  fileName: String(clientQ.sourceDocumentName || ''),
+                  page: clientQ.sourcePageNumber ?? null,
+                  snippet: String(clientQ.sourceSnippet || ''),
+                }
+              : null;
 
           const createdQ = await prisma.question.create({
             data: {
@@ -361,29 +465,24 @@ export const quizService = {
               type: 'MCQ',
               difficulty: qDiff as any,
               status: 'APPROVED',
-              cognitiveLevel: ((clientQ as any)?.cognitiveLevel as any) || 'CL2_UNDERSTAND',
-              explanation: (clientQ as any)?.explanation || null,
-              topicId: topic.id,
-              options: {
-                create: (clientQ as any)?.options && Array.isArray((clientQ as any).options) && (clientQ as any).options.length > 0
-                  ? (clientQ as any).options.map((opt: any) => ({
-                      text: opt.text,
-                      isCorrect: Boolean(opt.isCorrect),
-                    }))
-                  : [
-                      { text: 'Option A (Correct answer)', isCorrect: true },
-                      { text: 'Option B', isCorrect: false },
-                      { text: 'Option C', isCorrect: false },
-                      { text: 'Option D', isCorrect: false },
-                    ],
-              },
+              cognitiveLevel: (clientQ?.metadata?.cognitiveLevel ||
+                clientQ?.cognitiveLevel ||
+                'CL2_UNDERSTAND') as any,
+              explanation: clientQ?.explanation || null,
+              source: provenance || undefined,
+              topicId,
+              subtopicId,
+              options: { create: optionData },
             },
           });
+          createdIds.set(missingIds[i], createdQ.id);
           dbIds.add(createdQ.id);
         }
       }
 
-      finalQuestionIds = Array.from(dbIds);
+      finalQuestionIds = rawIds
+        .map(id => createdIds.get(id) || id)
+        .filter(id => dbIds.has(id));
     }
 
     const isFutureSchedule = !!data.scheduledAt && new Date(data.scheduledAt) > new Date();

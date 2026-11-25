@@ -116,6 +116,7 @@ model Question {
   cognitiveLevel CognitiveLevel  @default(CL1_REMEMBER)
   status         QuestionStatus  @default(APPROVED)
   explanation    String?
+  source         Json?
   topicId        String
   topic          Topic           @relation(fields: [topicId], references: [id])
   subtopicId     String?

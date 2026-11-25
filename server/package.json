@@ -18,6 +18,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "5.22.0",
     "@supabase/server": "^1.4.1",
     "bcryptjs": "^3.0.3",
@@ -26,7 +27,10 @@
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.4.0"
+    "jszip": "^3.10.2",
+    "mammoth": "^1.13.0",
+    "multer": "^2.4.0",
+    "pdfjs-dist": "^3.11.174"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

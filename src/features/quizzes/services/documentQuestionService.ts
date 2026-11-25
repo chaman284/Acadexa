@@ -1,9 +1,22 @@
 // ============================================================================
 // ACADEXA DOCUMENT-BASED QUESTION GENERATION SERVICE
-// Extracts syllabus text from PDF, DOCX, PPTX, and TXT files and generates
-// questions citing source pages and sections.
+// Browser-side API client for deterministic extraction + Gemini MCQ generation.
+// All extraction/generation happens on the server; no API keys are exposed here.
 // ============================================================================
-import type { Question, QuestionType, Difficulty, UploadedDocument } from '../types/quizTypes';
+import api from '../../../lib/apiClient';
+import type {
+  Question,
+  Difficulty,
+  QuestionType,
+  UploadedDocument,
+} from '../types/quizTypes';
+
+export interface DocumentSubtopicSelection {
+  id?: string;
+  name: string;
+  topicId?: string;
+  subtopicId?: string;
+}
 
 export interface DocumentQuestionConfig {
   document: UploadedDocument;
@@ -18,17 +31,48 @@ export interface DocumentQuestionConfig {
   department: string;
   questionCount: number;
   questionTypes: QuestionType[];
-  difficulty: Difficulty;
+  difficulty: Difficulty | 'mixed';
   marksPerQuestion: number;
+  /** The selected curriculum topic/subtopic tag from the quiz form. */
+  subtopic?: DocumentSubtopicSelection;
+  /** Used by per-card regeneration so Gemini avoids repeating questions. */
+  previousQuestions?: string[];
+}
+
+export interface ExtractedUnit {
+  unitNumber: number;
+  label: string;
+  text: string;
+}
+
+interface GenerationApiQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  difficulty: string;
+  sourcePage: number;
+  sourceSnippet: string;
 }
 
 const SUPPORTED_EXTENSIONS = ['.pdf', '.docx', '.pptx', '.txt'];
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
+const friendlyMessage = (error: any, fallback: string): string => {
+  if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
+    throw error;
+  }
+  return error?.response?.data?.message || error?.message || fallback;
+};
+
+const normalizeDifficulty = (value: unknown): Difficulty => {
+  const v = String(value || '').toLowerCase();
+  return v === 'easy' || v === 'hard' ? v : 'medium';
+};
+
 export const documentQuestionService = {
-  /**
-   * Validate uploaded file type and size
-   */
+  /** Validate uploaded file type and size before calling the server. */
   validateFile: (file: File): { isValid: boolean; error?: string } => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!SUPPORTED_EXTENSIONS.includes(ext)) {
@@ -43,137 +87,144 @@ export const documentQuestionService = {
         error: `File size exceeds the 15MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please upload a smaller document.`,
       };
     }
+    if (file.size === 0) {
+      return { isValid: false, error: 'The uploaded file is empty.' };
+    }
     return { isValid: true };
   },
 
-  /**
-   * Extract readable text & structured pages from document
-   */
-  processDocument: async (file: File): Promise<UploadedDocument> => {
-    // Simulated document parsing delay (600ms)
-    await new Promise(r => setTimeout(r, 700));
+  /** Extract text units on the server. No AI is involved in extraction. */
+  processDocument: async (file: File, signal?: AbortSignal): Promise<UploadedDocument> => {
+    const formData = new FormData();
+    formData.append('file', file);
 
-    // If it's a plain text file, we can read actual content
-    let extractedText = '';
-    if (file.type.includes('text') || file.name.endsWith('.txt')) {
-      try {
-        extractedText = await file.text();
-      } catch {
-        extractedText = '';
-      }
+    try {
+      const res = await api.post('/faculty/documents/extract', formData, {
+        signal,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const data = res.data || {};
+      const units: ExtractedUnit[] = Array.isArray(data.units) ? data.units : [];
+
+      return {
+        id: String(data.documentId || `doc_${Date.now()}`),
+        documentId: String(data.documentId || ''),
+        filename: String(data.fileName || file.name),
+        fileSize: file.size,
+        fileType: file.type || file.name.split('.').pop() || 'unknown',
+        extractedText: units.map(unit => unit.text).join('\n'),
+        pages: units.map(unit => ({ pageNumber: unit.unitNumber, text: unit.text })),
+        units,
+        totalUnits: Number(data.totalUnits || units.length),
+        wordCount: Number(data.wordCount || 0),
+        preview: String(data.preview || ''),
+        warning: data.warning ? String(data.warning) : undefined,
+        uploadedAt: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      throw new Error(
+        friendlyMessage(error, 'Document text could not be extracted. Please try another file.')
+      );
     }
-
-    if (!extractedText) {
-      // Realistic syllabus extraction for PDF/DOCX/PPTX
-      extractedText = `Chapter 3: Binary Tree Operations and Balanced Search Algorithms.\nSection 3.1: Inorder, Preorder, and Postorder Traversals.\nTheorem 3.4: A binary tree with N nodes has exactly N+1 null pointers.\nSection 3.2: Self-balancing AVL Rotations.\nDefinition: Balance factor BF(node) = Height(LeftSubtree) - Height(RightSubtree). Valid range is {-1, 0, +1}.\nSection 3.3: Worst-case search complexity in skewed trees degrades to O(N).`;
-    }
-
-    const pages = [
-      {
-        pageNumber: 1,
-        text: `Page 1: Introduction to Binary Trees. Recursive tree definitions, node structure (data, *left, *right). Preorder traversal explores root then children.`,
-      },
-      {
-        pageNumber: 2,
-        text: `Page 2: Theorem 3.4 on Null Pointers. Every binary tree with N nodes contains N+1 null link fields, proven by induction on tree degree.`,
-      },
-      {
-        pageNumber: 3,
-        text: `Page 3: AVL Tree Height Balancing and Rotations. When |BF| > 1, single LL/RR or double LR/RL rotations are performed to restore O(log N) operations.`,
-      },
-    ];
-
-    return {
-      id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      filename: file.name,
-      fileSize: file.size,
-      fileType: file.type || file.name.split('.').pop() || 'unknown',
-      extractedText,
-      pages,
-      uploadedAt: new Date().toISOString(),
-    };
   },
 
-  /**
-   * Generate questions linked to document source pages
-   */
-  generateFromDocument: async (config: DocumentQuestionConfig): Promise<Question[]> => {
-    await new Promise(r => setTimeout(r, 1000));
+  /** Generate MCQs from the selected units via Gemini on the server. */
+  generateFromDocument: async (
+    config: DocumentQuestionConfig,
+    signal?: AbortSignal
+  ): Promise<Question[]> => {
+    const allUnits = config.document.units || config.document.pages || [];
+    const selected =
+      config.selectedPageNumbers.length > 0
+        ? allUnits.filter(unit => {
+            const unitNumber = (unit as any).unitNumber ?? (unit as any).pageNumber;
+            return config.selectedPageNumbers.includes(Number(unitNumber));
+          })
+        : allUnits;
 
-    const count = Math.min(Math.max(1, config.questionCount), 5);
-    const pagesToUse = config.selectedPageNumbers.length > 0 ? config.selectedPageNumbers : [1, 2, 3];
-    const generated: Question[] = [];
-
-    const docTemplates = [
-      {
-        text: `According to Section 3.2 of "${config.document.filename}", what is the allowable Balance Factor range for any node in an AVL tree?`,
-        options: [
-          { id: 'opt_doc_1', text: '{-1, 0, +1}', isCorrect: true },
-          { id: 'opt_doc_2', text: '{-2, 0, +2}', isCorrect: false },
-          { id: 'opt_doc_3', text: '{0, 1}', isCorrect: false },
-          { id: 'opt_doc_4', text: '{-1, 1}', isCorrect: false },
-        ],
-        explanation: 'As defined in the uploaded lecture notes, AVL trees mandate BF in {-1, 0, +1} to guarantee O(log N) height.',
-        page: 3,
-      },
-      {
-        text: `Based on Theorem 3.4 in "${config.document.filename}", how many null pointers exist in a binary tree consisting of 24 nodes?`,
-        options: [
-          { id: 'opt_doc_a', text: '25 null pointers', isCorrect: true },
-          { id: 'opt_doc_b', text: '24 null pointers', isCorrect: false },
-          { id: 'opt_doc_c', text: '48 null pointers', isCorrect: false },
-          { id: 'opt_doc_d', text: '12 null pointers', isCorrect: false },
-        ],
-        explanation: 'Theorem 3.4 states that any binary tree with N nodes contains exactly N + 1 null link pointers. For N = 24, there are 25 null pointers.',
-        page: 2,
-      },
-      {
-        text: `In "${config.document.filename}", recursive preorder traversal visits the root node AFTER visiting both of its subtrees.`,
-        options: [
-          { id: 'opt_doc_tf1', text: 'True', isCorrect: false },
-          { id: 'opt_doc_tf2', text: 'False', isCorrect: true },
-        ],
-        explanation: 'False: Preorder traversal visits the root FIRST, followed by the left and right subtrees.',
-        page: 1,
-      },
-    ];
-
-    for (let i = 0; i < count; i++) {
-      const template = docTemplates[i % docTemplates.length];
-      const pageNum = pagesToUse[i % pagesToUse.length];
-
-      const question: Question = {
-        id: `doc_q_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
-        text: template.text,
-        type: i === 2 ? 'true-false' : 'mcq',
-        difficulty: config.difficulty || 'medium',
-        marks: config.marksPerQuestion || 2,
-        options: template.options,
-        explanation: template.explanation,
-        metadata: {
-          department: config.department || 'Artificial Intelligence and Machine Learning',
-          semester: config.semester || 3,
-          subjectId: config.subjectId,
-          subjectCode: config.subjectId.toUpperCase(),
-          subjectName: config.subjectName,
-          unitId: config.unitId,
-          unitName: config.unitName,
-          topicId: config.topicId,
-          topicName: config.topicName,
-          cognitiveLevel: 'CL2_UNDERSTAND',
-          learningObjective: `Extract core understanding from document "${config.document.filename}"`,
-        },
-        source: 'document',
-        sourceDocumentName: config.document.filename,
-        sourcePageNumber: pageNum,
-        createdBy: `Document Extractor: ${config.document.filename}`,
-        createdAt: new Date().toISOString(),
-        hasValidAnswerKey: true,
-      };
-
-      generated.push(question);
+    if (selected.length === 0) {
+      throw new Error('Select at least one page or slide to generate from.');
     }
 
-    return generated;
+    const selectedTopicId =
+      config.subtopic?.topicId || config.subtopic?.id || config.topicId;
+    const selectedSubtopicId = config.subtopic?.subtopicId;
+
+    try {
+      const res = await api.post(
+        '/faculty/documents/generate-questions',
+        {
+          units: selected.map(unit => ({
+            unitNumber: (unit as any).unitNumber ?? (unit as any).pageNumber,
+            label: (unit as any).label || `Page ${(unit as any).unitNumber ?? (unit as any).pageNumber}`,
+            text: unit.text,
+          })),
+          numQuestions: config.questionCount,
+          difficulty: config.difficulty,
+          subtopic: config.subtopic || {
+            name: config.topicName,
+            topicId: config.topicId || undefined,
+          },
+          fileName: config.document.filename,
+          previousQuestions: config.previousQuestions || [],
+        },
+        { signal }
+      );
+
+      const generated: GenerationApiQuestion[] = Array.isArray(res.data?.questions)
+        ? res.data.questions
+        : [];
+
+      return generated.map((item, index) => {
+        const options = (item.options || []).map((text, optIndex) => ({
+          id: `doc_opt_${Date.now()}_${index}_${optIndex}`,
+          text: String(text),
+          isCorrect: optIndex === Number(item.correctIndex),
+        }));
+        const page = Number(item.sourcePage) || 1;
+
+        return {
+          id: String(item.id || `doc_q_${Date.now()}_${index}`),
+          text: String(item.question || ''),
+          type: 'mcq' as QuestionType,
+          difficulty: normalizeDifficulty(item.difficulty),
+          marks: config.marksPerQuestion || 2,
+          options,
+          explanation: String(item.explanation || ''),
+          metadata: {
+            department: config.department,
+            semester: config.semester,
+            subjectId: config.subjectId,
+            subjectCode: '',
+            subjectName: config.subjectName,
+            unitId: config.unitId,
+            unitName: config.unitName,
+            topicId: selectedTopicId,
+            topicName: config.subtopic?.name || config.topicName,
+            subtopicId: selectedSubtopicId,
+            subtopicName: selectedSubtopicId ? config.subtopic?.name : undefined,
+            cognitiveLevel: 'CL2_UNDERSTAND',
+            learningObjective: `Extracted from ${config.document.filename}`,
+          },
+          source: 'document' as const,
+          sourceDocumentName: config.document.filename,
+          sourcePageNumber: page,
+          sourceSnippet: String(item.sourceSnippet || ''),
+          documentSource: {
+            fileName: config.document.filename,
+            page,
+            snippet: String(item.sourceSnippet || ''),
+          },
+          createdBy: `Document Generator: ${config.document.filename}`,
+          createdAt: new Date().toISOString(),
+          hasValidAnswerKey: options.some(opt => opt.isCorrect),
+        };
+      });
+    } catch (error: any) {
+      throw new Error(
+        friendlyMessage(error, 'Questions could not be generated. Please try again.')
+      );
+    }
   },
 };

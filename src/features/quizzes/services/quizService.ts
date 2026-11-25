@@ -184,6 +184,7 @@ export const quizService = {
         if (Array.isArray(dbQuiz.questions)) {
           mapped.questions = dbQuiz.questions.map((qItem: any, idx: number) => {
             const q = qItem.question || qItem;
+            const sourceData = q.source && typeof q.source === 'object' ? q.source : null;
             return {
               id: q.id,
               quizQuestionId: qItem.id || `qq_${idx}`,
@@ -192,7 +193,6 @@ export const quizService = {
               type: ((q.type || 'MCQ').toLowerCase().replace('_', '-')) as any,
               difficulty: ((q.difficulty || 'MEDIUM').toLowerCase()) as any,
               marks: 2,
-              explanation: q.explanation || '',
               options: (q.options || []).map((opt: any) => ({
                 id: opt.id,
                 text: opt.text,
@@ -208,8 +208,22 @@ export const quizService = {
                 unitName: '',
                 topicId: q.topicId || '',
                 topicName: q.topic?.name || '',
+                subtopicId: q.subtopicId || q.subtopic?.id || undefined,
+                subtopicName: q.subtopic?.name || undefined,
+                cognitiveLevel: q.cognitiveLevel || undefined,
               },
-              source: 'library',
+              explanation: q.explanation || '',
+              source: sourceData ? 'document' : 'library',
+              sourceDocumentName: sourceData?.fileName || undefined,
+              sourcePageNumber: sourceData?.page ?? undefined,
+              sourceSnippet: sourceData?.snippet || undefined,
+              documentSource: sourceData
+                ? {
+                    fileName: String(sourceData.fileName || ''),
+                    page: sourceData.page ?? '',
+                    snippet: sourceData.snippet || undefined,
+                  }
+                : undefined,
               hasValidAnswerKey: true,
               createdAt: q.createdAt || new Date().toISOString(),
             };
@@ -252,6 +266,8 @@ export const quizService = {
         type: newQuiz.category === 'Weekly Assessment' ? 'WEEKLY' : 'PRACTICE',
         scheduledAt: newQuiz.scheduledStart,
         questionIds: newQuiz.questions.map(q => q.id),
+        // Full question payload is required for client-only questions (AI/document).
+        questions: newQuiz.questions,
       });
       if (res.data?.id) {
         newQuiz.id = res.data.id;

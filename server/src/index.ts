@@ -18,6 +18,7 @@ import sectionsRoutes from './routes/sections';
 import skillGapRoutes from './routes/skillGaps';
 import deptRoutes from './routes/dept';
 import syllabusRoutes from './routes/syllabus';
+import facultyDocumentsRoutes from './routes/facultyDocuments';
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/courses', coursesRoutes);
 app.use('/api/sections', sectionsRoutes);
 app.use('/api/dept', deptRoutes);
 app.use('/api/syllabus', syllabusRoutes);
+app.use('/api/faculty/documents', facultyDocumentsRoutes);
 
 // Error Handler
 app.use(errorHandler);

@@ -608,6 +608,7 @@ export const QuizBuilderPage: React.FC = () => {
         <DocumentQuestionGeneratorModal
           defaultSubjectId={subjectId}
           defaultSemester={semester}
+          defaultTopicIds={topicIds}
           onAddQuestions={fromDoc => {
             handleAddQuestionFromSource(fromDoc);
             setShowDocModal(false);

@@ -123,6 +123,9 @@ export interface Question {
   source: QuestionSource;
   sourceDocumentName?: string;
   sourcePageNumber?: number | string;
+  sourceSnippet?: string;
+  /** Provenance persisted with the question when the quiz is saved. */
+  documentSource?: { fileName: string; page: number | string; snippet?: string };
   libraryQuestionId?: string;
 
   createdBy?: string;
@@ -282,6 +285,13 @@ export interface UploadedDocument {
   fileSize: number;
   fileType: string;
   extractedText: string;
+  /** Kept for existing consumers; now populated from backend units. */
   pages?: { pageNumber: number; text: string }[];
+  units?: { unitNumber: number; label: string; text: string }[];
+  documentId?: string;
+  totalUnits?: number;
+  wordCount?: number;
+  preview?: string;
+  warning?: string;
   uploadedAt: string;
 }
