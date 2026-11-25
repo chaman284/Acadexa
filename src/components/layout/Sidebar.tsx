@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
   MessageSquare, Building2, User, Settings, LogOut,
   GraduationCap, BarChart3, X, TrendingUp,
-  PanelLeftClose, PanelLeftOpen, Users, Bell, ArrowLeft,
+  PanelLeftClose, PanelLeftOpen, Users, Bell, ArrowLeft, FileText,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
@@ -60,20 +60,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const facultyNav: NavItem[] = classId
     ? [
         { to: `/faculty/class/${classId}`, label: 'Overview', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
+        { to: `/faculty/class/${classId}/syllabus`, label: 'Syllabus', icon: <FileText className="w-4.5 h-4.5 flex-shrink-0" /> },
         { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="w-4.5 h-4.5 flex-shrink-0" /> },
       ]
     : [
         { to: '/faculty/select-class', label: 'Dashboard', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
         { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-4.5 h-4.5 flex-shrink-0" /> },
         { to: '/faculty/paper-bank', label: 'Question Bank', icon: <Database className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: '/faculty/learning-gaps', label: 'Learning Analytics', icon: <TrendingUp className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: '/student/tutor', label: 'Academic Assistant', icon: <MessageSquare className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: '/faculty/department', label: 'Department Info', icon: <Building2 className="w-4.5 h-4.5 flex-shrink-0" /> },
       ];
 
   const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;
   const profileUrl = role === 'student' ? '/student/profile' : role === 'admin' ? '/admin/profile' : '/profile';
-  const settingsUrl = role === 'student' ? '/student/settings' : role === 'admin' ? '/admin/settings' : '/settings';
+  const settingsUrl = role === 'student' ? '/student/settings' : role === 'admin' ? '/admin/settings' : '/faculty/settings';
 
   const handleLogout = async () => {
     await logout();

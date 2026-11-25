@@ -1,49 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { facultyService, defaultFacultySettings } from '../../services/facultyService';
-import type { FacultySettings as FacultySettingsType } from '../../types/faculty';
+import { useSettings } from '../../context/SettingsContext';
+import type { FacultySettings as FacultySettingsType } from '../../types/settings';
 import {
   Bell, Volume2, Moon, Globe, Save, CheckCircle2,
   AlertCircle, ShieldCheck, Database, RefreshCw, FileSpreadsheet, Mail
 } from 'lucide-react';
 
+type BooleanSettingKey = {
+  [K in keyof FacultySettingsType]: FacultySettingsType[K] extends boolean ? K : never
+}[keyof FacultySettingsType];
+
 export const FacultySettings: React.FC = () => {
-  const [settings, setSettings] = useState<FacultySettingsType>(facultyService.getSettings());
-  const [isSaving, setIsSaving] = useState(false);
+  const { settings, updateSettings, resetSettings, savedToBackend } = useSettings();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
-    setSettings(facultyService.getSettings());
-  }, []);
+  const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+    setFeedback({ type, message });
+    window.setTimeout(() => setFeedback(null), 3500);
+  };
 
-  const handleToggle = (key: keyof FacultySettingsType) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const handleToggle = (key: BooleanSettingKey) => {
+    updateSettings({ [key]: !settings[key] } as Partial<typeof settings>);
   };
 
   const handleSave = () => {
-    setIsSaving(true);
-    try {
-      facultyService.updateSettings(settings);
-      setFeedback({ type: 'success', message: 'Faculty settings saved and applied successfully!' });
-      setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      setFeedback({ type: 'error', message: 'Failed to save settings.' });
-    } finally {
-      setIsSaving(false);
-    }
+    showFeedback(savedToBackend
+      ? 'Faculty settings saved and applied successfully!'
+      : 'Settings saved on this device (backend unavailable).');
   };
 
   const handleReset = () => {
-    setSettings(defaultFacultySettings);
-    facultyService.updateSettings(defaultFacultySettings);
-    setFeedback({ type: 'success', message: 'Settings reset to default values.' });
-    setTimeout(() => setFeedback(null), 3500);
+    resetSettings();
+    showFeedback('Settings reset to default values.');
   };
 
   return (
@@ -65,7 +57,6 @@ export const FacultySettings: React.FC = () => {
             <Button
               size="sm"
               onClick={handleSave}
-              isLoading={isSaving}
               leftIcon={<Save className="w-3.5 h-3.5" />}
             >
               Save Settings
@@ -74,7 +65,6 @@ export const FacultySettings: React.FC = () => {
         }
       />
 
-      {/* Feedback banner */}
       {feedback && (
         <div
           className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium transition-all ${
@@ -100,135 +90,39 @@ export const FacultySettings: React.FC = () => {
         />
 
         <div className="divide-y divide-[var(--color-border)]">
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[var(--color-accent)]" />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  Email Notifications
-                </span>
+          {([
+            ['emailNotifications', Mail, 'Email Notifications',
+              'Receive important academic notices and system announcements in your faculty inbox', 'text-[var(--color-accent)]'],
+            ['submissionAlerts', Bell, 'Quiz Submission Alerts',
+              'Show notices when students complete a published assessment or remedial test', 'text-oxblood'],
+            ['lowPerformanceAlerts', AlertCircle, 'Low Performance & Learning Gap Alerts',
+              'Flag class topics averaging below 60% or students who need attention', 'text-brass'],
+            ['departmentAnnouncements', Bell, 'Departmental Announcements',
+              'Circulars regarding academic board meetings, syllabus revisions, and exam schedules', 'text-oxblood'],
+            ['weeklyReportDigest', FileSpreadsheet, 'Weekly Analytics Digest',
+              'Include a weekly performance summary in your analytics exports', 'text-forest'],
+          ] as const).map(([key, Icon, label, description, iconColor]) => (
+            <div key={key} className="py-3.5 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Icon className={`w-4 h-4 ${iconColor}`} />
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</span>
+                </div>
+                <p className="text-xs text-[var(--color-text-muted)]">{description}</p>
               </div>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Receive important academic notices and system announcements in your faculty inbox
-              </p>
-            </div>
-            <button
-              onClick={() => handleToggle('emailNotifications')}
-              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.emailNotifications ? 'bg-oxblood' : 'bg-taupe/60'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.emailNotifications ? 'translate-x-5' : 'translate-x-0'
+              <button
+                onClick={() => handleToggle(key)}
+                aria-pressed={settings[key]}
+                className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
+                  settings[key] ? 'bg-oxblood' : 'bg-taupe/60'
                 }`}
-              />
-            </button>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-oxblood" />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  Quiz Submission Alerts
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Notify when students complete a published assessment or remedial test
-              </p>
+              >
+                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                  settings[key] ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
             </div>
-            <button
-              onClick={() => handleToggle('submissionAlerts')}
-              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.submissionAlerts ? 'bg-oxblood' : 'bg-taupe/60'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.submissionAlerts ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-brass" />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  Low Performance & Learning Gap Alerts
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Automated flag when class topic average drops below 60% or specific students need attention
-              </p>
-            </div>
-            <button
-              onClick={() => handleToggle('lowPerformanceAlerts')}
-              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.lowPerformanceAlerts ? 'bg-oxblood' : 'bg-taupe/60'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.lowPerformanceAlerts ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-oxblood" />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  Departmental Announcements
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Circulars regarding academic board meetings, syllabus revisions, and exam schedules
-              </p>
-            </div>
-            <button
-              onClick={() => handleToggle('departmentAnnouncements')}
-              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.departmentAnnouncements ? 'bg-oxblood' : 'bg-taupe/60'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.departmentAnnouncements ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-forest" />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  Weekly Analytics Digest
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Receive weekly summarized performance matrices and topic completion digests
-              </p>
-            </div>
-            <button
-              onClick={() => handleToggle('weeklyReportDigest')}
-              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
-                settings.weeklyReportDigest ? 'bg-oxblood' : 'bg-taupe/60'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.weeklyReportDigest ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
+          ))}
         </div>
       </Card>
 
@@ -246,7 +140,7 @@ export const FacultySettings: React.FC = () => {
             </div>
             <select
               value={settings.theme}
-              onChange={e => setSettings({ ...settings, theme: e.target.value as any })}
+              onChange={e => updateSettings({ theme: e.target.value as typeof settings.theme })}
               className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[8px] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
             >
               <option value="light">Light Theme (Default)</option>
@@ -261,12 +155,13 @@ export const FacultySettings: React.FC = () => {
             </div>
             <select
               value={settings.language}
-              onChange={e => setSettings({ ...settings, language: e.target.value })}
+              onChange={e => updateSettings({ language: e.target.value })}
               className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[8px] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
             >
               <option value="English">English (US/UK)</option>
-              <option value="Hindi">Hindi (हिंदी)</option>
-              <option value="Spanish">Spanish (Español)</option>
+              <option value="Hindi">हिन्दी (Hindi)</option>
+              <option value="Spanish">Español (Spanish)</option>
+              <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
             </select>
           </div>
 
@@ -276,12 +171,11 @@ export const FacultySettings: React.FC = () => {
             </div>
             <select
               value={settings.autoExportFormat}
-              onChange={e => setSettings({ ...settings, autoExportFormat: e.target.value as any })}
+              onChange={e => updateSettings({ autoExportFormat: e.target.value as typeof settings.autoExportFormat })}
               className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[8px] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
             >
-              <option value="csv">CSV (Comma Separated Values)</option>
-              <option value="xlsx">Excel (.xlsx)</option>
-              <option value="pdf">PDF Document</option>
+              <option value="csv">CSV (Excel-compatible)</option>
+              <option value="json">JSON (Structured Data)</option>
             </select>
           </div>
 
@@ -294,15 +188,14 @@ export const FacultySettings: React.FC = () => {
             </div>
             <button
               onClick={() => handleToggle('soundEffects')}
+              aria-pressed={settings.soundEffects}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                 settings.soundEffects ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.soundEffects ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                settings.soundEffects ? 'translate-x-5' : 'translate-x-0'
+              }`} />
             </button>
           </div>
         </div>
@@ -320,9 +213,11 @@ export const FacultySettings: React.FC = () => {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-oxblood" /> Local Storage Sync
+              <Database className="w-4 h-4 text-oxblood" /> Preferences Sync
             </span>
-            <span className="text-[var(--color-text-secondary)] font-medium">Auto-synced</span>
+            <span className="text-[var(--color-text-secondary)] font-medium">
+              {savedToBackend ? 'Synced to your account' : 'Saved on this device'}
+            </span>
           </div>
         </div>
       </Card>

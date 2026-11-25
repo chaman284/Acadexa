@@ -11,9 +11,9 @@ async function main() {
 
   // 1. Department
   const dept = await prisma.department.upsert({
-    where: { code: 'CS' },
+    where: { code: 'AIML' },
     update: {},
-    create: { name: 'Computer Science', code: 'CS' },
+    create: { name: 'Artificial Intelligence and Machine Learning', code: 'AIML' },
   });
   console.log('✅ Department:', dept.name);
 
@@ -131,7 +131,7 @@ async function main() {
     create: {
       id: 'subj-ds',
       name: 'Data Structures',
-      code: 'CS-201',
+      code: 'AIML-201',
       departmentId: dept.id,
     },
   });

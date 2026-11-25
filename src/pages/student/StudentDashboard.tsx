@@ -16,6 +16,12 @@ import { courseService } from '../../services/courseService';
 import api from '../../lib/apiClient';
 import type { Student, LeaderboardEntry } from '../../types/student';
 import type { Course } from '../../types/course';
+import type { DepartmentEvent } from '../../types/department';
+import {
+  buildStudentSchedule,
+  formatEventDateLabel,
+  type BackendDeptEvent,
+} from '../../utils/scheduleUtils';
 
 interface DashboardQuiz {
   id: string;
@@ -25,6 +31,13 @@ interface DashboardQuiz {
   courseName: string;
   status: 'active' | 'upcoming';
   scheduledAt?: string | null;
+}
+
+interface ScheduleEvent extends DepartmentEvent {
+  dateLabel: string;
+  endLabel?: string;
+  day: string;
+  month: string;
 }
 
 const mostImprovedData: { rank: number; studentId: string; studentName: string; score: number; change: 'up' | 'down' | 'same'; changeValue: number }[] = [];
@@ -67,7 +80,7 @@ export const StudentDashboard: React.FC = () => {
             name: u.name || profileData.name,
             email: u.email || profileData.email,
             rollNumber: u.student?.rollNo || profileData.rollNumber,
-            department: u.student?.section?.department?.name || profileData.department || 'Computer Science',
+            department: u.student?.section?.department?.name || profileData.department || 'Artificial Intelligence and Machine Learning',
             semester: u.student?.section?.semester || profileData.semester || 3,
             section: u.student?.section?.name ? `Section ${u.student.section.name}` : profileData.section,
           };
@@ -89,7 +102,7 @@ export const StudentDashboard: React.FC = () => {
               name: dbCourse.name,
               code: dbCourse.code,
               semester: dbCourse.semester || profileData.semester || 3,
-              department: dbCourse.departmentName || profileData.department || 'Computer Science',
+              department: dbCourse.departmentName || profileData.department || 'Artificial Intelligence and Machine Learning',
               creditHours: 4,
               facultyId: dbCourse.assignments?.[0]?.facultyId || '',
               facultyName: dbCourse.assignments?.[0]?.facultyName || 'Department Faculty',
@@ -188,22 +201,54 @@ export const StudentDashboard: React.FC = () => {
     }
   };
 
-  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+  const [recentEvents, setRecentEvents] = useState<ScheduleEvent[]>([]);
 
+  // Real-time, semester-aware schedule: student's semester + common campus events only.
   useEffect(() => {
-    api.get('/dept/info').then(res => {
-      if (Array.isArray(res.data?.data)) {
-        const events = res.data.data.map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          category: d.type === 'EVENT' ? 'exam' : 'holiday',
-          date: d.date,
-          time: 'All Day',
-        }));
-        setRecentEvents(events);
+    let cancelled = false;
+    const semester = student?.semester || 5;
+
+    const refreshSchedule = async () => {
+      let backendEvents: BackendDeptEvent[] = [];
+      try {
+        const res = await api.get('/dept/info');
+        if (Array.isArray(res.data?.data)) backendEvents = res.data.data;
+      } catch (err) {
+        console.warn('Failed to fetch department events:', err);
       }
-    }).catch(() => {});
-  }, []);
+      if (cancelled) return;
+
+      const now = new Date();
+      const events = buildStudentSchedule(backendEvents, semester, {
+        upcomingOnly: true,
+        now,
+      });
+
+      setRecentEvents(
+        events.slice(0, 5).map(event => {
+          const start = new Date(`${event.date}T00:00:00`);
+          return {
+            ...event,
+            dateLabel: formatEventDateLabel(event, now),
+            endLabel:
+              event.endDate && event.endDate !== event.date
+                ? `thru ${formatEventDateLabel({ date: event.endDate, endDate: event.endDate }, now)}`
+                : undefined,
+            day: String(start.getDate()).padStart(2, '0'),
+            month: start.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase(),
+          };
+        })
+      );
+    };
+
+    refreshSchedule();
+    // Keep date labels and "upcoming" state current while the page stays open.
+    const timer = window.setInterval(refreshSchedule, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [student?.semester]);
 
   // Overall average course progress
   const averageProgress = courses.length > 0
@@ -339,7 +384,7 @@ export const StudentDashboard: React.FC = () => {
         <Card className="h-fit">
           <CardHeader
             title="Upcoming Schedule"
-            subtitle="Exams & department calendar"
+            subtitle={`Semester ${student?.semester || 5} exams, deadlines & campus events`}
             action={
               <button
                 onClick={() => navigate('/student/department')}
@@ -358,31 +403,41 @@ export const StudentDashboard: React.FC = () => {
                   style={{ background: '#F7F1E8', border: '1px solid #E1D4CA' }}
                 >
                   <div
-                    className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
+                    className="w-11 h-11 rounded-[8px] flex flex-col items-center justify-center flex-shrink-0"
                     style={{
                       background: ev.category === 'exam' ? 'rgba(139,44,53,0.10)' : ev.category === 'deadline' ? 'rgba(84,37,54,0.08)' : 'rgba(182,154,105,0.12)',
-                      color: ev.category === 'exam' ? '#8b2c35' : ev.category === 'deadline' ? '#542536' : '#7a6200',
                       border: '1px solid rgba(84,37,54,0.12)',
                     }}
                   >
-                    <Calendar className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-bold uppercase leading-none tracking-wide" style={{ color: ev.category === 'exam' ? '#8b2c35' : '#7a6200' }}>
+                      {ev.month}
+                    </span>
+                    <span className="text-base font-black leading-tight" style={{ color: ev.category === 'exam' ? '#8b2c35' : '#7a6200' }}>
+                      {ev.day}
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-semibold text-[#302A2B] truncate">{ev.title}</span>
-                      <Badge color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'oxblood' : 'brass'} className="text-[9px] py-0 px-1 capitalize">
+                      <Badge
+                        color={ev.category === 'exam' ? 'red' : ev.category === 'deadline' ? 'oxblood' : ev.category === 'holiday' ? 'green' : 'brass'}
+                        className="text-[9px] py-0 px-1 capitalize flex-shrink-0"
+                      >
                         {ev.category}
                       </Badge>
                     </div>
                     <p className="text-[11px] font-medium text-[#79666A] mt-0.5">
-                      {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {ev.time}
+                      <span className="font-semibold text-[#542536]">{ev.dateLabel}</span>
+                      {' · '}{ev.time}
+                      {ev.endLabel ? ` (${ev.endLabel})` : ''}
+                      {ev.location ? ` · ${ev.location}` : ''}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
               <div className="py-8 text-center text-xs font-medium text-[#79666A]">
-                No upcoming exams or department events scheduled.
+                No upcoming events for semester {student?.semester || 5} right now.
               </div>
             )}
           </div>

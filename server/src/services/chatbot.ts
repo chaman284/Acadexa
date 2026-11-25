@@ -244,8 +244,59 @@ export const chatbotService = {
     };
 
     // Realistic, intelligent system prompt for Gemini
-    const systemPrompt = `You are Acadexa AI, an empathetic, highly knowledgeable, and articulate University Academic Tutor and Department Assistant.
-Your primary role is to help students truly understand complex concepts, excel in their coursework, prepare effectively for quizzes and exams, and navigate university life with confidence.
+    const systemPrompt = `You are Acadexa AI, an empathetic, highly knowledgeable, and articulate University Academic Tutor and Department Assistant for the Department of Artificial Intelligence and Machine Learning (AIML) at Sahyadri College of Engineering & Management, Mangaluru.
+Your primary role is to help students truly understand complex concepts, excel in their coursework, prepare effectively for quizzes and exams, and navigate university academic life with confidence.
+
+Official Department & Institutional Profile:
+- Institution: Sahyadri College of Engineering & Management, Mangaluru (Autonomous Institution)
+- Department: Artificial Intelligence and Machine Learning (AIML)
+- Head of Department (HOD): Dr. Pushpalatha K
+- HOD Email: hod.ai.engg@sahyadri.edu.in
+- HOD Cabin: Ground Floor, CS/AI Block
+- Department Vision: "To be a pioneering centre for Artificial Intelligence and Machine Learning education, fostering knowledge, research, innovation, and ethical AI practices to create intelligent solutions for societal progress."
+- Department Overview: The Department develops intelligent, data-driven solutions using Machine Learning, Deep Learning, Natural Language Processing, Computer Vision, Data Analytics, and Predictive Modelling to uncover valuable patterns, automate decision-making, and create sustainable solutions for industry and societal progress.
+
+Academic Calendar 2026-27 (B.E. 3rd & 5th Semester):
+* 5th Semester:
+  - Course Registration: Jul 20, 2026 | Placement & Skill Training: Jul 3–31, 2026
+  - Commencement of Regular Classes: Aug 3, 2026
+  - Continuous Internal Evaluation - I (CIE-I): Sep 7–9, 2026
+  - Course Drop Deadline: Sep 18, 2026
+  - Student Feedback - I: Sep 21–23, 2026
+  - Continuous Internal Evaluation - II (CIE-II): Oct 8–10, 2026
+  - Student Feedback - II: Oct 15–17, 2026
+  - Continuous Internal Evaluation - III (CIE-III): Nov 17–19, 2026
+  - Course Withdrawal Deadline: Nov 23, 2026
+  - Compensatory CIE: Nov 24–25, 2026
+  - Last Working Day & Submission of NE & Eligibility List: Nov 28, 2026
+  - Semester End Examination (SEE) - Theory: Dec 9–24, 2026
+  - Semester End Examination (SEE) - Practical: Dec 26, 2026 – Jan 1, 2027
+  - Provisional Results: Jan 6, 2027 | Answer Paper Viewing: Jan 11–12, 2027
+  - Revaluation Application Cutoff: Jan 18, 2027 | SEE Final Results: Jan 30, 2027
+  - Commencement of EVEN Semester (VI): Jan 11, 2027
+
+* 3rd Semester:
+  - Course Registration: Aug 3, 2026 | Placement & Skill Training: Aug 3–14, 2026
+  - Inhouse Internship: Aug 17–25, 2026
+  - Department Orientation Program: Aug 27–29, 2026
+  - Commencement of Regular Classes: Aug 31, 2026
+  - Continuous Internal Evaluation - I (CIE-I): Oct 23–26, 2026
+  - Student Feedback - I: Oct 28–29, 2026
+  - Course Drop Deadline: Nov 2, 2026
+  - Continuous Internal Evaluation - II (CIE-II): Dec 8–10, 2026
+  - Course Withdrawal Deadline: Dec 12, 2026
+  - Compensatory CIE: Dec 14–15, 2026
+  - Student Feedback - II: Dec 16, 2026
+  - Last Working Day & Submission of NE & Eligibility List: Dec 18, 2026
+  - Semester End Examination (SEE) - Theory: Dec 30, 2026 – Jan 13, 2027
+  - Semester End Examination (SEE) - Practical: Jan 18–23, 2027
+  - Provisional Results: Jan 28, 2027 | Answer Paper Viewing: Feb 3–4, 2027
+  - Commencement of EVEN Semester (IV): Feb 1, 2027
+  - Revaluation Application Cutoff: Feb 10, 2027 | SEE Final Results: Feb 22, 2027
+
+* Flagship Events & Conferences:
+  - SYNERGIA 2026 (Annual Mega Tech & Cultural Fest): Nov 12–14, 2026
+  - IEEE Cosmic Conference 2026: Nov 27–28, 2026 (Pre-Conference Workshop: Nov 26, 2026)
 
 Guiding Principles for Realistic & High-Impact Responses:
 1. Tone & Persona:
@@ -260,11 +311,11 @@ Guiding Principles for Realistic & High-Impact Responses:
    - When explaining code or algorithms, explain the intuition and step-by-step logic first, rather than just dumping raw code without explanation.
 
 3. Context & Factual Integrity:
-   - When asked about official department events, schedules, or specific faculty office hours: Rely strictly on the verified department context provided below. If no department notices are loaded in the database yet, honestly state that official notices have not been published yet by the department office, and encourage the student with academic guidance.
+   - When asked about department events, schedules, or faculty: Rely on the verified department context provided above and below.
    - Never fabricate fake professors, fake dates, or imaginary room numbers.
 
 4. Engaging & Interactive:
-   - End with a thoughtful, encouraging follow-up (e.g. asking if they'd like a worked example, a quick practice question, or an edge case breakdown).`;
+   - End with a thoughtful, encouraging follow-up.`;
 
     // If Gemini API Key is configured, use Gemini 1.5 Flash
     if (config.geminiApiKey) {
@@ -335,57 +386,170 @@ Guiding Principles for Realistic & High-Impact Responses:
     if (greetingMatches.some(g => qLower === g || qLower.startsWith(g + ' ') || qLower.startsWith(g + '!'))) {
       const courseList = ragData.courses.length > 0
         ? `I have access to your active courses: **${ragData.courses.map(c => c.name).join('**, **')}**.`
-        : `I am connected directly to your university portal and academic curriculum.`;
+        : `I am connected directly to your university portal and academic curriculum for the **Department of Artificial Intelligence & Machine Learning**.`;
 
       return (
         `👋 **Hello${nameGreeting}! Great to have you here.**\n\n` +
-        `I am your **AI Academic Tutor & Department Assistant** on Acadexa. ${courseList}\n\n` +
-        `Here are a few ways I can help you succeed today:\n` +
-        `• 💡 **Break down complex concepts**: Ask me to explain any topic with intuitive step-by-step logic and real-world analogies.\n` +
-        `• ⚖️ **Compare approaches & trade-offs**: Compare algorithms, data structures, or engineering patterns (e.g., BFS vs DFS, SQL vs NoSQL).\n` +
-        `• 📝 **Quiz & exam preparation**: Practice problem solving, identify common pitfalls, and review key curriculum takeaways.\n` +
-        `• 🔍 **Curriculum & department guidance**: Inquire about registered courses, active assessments, and official notices.\n\n` +
-        `What topic or question are you working on right now?`
+        `I am your **AI Academic Tutor & Department Assistant** for the **Department of Artificial Intelligence & Machine Learning** at Sahyadri College of Engineering & Management.\n\n` +
+        `${courseList}\n\n` +
+        `Here are a few things I can assist you with:\n` +
+        `• 🏛️ **Department Info & Contacts**: Learn about our vision, specializations, or connect with our HOD (**Dr. Pushpalatha K**).\n` +
+        `• 📅 **Academic Calendar 2026–27**: Inquire about CIE exam dates, SEE theory/practical schedules, Course Drop/Withdrawal cutoffs, and holidays for 3rd & 5th sem.\n` +
+        `• 🎪 **Campus Fests**: Get details on **SYNERGIA 2026** (Nov 12–14) and the IEEE Cosmic Conference.\n` +
+        `• 💡 **Coursework & Concepts**: Ask me to explain machine learning, data structures, algorithms, or review quiz questions.\n\n` +
+        `What would you like to know today?`
       );
     }
 
-    // 2. Department Events, Notices & Calendar queries
+    // 2. HOD (Head of Department) & Administration Queries
+    const isHodQuery = ['hod', 'head of department', 'pushpalatha', 'dr pushpalatha', 'contact hod', 'department head', 'ai hod'].some(k => qLower.includes(k));
+    if (isHodQuery) {
+      return (
+        `🏛️ **Head of Department (HOD) — AIML Department**\n\n` +
+        `• **Name**: **Dr. Pushpalatha K**\n` +
+        `• **Designation**: Professor & Head of Department (HOD)\n` +
+        `• **Department**: Artificial Intelligence and Machine Learning (AI & ML)\n` +
+        `• **Institution**: Sahyadri College of Engineering & Management, Mangaluru\n` +
+        `• **Official Email**: [hod.ai.engg@sahyadri.edu.in](mailto:hod.ai.engg@sahyadri.edu.in)\n` +
+        `• **Cabin Location**: HOD Cabin, Ground Floor, CS/AI Block\n` +
+        `• **Consultation Hours**: Monday – Friday during designated student interaction windows\n\n` +
+        `Dr. Pushpalatha K leads the department's academic vision, research initiatives, and student development in AI, Machine Learning, and Deep Learning.`
+      );
+    }
+
+    // 3. Department Vision & Overview Queries
+    const isVisionQuery = ['vision', 'mission', 'about department', 'about aiml', 'department overview', 'intro', 'what is aiml'].some(k => qLower.includes(k));
+    if (isVisionQuery) {
+      return (
+        `🌟 **Department of Artificial Intelligence and Machine Learning (AIML)**\n` +
+        `*Sahyadri College of Engineering & Management, Mangaluru*\n\n` +
+        `### **Department Vision**\n` +
+        `> "To be a pioneering centre for Artificial Intelligence and Machine Learning education, fostering knowledge, research, innovation, and ethical AI practices to create intelligent solutions for societal progress."\n\n` +
+        `### **Overview**\n` +
+        `The Department of Artificial Intelligence and Machine Learning focuses on developing intelligent, data-driven solutions using computational tools, algorithms, and analytical techniques to analyze complex datasets.\n\n` +
+        `Our curriculum and research span:\n` +
+        `• **Machine Learning & Deep Learning**\n` +
+        `• **Natural Language Processing (NLP) & Computer Vision**\n` +
+        `• **Data Analytics & Predictive Modelling**\n` +
+        `• **Ethical AI & Scalable Engineering Solutions**\n\n` +
+        `We provide students with cutting-edge industry training, research opportunities, and entrepreneurship skills to address real-world challenges across diverse sectors.`
+      );
+    }
+
+    // 4. Synergia 2026 / Campus Fests
+    const isSynergiaQuery = ['synergia', 'fest', 'annual fest', 'cultural fest', 'tech fest', 'hackathon'].some(k => qLower.includes(k));
+    if (isSynergiaQuery) {
+      return (
+        `🎉 **SYNERGIA 2026 — Annual Mega Tech & Cultural Fest**\n\n` +
+        `• **Dates**: **November 12th – 14th, 2026**\n` +
+        `• **Venue**: Sahyadri Main Campus & Auditoriums\n` +
+        `• **Host Departments**: Student Affairs & AIML Department\n\n` +
+        `**Highlights:**\n` +
+        `• Flagship 36-Hour Generative AI Hackathon\n` +
+        `• Autonomous Robotics & Drone Obstacle Course\n` +
+        `• Paper Presentations & AI Innovation Expo\n` +
+        `• National Cultural Gala, Band Battles & Performances\n\n` +
+        `Keep an eye on the Announcements tab for official registrations and team sign-ups!`
+      );
+    }
+
+    // 5. CIE (Continuous Internal Evaluation) Specific Queries
+    const isCieQuery = (qLower.includes('cie') || qLower.includes('internal') || qLower.includes('test')) && (qLower.includes('date') || qLower.includes('when') || qLower.includes('schedule') || qLower.includes('exam'));
+    if (isCieQuery) {
+      return (
+        `📝 **Continuous Internal Evaluation (CIE) Schedules 2026–27**\n\n` +
+        `### **Semester 5 (B.E. AIML):**\n` +
+        `• **CIE-I**: September 7 – 9, 2026\n` +
+        `• **CIE-II**: October 8 – 10, 2026\n` +
+        `• **CIE-III**: November 17 – 19, 2026\n` +
+        `• **Compensatory CIE**: November 24 – 25, 2026\n\n` +
+        `### **Semester 3 (B.E. AIML):**\n` +
+        `• **CIE-I**: October 23 – 26, 2026\n` +
+        `• **CIE-II**: December 8 – 10, 2026\n` +
+        `• **Compensatory CIE**: December 14 – 15, 2026\n\n` +
+        `*Note: Attendance in all CIEs is mandatory. Ensure you maintain at least 85% course attendance to remain eligible for Semester End Examinations (SEE).*`
+      );
+    }
+
+    // 6. Semester End Examinations (SEE) & Results Queries
+    const isSeeQuery = ['see', 'semester end', 'final exam', 'theory exam', 'practical exam', 'result', 'reval', 'paper viewing'].some(k => qLower.includes(k));
+    if (isSeeQuery) {
+      return (
+        `🎓 **Semester End Examination (SEE) & Results Schedule 2026–27**\n\n` +
+        `### **Semester 5:**\n` +
+        `• **SEE - Theory**: December 9 – 24, 2026\n` +
+        `• **SEE - Practical**: December 26, 2026 – January 1, 2027\n` +
+        `• **Provisional Result Declaration**: January 6, 2027\n` +
+        `• **Answer Paper Viewing**: January 11 – 12, 2027\n` +
+        `• **Revaluation Cutoff**: January 18, 2027\n` +
+        `• **SEE Final Results**: January 30, 2027\n` +
+        `• **Commencement of Even Sem (VI)**: January 11, 2027\n\n` +
+        `### **Semester 3:**\n` +
+        `• **SEE - Theory**: December 30, 2026 – January 13, 2027\n` +
+        `• **SEE - Practical**: January 18 – 23, 2027\n` +
+        `• **Provisional Result Declaration**: January 28, 2027\n` +
+        `• **Commencement of Even Sem (IV)**: February 1, 2027\n` +
+        `• **Answer Paper Viewing**: February 3 – 4, 2027\n` +
+        `• **Revaluation Cutoff**: February 10, 2027\n` +
+        `• **SEE Final Results**: February 22, 2027\n\n` +
+        `*Eligibility lists (NE lists) are submitted on Nov 28 (5th sem) and Dec 18 (3rd sem).*`
+      );
+    }
+
+    // 7. Course Drop & Withdrawal Cutoffs
+    const isDropWithdrawQuery = ['course drop', 'drop', 'withdrawal', 'withdraw', 'eligibility', 'last working day', 'ne list'].some(k => qLower.includes(k));
+    if (isDropWithdrawQuery) {
+      return (
+        `📋 **Course Drop, Withdrawal & Eligibility Deadlines 2026–27**\n\n` +
+        `### **Semester 5:**\n` +
+        `• **Course Drop**: September 18, 2026\n` +
+        `• **Course Withdrawal**: November 23, 2026\n` +
+        `• **Last Working Day & Submission of NE/Eligibility List**: November 28, 2026\n\n` +
+        `### **Semester 3:**\n` +
+        `• **Course Drop**: November 2, 2026\n` +
+        `• **Course Withdrawal**: December 12, 2026\n` +
+        `• **Last Working Day & Submission of NE/Eligibility List**: December 18, 2026\n\n` +
+        `Please consult with your academic mentor and HOD Dr. Pushpalatha K before submitting drop/withdrawal forms.`
+      );
+    }
+
+    // 8. General Department Events, Notices & Calendar queries
     const isDeptQuery = ['event', 'notice', 'announcement', 'symposium', 'hackathon', 'seminar', 'calendar', 'holiday', 'break', 'vacation', 'timetable', 'schedule'].some(k => qLower.includes(k));
     if (isDeptQuery) {
       if (ragData.deptChunks.length > 0) {
-        let text = `📅 **Official Department Announcements & Schedule:**\n\n`;
+        let text = `📅 **Official Department Announcements & Calendar Highlights:**\n\n`;
         ragData.deptChunks.forEach(item => {
           const dateFormatted = item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Notice';
           text += `### **${item.title}** (${dateFormatted})\n`;
           text += `*Type: ${item.type} | Target: ${item.targetDept}*\n\n`;
           text += `${item.description}\n\n---\n`;
         });
-        text += `Please check your student notifications or visit the department coordinator if you have any questions.`;
+        text += `You can also browse the full Academic Calendar with semester filters under **Department Info > Academic Calendar & Events**.`;
         return text;
       }
 
-      // Realistic response when user hasn't uploaded department records yet
       return (
-        `📋 **Department Notices & Calendar Update**\n\n` +
-        `There are currently **no official department notices or calendar entries** loaded in the system.\n\n` +
-        `Once your department administrators upload the official academic calendar, holiday lists, and exam schedules, I will provide the verified dates and details here immediately.\n\n` +
-        `In the meantime, I am fully ready to help you with your coursework, concept explanations, and quiz preparation! What subject are you studying today?`
+        `📅 **Key Academic Calendar Highlights (2026–27):**\n\n` +
+        `• **3rd Sem Commencement**: August 31, 2026\n` +
+        `• **5th Sem Commencement**: August 3, 2026\n` +
+        `• **Synergia 2026 (Flagship Fest)**: November 12–14, 2026\n` +
+        `• **IEEE Cosmic Conference**: November 27–28, 2026\n` +
+        `• **5th Sem SEE Theory**: December 9–24, 2026\n` +
+        `• **3rd Sem SEE Theory**: December 30, 2026 – January 13, 2027\n\n` +
+        `Check the **Academic Calendar & Events** tab for the full list of holidays and assessment windows!`
       );
     }
 
-    // 3. Faculty Directory / Office Hours queries
-    const isFacultyQuery = ['faculty', 'professor', 'teacher', 'instructor', 'hod', 'office hour', 'cabin'].some(k => qLower.includes(k));
+    // 9. Faculty Directory / Office Hours queries
+    const isFacultyQuery = ['faculty', 'professor', 'teacher', 'instructor', 'office hour', 'cabin'].some(k => qLower.includes(k));
     if (isFacultyQuery) {
-      if (ragData.deptChunks.some(d => d.description.toLowerCase().includes('faculty') || d.title.toLowerCase().includes('faculty'))) {
-        const item = ragData.deptChunks.find(d => d.description.toLowerCase().includes('faculty') || d.title.toLowerCase().includes('faculty'));
-        return `🏛️ **Faculty & Office Hours Directory:**\n\n${item?.title}\n\n${item?.description}`;
-      }
-
       return (
-        `🏛️ **Faculty & Advising Directory**\n\n` +
-        `Official faculty office hours and cabin directories have not been published in the database yet.\n\n` +
-        `You can check your course dashboard or contact the department administration office for faculty availability and room allocations.\n\n` +
-        `Would you like help with any specific course questions or concepts taught in your lectures?`
+        `🏛️ **AIML Faculty Directory**\n\n` +
+        `• **Head of Department (HOD)**: **Dr. Pushpalatha K**\n` +
+        `  Email: [hod.ai.engg@sahyadri.edu.in](mailto:hod.ai.engg@sahyadri.edu.in) | Cabin: Ground Floor CS/AI Block\n` +
+        `  Focus: Artificial Intelligence, Machine Learning Foundations, Deep Learning\n\n` +
+        `• **Faculty Members**: All active faculty assigned to AIML subjects are listed in real-time in the **Faculty Directory** tab.\n\n` +
+        `Whenever an administrator adds a new faculty member, they appear in your directory automatically!`
       );
     }
 

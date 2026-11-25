@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../prisma';
 import { authenticateJWT, requireRole } from '../middleware/auth';
+import { notifyFacultyRegistered } from '../services/notificationService';
 
 const router = Router();
 
@@ -67,19 +68,23 @@ router.post('/faculty', authenticateJWT, requireRole(['ADMIN']), async (req, res
     const { email, password, name } = req.body;
     const passwordHash = await bcrypt.hash(password || 'Acadexa@123', 10);
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        name,
-        role: 'FACULTY',
-        faculty: {
-          create: {},
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email,
+          passwordHash,
+          name,
+          role: 'FACULTY',
+          faculty: {
+            create: {},
+          },
         },
-      },
-      include: {
-        faculty: true,
-      },
+        include: {
+          faculty: true,
+        },
+      });
+      await notifyFacultyRegistered(created.id, tx);
+      return created;
     });
 
     const { passwordHash: _, ...safeUser } = user;

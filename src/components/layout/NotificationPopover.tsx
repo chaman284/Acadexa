@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Bell, CheckCheck, Trash2, ExternalLink, Sparkles, BookOpen, ClipboardList, Info, AlertCircle } from 'lucide-react';
+import {
+  Bell, CheckCheck, Trash2, ExternalLink, Sparkles, BookOpen, ClipboardList,
+  Info, AlertCircle, ArrowLeft, GraduationCap,
+} from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import type { Notification, NotificationType } from '../../types/notification';
 
 interface NotificationPopoverProps {
@@ -20,6 +24,8 @@ const getNotificationIcon = (type: NotificationType) => {
       return <AlertCircle className="w-4 h-4 text-[#9E4A59]" />;
     case 'announcement':
       return <Sparkles className="w-4 h-4 text-[#8B6E3F]" />;
+    case 'enrollment':
+      return <GraduationCap className="w-4 h-4 text-[#34483A]" />;
     case 'system':
     default:
       return <Info className="w-4 h-4 text-[#542536]" />;
@@ -31,11 +37,22 @@ const typeColors: Record<NotificationType, string> = {
   course:       '#F0F4EF',
   learning_gap: '#FAF0F2',
   announcement: '#FBF6EB',
+  enrollment:   '#EEF3EF',
   system:       '#F7F1E8',
+};
+
+const typeLabels: Record<NotificationType, string> = {
+  quiz:         'Quiz & Assessment',
+  course:       'Course Update',
+  learning_gap: 'Performance Alert',
+  announcement: 'Announcement',
+  enrollment:   'Enrollment',
+  system:       'System Notice',
 };
 
 const formatTimeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr).getTime();
+  if (!Number.isFinite(diff)) return '';
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
@@ -45,65 +62,155 @@ const formatTimeAgo = (dateStr: string) => {
   return `${days}d ago`;
 };
 
+const formatFullDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return Number.isNaN(date.getTime())
+    ? dateStr
+    : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+/**
+ * Notification preferences are real filters: each alert toggle in the user's
+ * settings decides whether that kind of notice appears in the bell.
+ */
+const isAllowedByPreferences = (
+  notification: Notification,
+  settings: ReturnType<typeof useSettings>['settings'],
+  role?: string,
+) => {
+  switch (role) {
+    case 'student':
+      switch (notification.type) {
+        case 'quiz': return settings.quizReminders;
+        case 'learning_gap': return settings.performanceReports;
+        case 'announcement':
+        case 'course':
+        case 'system': return settings.announcementAlerts;
+        default: return true;
+      }
+    case 'faculty':
+      switch (notification.type) {
+        case 'quiz': return settings.submissionAlerts;
+        case 'learning_gap': return settings.lowPerformanceAlerts;
+        case 'announcement': return settings.departmentAnnouncements;
+        default: return true; // course assignments & account notices are never hidden
+      }
+    case 'admin':
+      switch (notification.type) {
+        case 'enrollment': return settings.emailAlertsOnEnrollment;
+        case 'quiz': return settings.quizReportNotifications;
+        case 'system': return settings.systemMaintenanceAlerts;
+        default: return true;
+      }
+    default:
+      return true;
+  }
+};
+
 export const NotificationPopover: React.FC<NotificationPopoverProps> = ({ onNotificationClick }) => {
-  const { user } = useAuth();
-  const role = user?.role;
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selected, setSelected] = useState<Notification | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { settings } = useSettings();
 
-  const loadNotifications = () => {
-    setNotifications(notificationService.getNotifications(role));
-  };
+  const loadNotifications = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      setNotifications(await notificationService.getRemoteNotifications());
+    } catch (error) {
+      console.warn('Failed to load notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    loadNotifications();
-    const handleStorageChange = () => loadNotifications();
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    void loadNotifications();
+    const poll = window.setInterval(() => void loadNotifications(), 30000);
+    const handleFocus = () => void loadNotifications();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(poll);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSelected(null);
       }
     };
     if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const visibleNotifications = notifications.filter(n =>
+    isAllowedByPreferences(n, settings, user?.role)
+  );
+  const hiddenCount = notifications.length - visibleNotifications.length;
+  const unreadCount = visibleNotifications.filter(n => !n.isRead).length;
 
-  const handleMarkAllRead = () => {
-    const updated = notificationService.markAllAsRead(role);
-    setNotifications(updated);
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setSelected(null);
+  };
+
+  const handleMarkAllRead = async () => {
+    const previous = notifications;
+    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    setSelected(current => current ? { ...current, isRead: true } : null);
+    try {
+      await notificationService.markAllRemoteAsRead();
+    } catch (error) {
+      console.warn('Failed to mark all notifications as read:', error);
+      setNotifications(previous);
+    }
+  };
+
+  const markAsRead = (notification: Notification) => {
+    if (notification.isRead) return;
+    setNotifications(current =>
+      current.map(n => (n.id === notification.id ? { ...n, isRead: true } : n))
+    );
+    notificationService.markRemoteAsRead(notification.id).catch(error => {
+      console.warn('Failed to mark notification as read:', error);
+    });
   };
 
   const handleItemClick = (notification: Notification) => {
-    if (!notification.isRead) {
-      const updated = notificationService.markAsRead(notification.id, role);
-      setNotifications(updated);
-    }
-    if (notification.actionUrl) {
-      setIsOpen(false);
-      if (onNotificationClick) onNotificationClick();
-      navigate(notification.actionUrl);
-    }
+    markAsRead(notification);
+    setSelected({ ...notification, isRead: true });
+  };
+
+  const handleOpenPage = () => {
+    if (!selected?.actionUrl) return;
+    const url = selected.actionUrl;
+    closeDropdown();
+    if (onNotificationClick) onNotificationClick();
+    navigate(url);
   };
 
   const handleDeleteItem = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const updated = notificationService.clearNotification(id, role);
-    setNotifications(updated);
+    setNotifications(current => current.filter(n => n.id !== id));
+    if (selected?.id === id) setSelected(null);
+    notificationService.deleteRemoteNotification(id).catch(error => {
+      console.warn('Failed to delete notification:', error);
+    });
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => {
-          loadNotifications();
+          if (!isOpen) void loadNotifications();
+          else setSelected(null);
           setIsOpen(!isOpen);
         }}
         className={clsx(
@@ -128,21 +235,34 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({ onNoti
           className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-[14px] border border-[#E1D4CA] z-50 overflow-hidden animate-fade-in"
           style={{ boxShadow: '0 12px 36px rgba(50,25,35,0.12), 0 4px 12px rgba(50,25,35,0.06)', transformOrigin: 'top right' }}
         >
-          {/* Header */}
+          {/* Header — changes with the current view */}
           <div className="p-3.5 border-b border-[#E1D4CA] flex items-center justify-between bg-[#F7F1E8]">
             <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-[#542536]" />
-              <span className="font-semibold text-sm text-[#302A2B]">Notifications</span>
-              {unreadCount > 0 && (
+              {selected ? (
+                <button
+                  onClick={() => setSelected(null)}
+                  className="p-1 -ml-1 rounded-[7px] text-[#542536] hover:bg-[#EEE3E0] transition-colors cursor-pointer"
+                  aria-label="Back to notifications"
+                  title="Back to notifications"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              ) : (
+                <Bell className="w-4 h-4 text-[#542536]" />
+              )}
+              <span className="font-semibold text-sm text-[#302A2B]">
+                {selected ? 'Notification Details' : 'Notifications'}
+              </span>
+              {!selected && unreadCount > 0 && (
                 <span className="bg-[#542536] text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
                   {unreadCount} new
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
+            {!selected && unreadCount > 0 && (
               <button
-                onClick={handleMarkAllRead}
-                className="text-xs text-[#542536] hover:underline flex items-center gap-1 font-medium transition-colors"
+                onClick={() => void handleMarkAllRead()}
+                className="text-xs text-[#542536] hover:underline flex items-center gap-1 font-medium transition-colors cursor-pointer"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 Mark all read
@@ -150,67 +270,131 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({ onNoti
             )}
           </div>
 
-          {/* List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-[#E1D4CA]/60">
-            {notifications.length === 0 ? (
-              <div className="py-10 px-4 text-center">
+          {/* Expanded detail view */}
+          {selected ? (
+            <div className="p-4 max-h-[420px] overflow-y-auto">
+              <div className="flex items-center gap-2 mb-3">
                 <div
-                  className="w-11 h-11 rounded-[12px] bg-[#F7F1E8] flex items-center justify-center mx-auto mb-3 border border-[#E1D4CA]"
+                  className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 border border-[#E1D4CA]"
+                  style={{ background: typeColors[selected.type] }}
                 >
-                  <Bell className="w-5 h-5 text-[#79666A]" />
+                  {getNotificationIcon(selected.type)}
                 </div>
-                <p className="text-sm font-semibold text-[#302A2B]">All caught up!</p>
-                <p className="text-xs text-[#79666A] font-medium mt-0.5">New updates will show up here.</p>
+                <div>
+                  <span className="inline-block text-[10px] font-semibold uppercase tracking-wide text-[#79666A] bg-[#F7F1E8] border border-[#E1D4CA] rounded-full px-2 py-0.5">
+                    {typeLabels[selected.type]}
+                  </span>
+                  <p className="text-[11px] text-[#79666A] font-medium mt-1">
+                    {formatFullDate(selected.createdAt)}
+                  </p>
+                </div>
               </div>
-            ) : (
-              notifications.map(item => (
-                <div
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className={clsx(
-                    'p-3.5 flex items-start gap-3 transition-colors cursor-pointer group text-left',
-                    item.isRead ? 'hover:bg-[#F7F1E8]' : 'bg-[#FAF4EE] hover:bg-[#F5EDE5]'
-                  )}
-                >
-                  <div
-                    className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5 border border-[#E1D4CA]"
-                    style={{ background: typeColors[item.type] }}
-                  >
-                    {getNotificationIcon(item.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <p className={clsx('text-xs truncate', item.isRead ? 'text-[#302A2B] font-medium' : 'text-[#302A2B] font-semibold')}>
-                        {item.title}
-                      </p>
-                      <span className="text-[10px] text-[#79666A] flex-shrink-0 font-medium">
-                        {formatTimeAgo(item.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#79666A] font-normal line-clamp-2 leading-relaxed">
-                      {item.message}
-                    </p>
-                    {item.actionUrl && (
-                      <div className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-[#542536]">
-                        <span>View details</span>
-                        <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex items-center gap-1 flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleDeleteItem(e, item.id)}
-                      className="p-1 hover:bg-[#FAF0F2] text-[#79666A] hover:text-[#542536] rounded-[6px] transition-colors"
-                      title="Delete notification"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+              <h3 className="text-[15px] font-semibold text-[#302A2B] leading-snug">
+                {selected.title}
+              </h3>
+
+              <div className="mt-3 p-3.5 rounded-[10px] bg-[#F7F1E8] border border-[#E1D4CA]">
+                <p className="text-[13px] text-[#4A3E42] leading-relaxed whitespace-pre-wrap break-words">
+                  {selected.message}
+                </p>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={() => setSelected(null)}
+                  className="flex-1 text-xs font-semibold text-[#542536] border border-[#E1D4CA] bg-white rounded-[9px] py-2.5 hover:bg-[#F7F1E8] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back to notifications
+                </button>
+                {selected.actionUrl && (
+                  <button
+                    onClick={handleOpenPage}
+                    className="flex-1 text-xs font-semibold text-white bg-[#542536] rounded-[9px] py-2.5 hover:bg-[#321923] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    Open page
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* List */}
+              <div className="max-h-[380px] overflow-y-auto divide-y divide-[#E1D4CA]/60">
+                {isLoading && notifications.length === 0 ? (
+                  <div className="py-10 px-4 text-center text-xs text-[#79666A]">Loading notifications...</div>
+                ) : visibleNotifications.length === 0 ? (
+                  <div className="py-10 px-4 text-center">
+                    <div className="w-11 h-11 rounded-[12px] bg-[#F7F1E8] flex items-center justify-center mx-auto mb-3 border border-[#E1D4CA]">
+                      <Bell className="w-5 h-5 text-[#79666A]" />
+                    </div>
+                    <p className="text-sm font-semibold text-[#302A2B]">
+                      {hiddenCount > 0 ? 'Nothing to show' : 'All caught up!'}
+                    </p>
+                    <p className="text-xs text-[#79666A] font-medium mt-0.5">
+                      {hiddenCount > 0
+                        ? 'Notifications are hidden by your current preferences.'
+                        : 'New updates will show up here.'}
+                    </p>
                   </div>
+                ) : (
+                  visibleNotifications.map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleItemClick(item)}
+                      className={clsx(
+                        'p-3.5 flex items-start gap-3 transition-colors cursor-pointer group text-left',
+                        item.isRead ? 'hover:bg-[#F7F1E8]' : 'bg-[#FAF4EE] hover:bg-[#F5EDE5]'
+                      )}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 mt-0.5 border border-[#E1D4CA]"
+                        style={{ background: typeColors[item.type] }}
+                      >
+                        {getNotificationIcon(item.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <p className={clsx('text-xs truncate', item.isRead ? 'text-[#302A2B] font-medium' : 'text-[#302A2B] font-semibold')}>
+                            {item.title}
+                          </p>
+                          <span className="text-[10px] text-[#79666A] flex-shrink-0 font-medium">
+                            {formatTimeAgo(item.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#79666A] font-normal line-clamp-2 leading-relaxed">
+                          {item.message}
+                        </p>
+                        <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-[#542536]">
+                          Read full details
+                          <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => handleDeleteItem(e, item.id)}
+                          className="p-1 hover:bg-[#FAF0F2] text-[#79666A] hover:text-[#542536] rounded-[6px] transition-colors cursor-pointer"
+                          title="Delete notification"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {hiddenCount > 0 && (
+                <div className="px-4 py-2 border-t border-[#E1D4CA]/60 bg-[#F7F1E8]/60">
+                  <p className="text-[10px] text-[#79666A] font-medium">
+                    {hiddenCount} notice{hiddenCount > 1 ? 's' : ''} hidden by your notification preferences
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

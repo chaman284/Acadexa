@@ -103,7 +103,7 @@ flowchart LR
   2. **Department Information Chatbot**: Instant answers to departmental queries—exam schedules, symposiums, faculty office hours, and academic calendars grounded in departmental data.
 - **🎮 High-Engagement Quiz Engine**: Fullscreen proctored assessment screen featuring Web Audio API synthesized tones (chords for correct answers, low buzzers for incorrect), streak multipliers, countdown timers, four-color Kahoot-style options, and celebratory Canvas Confetti.
 - **📊 Multi-Modal Mastery Visualizations**: Interactive **Radar Charts**, **Bloom's Cognitive Level Bar Charts**, and a **Heatmap Grid Matrix** (cross-tabulating topics × Bloom's levels) powered by **Recharts**.
-- **👩‍🏫 Dual-Stage Faculty Workspace**: Class switcher allowing faculty to seamlessly toggle between assigned semesters and sections (e.g., *CS 5th Sem - Section A*), access aggregated grade distributions, and initiate remedial interventions.
+- **👩‍🏫 Dual-Stage Faculty Workspace**: Class switcher allowing faculty to seamlessly toggle between assigned semesters and sections (e.g., *AIML 5th Sem - Section A*), access aggregated grade distributions, and initiate remedial interventions.
 - **🏛️ Institutional Admin Console**: Complete management of departments, semesters, sections, faculty course assignments, student enrollments, course catalogs, and campus-wide notifications.
 - **📄 Instant Academic PDF Generator**: Built-in client-side engine to export cleanly formatted academic question papers with answer keys directly to print/PDF from the question bank.
 - **🛡️ Hybrid Database & Resilient Offline Fallback**: Native support for **Supabase Cloud PostgreSQL** and local PostgreSQL, with resilient mock fallbacks for zero-friction evaluations.
@@ -151,7 +151,7 @@ graph TD
 
 ## 📚 Main Topics & Curriculum Coverage
 
-Acadexa is initialized with a robust computer science curriculum (Data Structures & Algorithms — `CS-201`) evaluated against **Bloom's Revised Taxonomy**:
+Acadexa is initialized with a robust artificial intelligence and machine learning curriculum (Data Structures & Algorithms — `AIML-201`) evaluated against **Bloom's Revised Taxonomy**:
 
 ### 1. Core Syllabus Topics
 - **Arrays**: Time complexities, sequential access, two-pointer techniques, Kadane's maximum subarray sum, and in-place manipulations. *(Baseline mastery: ~92%)*
@@ -247,7 +247,7 @@ Located in `src/pages/student/QuizScreen.tsx` and `src/pages/student/QuizResult.
 
 Located in `src/pages/faculty/`:
 
-- **Class Selector & Section Switching**: Switch between assigned semesters and sections (e.g., *CS 5th Sem - Section A*).
+- **Class Selector & Section Switching**: Switch between assigned semesters and sections (e.g., *AIML 5th Sem - Section A*).
 - **Class Analytics Dashboard**: Aggregate score distributions, average performance metrics, participation rates, and difficult question heatmaps.
 - **3-Step Quiz Builder**: Create weekly or remedial quizzes by selecting topics, choosing approved question bank items, and scheduling target dates.
 - **Remedial Assignment Dispatch**: One-click dispatch of remedial quizzes targeted at students identified as having learning gaps.
@@ -277,7 +277,7 @@ Located in `src/pages/faculty/`:
 | Feature / Module | Route | Description |
 |---|---|---|
 | **Faculty Dashboard** | `/faculty` | Centralized teaching hub displaying assigned sections, quick metrics, pending quiz reviews, and activity feeds. |
-| **Class Dashboard** | `/faculty/class/:classId` | Dedicated control screen for an individual semester/section cohort (e.g., CS Sem 5 - Sec A). |
+| **Class Dashboard** | `/faculty/class/:classId` | Dedicated control screen for an individual semester/section cohort (e.g., AIML Sem 5 - Sec A). |
 | **Class Analytics** | `/faculty/class/:classId/analytics` | In-depth Recharts visualisations: score histograms, student participation rates, and difficult question diagnostics. |
 | **3-Step Quiz Builder** | `/faculty/quiz/create` | Step 1: Metadata (title, duration, type); Step 2: Question selection (custom or from bank); Step 3: Target section scheduling. |
 | **Quiz Management** | `/faculty/quizzes` | Complete assessment lifecycle management (Draft, Active, Completed) with one-click remedial quiz creation. |
@@ -611,12 +611,12 @@ The database seed (`server/prisma/seed.ts`) and frontend login page come pre-con
 
 | Role | Email | Password | Assigned Scope & Details |
 |---|---|---|---|
-| **Student** | `student@college.edu` | `student123` | CS Sem 5, Section A. Full quiz participation, learning gap tracker, leaderboard, and AI tutor. |
+| **Student** | `student@college.edu` | `student123` | AIML Sem 5, Section A. Full quiz participation, learning gap tracker, leaderboard, and AI tutor. |
 | **Student** | `chaman@cs.college.edu` | `student123` | Pre-populated with Knowledge Tracing data (Arrays: 92%, Trees: 45%). |
-| **Student** | `rehan@cs.college.edu` | `rehan123` | Rehan Patel (CS 5th Semester, Sec A). |
-| **Faculty** | `faculty@college.edu` | `faculty123` | Dr. Ramesh Kumar (CS Dept). Class analytics, 3-step quiz builder, remedial quiz dispatch, paper bank. |
-| **Faculty** | `faculty@cs.college.edu` | `faculty123` | Dr. Ramesh Kumar (CS Dept Faculty Account). |
-| **Faculty** | `soumya@cs.college.edu` | `soumya123` | Soumya (CS Dept Faculty). |
+| **Student** | `rehan@cs.college.edu` | `rehan123` | Rehan Patel (AIML 5th Semester, Sec A). |
+| **Faculty** | `faculty@college.edu` | `faculty123` | Dr. Ramesh Kumar (AIML Dept). Class analytics, 3-step quiz builder, remedial quiz dispatch, paper bank. |
+| **Faculty** | `faculty@cs.college.edu` | `faculty123` | Dr. Ramesh Kumar (AIML Dept Faculty Account). |
+| **Faculty** | `soumya@cs.college.edu` | `soumya123` | Soumya (AIML Dept Faculty). |
 | **Admin** | `admin@college.edu` | `admin123` | System Administrator. Institutional KPIs, faculty workload assignments, course catalog, student roster, section provisioning, broadcast notifications. |
 
 ---

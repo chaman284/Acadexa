@@ -316,8 +316,9 @@ export const QuizManagement: React.FC = () => {
       <header className="h-14 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/faculty')}
-            className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors group"
+            onClick={() => navigate('/faculty/select-class')}
+            className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors group cursor-pointer"
+            title="Return to Dashboard"
           >
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             Back

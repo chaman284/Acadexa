@@ -280,7 +280,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
 
                     {/* Metadata topic breadcrumb */}
                     <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                      <span>{q.metadata?.subjectCode || 'CS'}:</span>
+                      <span>{q.metadata?.subjectCode || 'AIML'}:</span>
                       <strong className="text-slate-600 font-medium">
                         {q.metadata?.unitName}
                       </strong>{' '}

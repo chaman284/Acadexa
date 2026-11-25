@@ -157,7 +157,7 @@ export const ClassDashboard: React.FC = () => {
             />
           </h1>
           <p className="text-sm text-[#79666A] font-medium mt-1">
-            Department of Computer Science · Teaching & Analytics Overview
+            Department of Artificial Intelligence and Machine Learning · Teaching & Analytics Overview
           </p>
         </div>
 

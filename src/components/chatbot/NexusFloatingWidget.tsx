@@ -107,7 +107,7 @@ export const NexusFloatingWidget: React.FC = () => {
         {
           id: `err_${Date.now()}`,
           sender: 'nexus',
-          text: 'I encountered an error retrieving departmental context. Please try again or visit Room CS-401 for assistance.',
+          text: 'I encountered an error retrieving departmental context. Please try again or visit Room AIML-401 for assistance.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);

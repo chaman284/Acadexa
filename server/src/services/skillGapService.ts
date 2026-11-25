@@ -152,6 +152,7 @@ async function loadEvidence(scope: Scope): Promise<Evidence[]> {
       question: {
         select: {
           difficulty: true,
+          subtopic: { select: { id: true, name: true } },
           topic: {
             select: { id: true, name: true, subjectId: true, subject: { select: { name: true } } },
           },
@@ -173,8 +174,8 @@ async function loadEvidence(scope: Scope): Promise<Evidence[]> {
     subjectName: r.question.topic.subject.name,
     topicId: r.question.topic.id,
     topicName: r.question.topic.name,
-    subtopicId: null,
-    subtopicName: null,
+    subtopicId: r.question.subtopic?.id ?? null,
+    subtopicName: r.question.subtopic?.name ?? null,
   }));
 }
 

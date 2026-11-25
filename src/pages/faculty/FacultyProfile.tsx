@@ -329,7 +329,7 @@ export const FacultyProfile: React.FC = () => {
                   <Input
                     value={formData.qualifications}
                     onChange={e => setFormData({ ...formData, qualifications: e.target.value })}
-                    placeholder="e.g. Ph.D. in Computer Science (IIT Bombay), M.Tech"
+                    placeholder="e.g. Ph.D. in Artificial Intelligence and Machine Learning (IIT Bombay), M.Tech"
                   />
                 </div>
 

@@ -204,10 +204,10 @@ export const QuizBuilderPage: React.FC = () => {
       category,
       mode,
       status,
-      department: currentSubj?.department || 'Computer Science and Engineering',
+      department: currentSubj?.department || 'Artificial Intelligence and Machine Learning',
       semester,
       subjectId: subjectId || currentSubj?.id || '',
-      subjectCode: currentSubj?.code || 'CS',
+      subjectCode: currentSubj?.code || 'AIML',
       subjectName: currentSubj?.name || 'Curriculum Course',
       unitIds,
       unitNames: currentSubj?.units?.filter(u => unitIds.includes(u.id)).map(u => u.name) || [],
@@ -289,10 +289,10 @@ export const QuizBuilderPage: React.FC = () => {
       category,
       mode,
       status: 'active',
-      department: currentSubj?.department || 'Computer Science and Engineering',
+      department: currentSubj?.department || 'Artificial Intelligence and Machine Learning',
       semester,
       subjectId: subjectId || currentSubj?.id || '',
-      subjectCode: currentSubj?.code || 'CS',
+      subjectCode: currentSubj?.code || 'AIML',
       subjectName: currentSubj?.name || 'Curriculum Course',
       unitIds,
       unitNames: [],
@@ -486,7 +486,7 @@ export const QuizBuilderPage: React.FC = () => {
             title={title}
             description={description}
             subjectName={CURRICULUM_DATA.find(s => s.id === subjectId)?.name || 'Course'}
-            subjectCode={CURRICULUM_DATA.find(s => s.id === subjectId)?.code || 'CS'}
+            subjectCode={CURRICULUM_DATA.find(s => s.id === subjectId)?.code || 'AIML'}
             semester={semester}
             assignedClasses={assignedClasses}
             questions={questions}

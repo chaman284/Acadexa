@@ -1,5 +1,6 @@
 import React from 'react';
 import { clsx } from 'clsx';
+import { settingsService } from '../../services/settingsService';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'forest' | 'brass' | 'rose' | 'sage';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -67,7 +68,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...rest
 }) => {
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (withSound || rest.type === 'submit') {
+    if ((withSound || rest.type === 'submit') && settingsService.getLocalSettings().soundEffects) {
       playButtonSound();
     }
     if (onClick) {

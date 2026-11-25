@@ -14,10 +14,13 @@ import {
 } from '../../services/adminService';
 import {
   Users, Search, Plus, Trash2, BookOpen,
-  CheckCircle2, AlertCircle, Eye, RefreshCw, UserPlus
+  CheckCircle2, AlertCircle, Eye, RefreshCw, UserPlus, FileDown
 } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
+import { downloadRows, type ExportRow } from '../../services/exportService';
 
 export const FacultyManagement: React.FC = () => {
+  const { settings: adminSettings } = useSettings();
   const [facultyList, setFacultyList] = useState<FacultyRecord[]>([]);
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [sections, setSections] = useState<SectionRecord[]>([]);
@@ -81,6 +84,20 @@ export const FacultyManagement: React.FC = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadData();
+  };
+
+  const handleExportFaculty = () => {
+    const rows: ExportRow[] = [
+      ['Name', 'Email', 'Courses Assigned', 'Sections Assigned'],
+      ...facultyList.map(f => [f.name, f.email, f.coursesCount, f.sectionsCount]),
+    ];
+    const file = downloadRows(rows, adminSettings.exportFormat, 'Faculty_Directory', {
+      department: 'Artificial Intelligence and Machine Learning',
+    });
+    setActionMessage({
+      type: 'success',
+      text: `Faculty directory exported as ${file.split('.').pop()?.toUpperCase()}.`,
+    });
   };
 
   const handleOpenAddFacultyModal = () => {
@@ -213,6 +230,16 @@ export const FacultyManagement: React.FC = () => {
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Faculty' }]}
         action={
           <div className="flex items-center gap-2">
+            <Button
+              onClick={handleExportFaculty}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-[#E1D4CA] hover:bg-[#F7F1E8]"
+              disabled={facultyList.length === 0}
+            >
+              <FileDown className="w-4 h-4" />
+              Export
+            </Button>
             <Button
               onClick={() => handleOpenRemoveFacultyModal()}
               variant="outline"

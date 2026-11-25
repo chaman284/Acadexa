@@ -3,72 +3,39 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { useSettings } from '../../context/SettingsContext';
+import type { AdminSettingsConfig } from '../../types/settings';
 import {
   Bell, ShieldCheck, Database, RefreshCw, Volume2,
-  Mail, Save, CheckCircle2, AlertCircle, FileSpreadsheet, Lock, Cpu, Layers
+  Mail, Save, CheckCircle2, AlertCircle, FileSpreadsheet, Cpu, Layers, Moon, Globe
 } from 'lucide-react';
 
-const ADMIN_SETTINGS_STORAGE_KEY = 'acadexa_admin_settings';
-
-export interface AdminSettingsConfig {
-  emailAlertsOnEnrollment: boolean;
-  systemMaintenanceAlerts: boolean;
-  autoSyncAcademicYears: boolean;
-  quizReportNotifications: boolean;
-  soundEffects: boolean;
-  exportFormat: 'csv' | 'json';
-}
-
-const defaultAdminSettings: AdminSettingsConfig = {
-  emailAlertsOnEnrollment: true,
-  systemMaintenanceAlerts: true,
-  autoSyncAcademicYears: true,
-  quizReportNotifications: false,
-  soundEffects: true,
-  exportFormat: 'csv',
-};
+type BooleanSettingKey = {
+  [K in keyof AdminSettingsConfig]: AdminSettingsConfig[K] extends boolean ? K : never
+}[keyof AdminSettingsConfig];
 
 export const AdminSettings: React.FC = () => {
-  const [settings, setSettings] = useState<AdminSettingsConfig>(() => {
-    const stored = localStorage.getItem(ADMIN_SETTINGS_STORAGE_KEY);
-    if (stored) {
-      try {
-        return { ...defaultAdminSettings, ...JSON.parse(stored) };
-      } catch {
-        return defaultAdminSettings;
-      }
-    }
-    return defaultAdminSettings;
-  });
-
-  const [isSaving, setIsSaving] = useState(false);
+  const { settings, updateSettings, resetSettings, savedToBackend } = useSettings();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const handleToggle = (key: keyof AdminSettingsConfig) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+    setFeedback({ type, message });
+    window.setTimeout(() => setFeedback(null), 3500);
+  };
+
+  const handleToggle = (key: BooleanSettingKey) => {
+    updateSettings({ [key]: !settings[key] } as Partial<typeof settings>);
   };
 
   const handleSave = () => {
-    setIsSaving(true);
-    try {
-      localStorage.setItem(ADMIN_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-      setFeedback({ type: 'success', message: 'Administrator preferences saved successfully!' });
-      setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      setFeedback({ type: 'error', message: 'Failed to save settings.' });
-    } finally {
-      setIsSaving(false);
-    }
+    showFeedback(savedToBackend
+      ? 'Administrator preferences saved and applied successfully!'
+      : 'Preferences saved on this device (backend unavailable).');
   };
 
   const handleReset = () => {
-    setSettings(defaultAdminSettings);
-    localStorage.setItem(ADMIN_SETTINGS_STORAGE_KEY, JSON.stringify(defaultAdminSettings));
-    setFeedback({ type: 'success', message: 'Preferences reset to default values.' });
-    setTimeout(() => setFeedback(null), 3500);
+    resetSettings();
+    showFeedback('Preferences reset to default values.');
   };
 
   return (
@@ -90,7 +57,6 @@ export const AdminSettings: React.FC = () => {
             <Button
               size="sm"
               onClick={handleSave}
-              isLoading={isSaving}
               leftIcon={<Save className="w-3.5 h-3.5" />}
             >
               Save Settings
@@ -99,7 +65,6 @@ export const AdminSettings: React.FC = () => {
         }
       />
 
-      {/* Feedback banner */}
       {feedback && (
         <div
           className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium transition-all ${
@@ -139,15 +104,14 @@ export const AdminSettings: React.FC = () => {
             </div>
             <button
               onClick={() => handleToggle('emailAlertsOnEnrollment')}
+              aria-pressed={settings.emailAlertsOnEnrollment}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                 settings.emailAlertsOnEnrollment ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.emailAlertsOnEnrollment ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                settings.emailAlertsOnEnrollment ? 'translate-x-5' : 'translate-x-0'
+              }`} />
             </button>
           </div>
 
@@ -165,15 +129,14 @@ export const AdminSettings: React.FC = () => {
             </div>
             <button
               onClick={() => handleToggle('systemMaintenanceAlerts')}
+              aria-pressed={settings.systemMaintenanceAlerts}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                 settings.systemMaintenanceAlerts ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.systemMaintenanceAlerts ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                settings.systemMaintenanceAlerts ? 'translate-x-5' : 'translate-x-0'
+              }`} />
             </button>
           </div>
 
@@ -186,20 +149,19 @@ export const AdminSettings: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Automatically map semester cohorts (1-2 Year 1, 3-4 Year 2, etc.) for department analytics
+                Include automatic semester-to-year mapping in enrollment records and alerts
               </p>
             </div>
             <button
               onClick={() => handleToggle('autoSyncAcademicYears')}
+              aria-pressed={settings.autoSyncAcademicYears}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                 settings.autoSyncAcademicYears ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.autoSyncAcademicYears ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                settings.autoSyncAcademicYears ? 'translate-x-5' : 'translate-x-0'
+              }`} />
             </button>
           </div>
 
@@ -212,20 +174,19 @@ export const AdminSettings: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Notify administrative logs upon department quiz publish and completion events
+                Show quiz publish and completion notices in your notification feed
               </p>
             </div>
             <button
               onClick={() => handleToggle('quizReportNotifications')}
+              aria-pressed={settings.quizReportNotifications}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                 settings.quizReportNotifications ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.quizReportNotifications ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                settings.quizReportNotifications ? 'translate-x-5' : 'translate-x-0'
+              }`} />
             </button>
           </div>
         </div>
@@ -245,11 +206,42 @@ export const AdminSettings: React.FC = () => {
             </div>
             <select
               value={settings.exportFormat}
-              onChange={e => setSettings({ ...settings, exportFormat: e.target.value as any })}
+              onChange={e => updateSettings({ exportFormat: e.target.value as typeof settings.exportFormat })}
               className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[8px] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
             >
               <option value="csv">CSV (Spreadsheet / Microsoft Excel)</option>
               <option value="json">JSON (Structured Archive)</option>
+            </select>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-muted)] mb-2">
+              <Moon className="w-3.5 h-3.5" /> Color Theme
+            </div>
+            <select
+              value={settings.theme}
+              onChange={e => updateSettings({ theme: e.target.value as typeof settings.theme })}
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[8px] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+            >
+              <option value="light">Light Theme (Default)</option>
+              <option value="dark">Dark Theme</option>
+              <option value="system">System Preference</option>
+            </select>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-muted)] mb-2">
+              <Globe className="w-3.5 h-3.5" /> Portal Language
+            </div>
+            <select
+              value={settings.language}
+              onChange={e => updateSettings({ language: e.target.value })}
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[8px] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+            >
+              <option value="English">English (US/UK)</option>
+              <option value="Hindi">हिन्दी (Hindi)</option>
+              <option value="Spanish">Español (Spanish)</option>
+              <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
             </select>
           </div>
 
@@ -262,15 +254,14 @@ export const AdminSettings: React.FC = () => {
             </div>
             <button
               onClick={() => handleToggle('soundEffects')}
+              aria-pressed={settings.soundEffects}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                 settings.soundEffects ? 'bg-oxblood' : 'bg-taupe/60'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                  settings.soundEffects ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                settings.soundEffects ? 'translate-x-5' : 'translate-x-0'
+              }`} />
             </button>
           </div>
         </div>
@@ -288,9 +279,11 @@ export const AdminSettings: React.FC = () => {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-oxblood" /> Local Storage Sync
+              <Database className="w-4 h-4 text-oxblood" /> Preferences Sync
             </span>
-            <span className="text-[var(--color-text-secondary)] font-medium">Auto-synced</span>
+            <span className="text-[var(--color-text-secondary)] font-medium">
+              {savedToBackend ? 'Synced to your account' : 'Saved on this device'}
+            </span>
           </div>
         </div>
       </Card>

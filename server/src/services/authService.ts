@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
 import { config } from '../config';
+import { notifyFacultyRegistered } from './notificationService';
 
 export const authService = {
   async register(data: {
@@ -22,34 +23,47 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        name: data.name,
-        role: data.role,
-        ...(data.role === 'STUDENT' && data.rollNo && data.sectionId
-          ? {
-            student: {
-              create: {
-                rollNo: data.rollNo,
-                sectionId: data.sectionId,
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: data.email,
+          passwordHash,
+          name: data.name,
+          role: data.role,
+          ...(data.role === 'STUDENT' && data.rollNo && data.sectionId
+            ? {
+              student: {
+                create: {
+                  rollNo: data.rollNo,
+                  sectionId: data.sectionId,
+                },
               },
+            }
+            : {}),
+          ...(data.role === 'FACULTY'
+            ? {
+              faculty: {
+                create: {},
+              },
+            }
+            : {}),
+        },
+        include: {
+          student: {
+            include: {
+              section: true,
             },
-          }
-          : {}),
-        ...(data.role === 'FACULTY'
-          ? {
-            faculty: {
-              create: {},
-            },
-          }
-          : {}),
-      },
-      include: {
-        student: true,
-        faculty: true,
-      },
+          },
+          faculty: true,
+        },
+      });
+
+      // Faculty must be welcomed through every registration path.
+      if (data.role === 'FACULTY') {
+        await notifyFacultyRegistered(created.id, tx);
+      }
+
+      return created;
     });
 
     const token = jwt.sign(
@@ -75,7 +89,11 @@ export const authService = {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        student: true,
+        student: {
+          include: {
+            section: true,
+          },
+        },
         faculty: true,
       },
     });

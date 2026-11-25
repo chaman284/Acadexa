@@ -5,10 +5,11 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { courseService } from '../../services/courseService';
-import type { Course, Unit, Topic } from '../../types/course';
+import { syllabusService } from '../../services/syllabusService';
+import type { Course, Unit, Topic, CourseSyllabus } from '../../types/course';
 import {
-  BookOpen, CheckCircle, Circle, ChevronDown, ChevronUp,
-  Clock, Check, Search, ArrowLeft, Calendar, User, Sparkles
+  BookOpen, CheckCircle, CheckCircle2, Circle, ChevronDown, ChevronUp,
+  Clock, Check, Search, ArrowLeft, Calendar, User, Sparkles, Layers, FileText
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -28,21 +29,23 @@ export const Courses: React.FC = () => {
   const loadCourses = async () => {
     const list = courseService.getCoursesWithProgress();
     try {
-      const res = await api.get('/courses');
+      const [res, syllabi] = await Promise.all([
+        api.get('/courses'),
+        syllabusService.getStudentSyllabi().catch(() => [] as CourseSyllabus[]),
+      ]);
       const dbCourses: any[] = res.data;
+      const syllabusFor = (course: { code: string; name: string }) =>
+        syllabi.find(s => s.subjectCode === course.code) ||
+        syllabi.find(s => s.subjectName.toLowerCase() === course.name.toLowerCase());
+
       if (Array.isArray(dbCourses) && dbCourses.length > 0) {
         const merged: Course[] = list.map(localCourse => {
           const match = dbCourses.find(d => d.code === localCourse.code);
-          if (match) {
-            return {
-              ...localCourse,
-              enrollmentStatus: match.enrollmentStatus,
-              facultyName: match.assignments?.[0]?.facultyName || localCourse.facultyName,
-            };
-          }
           return {
             ...localCourse,
-            enrollmentStatus: 'Enrolled' as const,
+            enrollmentStatus: match?.enrollmentStatus || ('Enrolled' as const),
+            facultyName: match?.assignments?.[0]?.facultyName || localCourse.facultyName,
+            publishedSyllabus: syllabusFor(localCourse),
           };
         });
 
@@ -54,7 +57,7 @@ export const Courses: React.FC = () => {
               name: dbCourse.name,
               code: dbCourse.code,
               semester: dbCourse.semester || dbCourse.assignments?.[0]?.semester || 1,
-              department: dbCourse.departmentName || 'Computer Science',
+              department: dbCourse.departmentName || 'Artificial Intelligence and Machine Learning',
               creditHours: 4,
               facultyId: dbCourse.assignments?.[0]?.facultyId || '',
               facultyName: dbCourse.assignments?.[0]?.facultyName || 'Awaiting Faculty',
@@ -62,6 +65,7 @@ export const Courses: React.FC = () => {
               units: [],
               progress: 0,
               enrollmentStatus: dbCourse.enrollmentStatus || 'Available',
+              publishedSyllabus: syllabusFor(dbCourse),
             });
           }
         });
@@ -78,7 +82,9 @@ export const Courses: React.FC = () => {
 
   const handleSelectCourse = (course: Course) => {
     setSelectedCourseId(course.id);
-    if (course.units?.length > 0) {
+    if (course.publishedSyllabus?.modules?.length) {
+      setExpandedUnitIds([course.publishedSyllabus.modules[0].id]);
+    } else if (course.units?.length > 0) {
       setExpandedUnitIds([course.units[0].id]);
     }
   };
@@ -137,8 +143,8 @@ export const Courses: React.FC = () => {
         />
       ) : (
         <PageHeader
-          title={`${selectedCourse.name} — Syllabus & Units`}
-          subtitle={`${selectedCourse.code} · ${selectedCourse.facultyName} · Unit-wise curriculum breakdown`}
+          title={`${selectedCourse.name} — Syllabus & Course Details`}
+          subtitle={`${selectedCourse.code} · ${selectedCourse.facultyName || 'Faculty'} · ${selectedCourse.department || 'Curriculum'}`}
           breadcrumbs={[
             { label: 'Dashboard', to: '/student' },
             { label: 'My Courses', href: '#', to: '/student/courses' },
@@ -211,6 +217,11 @@ export const Courses: React.FC = () => {
                     >
                       {course.enrollmentStatus || 'Enrolled'}
                     </Badge>
+                    {course.publishedSyllabus && (
+                      <Badge color="forest" dot className="text-[10px] font-semibold">
+                        Syllabus Published
+                      </Badge>
+                    )}
                     <Badge color="gray">{course.code}</Badge>
                   </div>
                 </div>
@@ -224,14 +235,26 @@ export const Courses: React.FC = () => {
 
                 <div className="space-y-1.5 mb-4">
                   <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-[var(--color-text-muted)] font-normal">Syllabus Progress</span>
-                    <span className="text-[var(--color-text-primary)] font-serif font-bold">{course.progress}%</span>
+                    <span className="text-[var(--color-text-muted)] font-normal">
+                      {course.publishedSyllabus ? 'Teaching Progress' : 'My Study Progress'}
+                    </span>
+                    <span className="text-[var(--color-text-primary)] font-serif font-bold">
+                      {course.publishedSyllabus ? course.publishedSyllabus.overallProgress : course.progress}%
+                    </span>
                   </div>
-                  <ProgressBar value={course.progress} height="xs" color="oxblood" />
+                  <ProgressBar
+                    value={course.publishedSyllabus ? course.publishedSyllabus.overallProgress : course.progress}
+                    height="xs"
+                    color="oxblood"
+                  />
                 </div>
 
                 <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                  <span>{course.units?.length || 0} Units</span>
+                  <span>
+                    {course.publishedSyllabus
+                      ? `${course.publishedSyllabus.modules.length} Modules`
+                      : `${course.units?.length || 0} Units`}
+                  </span>
                   <span className="text-oxblood font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     View Syllabus →
                   </span>
@@ -295,23 +318,48 @@ export const Courses: React.FC = () => {
               {/* Course Progress Snapshot */}
               <div className="flex items-center gap-6 bg-white p-3.5 rounded-xl border border-[var(--color-border)] shadow-xs">
                 <div className="text-right">
-                  <p className="text-xs text-[var(--color-text-muted)] font-medium">Overall Progress</p>
+                  <p className="text-xs text-[var(--color-text-muted)] font-medium">
+                    {selectedCourse.publishedSyllabus ? 'Teaching Progress' : 'Study Progress'}
+                  </p>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-2xl font-serif font-bold text-oxblood">{selectedCourse.progress}%</span>
+                    <span className="text-2xl font-serif font-bold text-oxblood">
+                      {selectedCourse.publishedSyllabus
+                        ? selectedCourse.publishedSyllabus.overallProgress
+                        : selectedCourse.progress}%
+                    </span>
                   </div>
                 </div>
 
                 <div className="h-9 w-px bg-[var(--color-border)]" />
 
                 <div className="space-y-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-forest" />
-                    <span className="text-[var(--color-text-secondary)] font-medium">{completedUnits} Completed Units</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-taupe" />
-                    <span className="text-[var(--color-text-muted)]">{remainingUnits} Remaining Units</span>
-                  </div>
+                  {selectedCourse.publishedSyllabus ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-forest" />
+                        <span className="text-[var(--color-text-secondary)] font-medium">
+                          {selectedCourse.publishedSyllabus.modules.filter(m => m.progress === 100).length} Modules Completed
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-taupe" />
+                        <span className="text-[var(--color-text-muted)]">
+                          {selectedCourse.publishedSyllabus.modules.length} Modules Total
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-forest" />
+                        <span className="text-[var(--color-text-secondary)] font-medium">{completedUnits} Completed Units</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-taupe" />
+                        <span className="text-[var(--color-text-muted)]">{remainingUnits} Remaining Units</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -319,9 +367,25 @@ export const Courses: React.FC = () => {
             {/* Quick Metrics Bar */}
             <div className="px-6 py-3 bg-[var(--color-muted)]/40 border-b border-[var(--color-border)] flex flex-wrap items-center justify-between text-xs text-[var(--color-text-secondary)] gap-2">
               <div className="flex items-center gap-4">
-                <span><strong>{totalUnits}</strong> Units in Curriculum</span>
-                <span>•</span>
-                <span><strong>{completedTopics} / {totalTopics}</strong> Topics Completed</span>
+                {selectedCourse.publishedSyllabus ? (
+                  <>
+                    <span><strong>{selectedCourse.publishedSyllabus.modules.length}</strong> Published Modules</span>
+                    <span>•</span>
+                    <span>
+                      <strong>
+                        {selectedCourse.publishedSyllabus.modules.reduce((sum, m) => sum + m.completedTopicIds.length, 0)} /{' '}
+                        {selectedCourse.publishedSyllabus.modules.reduce((sum, m) => sum + m.topics.length, 0)}
+                      </strong>{' '}
+                      Topics Taught by Faculty
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span><strong>{totalUnits}</strong> Units in Curriculum</span>
+                    <span>•</span>
+                    <span><strong>{completedTopics} / {totalTopics}</strong> Topics Completed</span>
+                  </>
+                )}
               </div>
               <div className="text-[var(--color-text-muted)]">
                 💡 Check off units or individual topics to track your study progress.
@@ -330,10 +394,140 @@ export const Courses: React.FC = () => {
 
             {/* Units and Topics Portion */}
             <div className="p-6 space-y-4">
-              {(!selectedCourse.units || selectedCourse.units.length === 0) ? (
+              {selectedCourse.publishedSyllabus ? (
+                selectedCourse.publishedSyllabus.modules.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <BookOpen className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-2" />
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      No Modules Published Yet
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      The faculty has not published modules for this course yet. Please check back later.
+                    </p>
+                  </div>
+                ) : (
+                  selectedCourse.publishedSyllabus.modules.map((module, index) => {
+                    const isExpanded = expandedUnitIds.includes(module.id);
+                    const label = module.moduleNumber ? `Module ${module.moduleNumber}` : `Module ${index + 1}`;
+                    const taughtCount = module.completedTopicIds?.length || 0;
+                    const totalCount = module.topics?.length || 0;
+
+                    return (
+                      <div
+                        key={module.id}
+                        className={clsx(
+                          'border rounded-xl transition-all duration-150 overflow-hidden',
+                          module.progress === 100
+                            ? 'border-forest/30 bg-forest/5'
+                            : 'border-[var(--color-border)] bg-white'
+                        )}
+                      >
+                        {/* Module Header Bar */}
+                        <div
+                          onClick={() => toggleUnitExpand(module.id)}
+                          className="p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-ivory/50 transition-colors select-none"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#34483A]/10 text-[#34483A] flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                              {module.moduleNumber || index + 1}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                                  {label}
+                                </span>
+                                <span className="font-serif font-bold text-base text-[var(--color-text-primary)] truncate">
+                                  {module.title}
+                                </span>
+                                <Badge
+                                  color={module.progress === 100 ? 'forest' : module.progress > 0 ? 'brass' : 'gray'}
+                                  className="text-[10px]"
+                                >
+                                  {module.progress === 100 ? 'Completed' : module.progress > 0 ? 'In Progress' : 'Not Started'}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                                {taughtCount} of {totalCount} topics taught
+                                {module.hours ? ` · ${module.hours}` : ''}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Progress bar and toggle arrow */}
+                          <div className="flex items-center gap-4 flex-shrink-0">
+                            <div className="hidden sm:block w-28">
+                              <ProgressBar
+                                value={module.progress}
+                                height="xs"
+                                color={module.progress === 100 ? 'forest' : 'oxblood'}
+                              />
+                            </div>
+                            <span className="text-sm font-serif font-bold text-oxblood w-10 text-right">
+                              {module.progress}%
+                            </span>
+                            <div className="text-[var(--color-text-muted)]">
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Topics List (Collapsible) */}
+                        {isExpanded && (
+                          <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border)]/60 bg-ivory/30">
+                            {module.description && (
+                              <p className="text-xs leading-relaxed text-[var(--color-text-secondary)] mt-3 mb-3">
+                                {module.description}
+                              </p>
+                            )}
+                            <div className="space-y-1.5 mt-2">
+                              {module.topics.map(topic => {
+                                const taught = module.completedTopicIds?.includes(topic.id);
+                                return (
+                                  <div
+                                    key={topic.id}
+                                    className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white border border-[var(--color-border)]"
+                                  >
+                                    {taught ? (
+                                      <CheckCircle2 className="w-4 h-4 text-forest mt-0.5 flex-shrink-0" />
+                                    ) : (
+                                      <Circle className="w-4 h-4 text-[var(--color-text-muted)] mt-0.5 flex-shrink-0" />
+                                    )}
+                                    <span
+                                      className={clsx(
+                                        'text-xs leading-snug',
+                                        taught
+                                          ? 'text-[var(--color-text-primary)] font-medium'
+                                          : 'text-[var(--color-text-secondary)]'
+                                      )}
+                                    >
+                                      {topic.name}
+                                    </span>
+                                    {taught && (
+                                      <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded bg-forest/10 text-forest border border-forest/20 flex-shrink-0">
+                                        Taught
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {module.topics.length === 0 && (
+                                <p className="text-xs text-[var(--color-text-muted)] text-center py-3">
+                                  No topics listed for this module.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )
+              ) : (!selectedCourse.units || selectedCourse.units.length === 0) ? (
                 <div className="py-12 text-center">
                   <BookOpen className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">No Syllabus Available</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    No Syllabus Available
+                  </p>
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                     The syllabus for this course has not been uploaded yet. Please check back later.
                   </p>

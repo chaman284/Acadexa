@@ -2,7 +2,7 @@
 // ACADEXA AI QUESTION GENERATOR MODAL
 // Curriculum-guided AI item generation with review, batch selection & regeneration
 // ============================================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Sparkles, Loader2, Check, RefreshCw, Trash2, Eye,
   BookOpen, Layers, Award, AlertCircle, HelpCircle,
@@ -15,7 +15,7 @@ import type {
   Difficulty,
 } from '../types/quizTypes';
 import { aiQuestionService } from '../services/aiQuestionService';
-import { CURRICULUM_DATA } from '../constants/curriculumData';
+import { fetchDynamicCurriculum, type DynamicSubject } from '../services/curriculumService';
 
 interface AiQuestionGeneratorModalProps {
   defaultSubjectId?: string;
@@ -33,24 +33,85 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
   // Step 1: Configuration; Step 2: Review generated questions
   const [currentStep, setCurrentStep] = useState<'configure' | 'review'>('configure');
 
-  // Config parameters
-  const initialSubj =
-    CURRICULUM_DATA.find(s => s.id === defaultSubjectId) || CURRICULUM_DATA[0];
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(initialSubj.id);
-  const currentSubject =
-    CURRICULUM_DATA.find(s => s.id === selectedSubjectId) || CURRICULUM_DATA[0];
+  // Database-backed curriculum data
+  const [subjects, setSubjects] = useState<DynamicSubject[]>([]);
+  const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
 
-  const [selectedUnitId, setSelectedUnitId] = useState<string>(
-    currentSubject.units[0]?.id || ''
-  );
-  const currentUnit =
-    currentSubject.units.find(u => u.id === selectedUnitId) || currentSubject.units[0];
+  // Selected identifiers
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(defaultSubjectId || '');
+  const [selectedUnitId, setSelectedUnitId] = useState<string>('');
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('');
 
-  const [selectedTopicId, setSelectedTopicId] = useState<string>(
-    currentUnit?.topics[0]?.id || ''
-  );
-  const currentTopic =
-    currentUnit?.topics.find(t => t.id === selectedTopicId) || currentUnit?.topics[0];
+  useEffect(() => {
+    let isMounted = true;
+    const loadCurriculum = async () => {
+      setIsLoadingCurriculum(true);
+      try {
+        const dynamicList = await fetchDynamicCurriculum();
+        if (!isMounted) return;
+        setSubjects(dynamicList);
+
+        if (dynamicList.length > 0) {
+          const matched =
+            (defaultSubjectId && dynamicList.find(s => s.id === defaultSubjectId)) ||
+            (defaultSemester && dynamicList.find(s => s.semester === defaultSemester)) ||
+            dynamicList[0];
+
+          setSelectedSubjectId(matched.id);
+          const firstUnit = matched.units[0];
+          if (firstUnit) {
+            setSelectedUnitId(firstUnit.id);
+            if (firstUnit.topics[0]) {
+              setSelectedTopicId(firstUnit.topics[0].id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load database curriculum for AI generator:', err);
+      } finally {
+        if (isMounted) setIsLoadingCurriculum(false);
+      }
+    };
+
+    loadCurriculum();
+    return () => {
+      isMounted = false;
+    };
+  }, [defaultSubjectId, defaultSemester]);
+
+  const currentSubject = useMemo(() => {
+    return subjects.find(s => s.id === selectedSubjectId) || subjects[0];
+  }, [subjects, selectedSubjectId]);
+
+  const currentUnit = useMemo(() => {
+    if (!currentSubject || !currentSubject.units || currentSubject.units.length === 0) return undefined;
+    return currentSubject.units.find(u => u.id === selectedUnitId) || currentSubject.units[0];
+  }, [currentSubject, selectedUnitId]);
+
+  const currentTopic = useMemo(() => {
+    if (!currentUnit || !currentUnit.topics || currentUnit.topics.length === 0) return undefined;
+    return currentUnit.topics.find(t => t.id === selectedTopicId) || currentUnit.topics[0];
+  }, [currentUnit, selectedTopicId]);
+
+  const handleSubjectChange = (newSubjectId: string) => {
+    setSelectedSubjectId(newSubjectId);
+    const sub = subjects.find(s => s.id === newSubjectId);
+    if (sub && sub.units.length > 0) {
+      const u = sub.units[0];
+      setSelectedUnitId(u.id);
+      if (u.topics.length > 0) {
+        setSelectedTopicId(u.topics[0].id);
+      }
+    }
+  };
+
+  const handleUnitChange = (newUnitId: string) => {
+    setSelectedUnitId(newUnitId);
+    const u = currentSubject?.units.find(x => x.id === newUnitId);
+    if (u && u.topics.length > 0) {
+      setSelectedTopicId(u.topics[0].id);
+    }
+  };
 
   const [questionCount, setQuestionCount] = useState<number>(3);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -78,6 +139,10 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
   };
 
   const handleGenerate = async () => {
+    if (!currentSubject || !currentUnit || !currentTopic) {
+      setErrorMsg('Please select a valid Subject and Topic from the database.');
+      return;
+    }
     setErrorMsg(null);
     setIsGenerating(true);
     try {
@@ -88,7 +153,8 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
         department: currentSubject.department,
         unitId: currentUnit.id,
         unitName: currentUnit.name,
-        topicId: currentTopic.id,
+        topicId: currentTopic.topicId || currentUnit.id,
+        subtopicId: currentTopic.subtopicId || currentTopic.id,
         topicName: currentTopic.name,
         questionCount,
         questionTypes: selectedTypes,
@@ -179,65 +245,65 @@ export const AiQuestionGeneratorModal: React.FC<AiQuestionGeneratorModalProps> =
                 </h4>
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Subject</label>
-                  <select
-                    value={selectedSubjectId}
-                    onChange={e => {
-                      const id = e.target.value;
-                      setSelectedSubjectId(id);
-                      const m = CURRICULUM_DATA.find(s => s.id === id);
-                      if (m) {
-                        setSelectedUnitId(m.units[0]?.id || '');
-                        setSelectedTopicId(m.units[0]?.topics[0]?.id || '');
-                      }
-                    }}
-                    className="w-full border border-slate-200 rounded-xl p-2 bg-white"
-                  >
-                    {CURRICULUM_DATA.map(s => (
-                      <option key={s.id} value={s.id}>
-                        [{s.code}] {s.name}
-                      </option>
-                    ))}
-                  </select>
+              {isLoadingCurriculum ? (
+                <div className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                  <span>Loading syllabus topics from database...</span>
                 </div>
+              ) : subjects.length === 0 ? (
+                <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                  No courses or topics found in the database.
+                </p>
+              ) : (
+                <div className="grid sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Subject</label>
+                    <select
+                      value={selectedSubjectId}
+                      onChange={e => handleSubjectChange(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                    >
+                      {subjects.map(s => (
+                        <option key={s.id} value={s.id}>
+                          [{s.code}] {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Unit</label>
-                  <select
-                    value={selectedUnitId}
-                    onChange={e => {
-                      const id = e.target.value;
-                      setSelectedUnitId(id);
-                      const u = currentSubject.units.find(x => x.id === id);
-                      if (u) setSelectedTopicId(u.topics[0]?.id || '');
-                    }}
-                    className="w-full border border-slate-200 rounded-xl p-2 bg-white"
-                  >
-                    {currentSubject.units.map(u => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Module</label>
+                    <select
+                      value={selectedUnitId}
+                      onChange={e => handleUnitChange(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                      disabled={!currentSubject || !currentSubject.units || currentSubject.units.length === 0}
+                    >
+                      {currentSubject?.units?.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Topic</label>
-                  <select
-                    value={selectedTopicId}
-                    onChange={e => setSelectedTopicId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl p-2 bg-white"
-                  >
-                    {currentUnit?.topics.map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Topic</label>
+                    <select
+                      value={selectedTopicId}
+                      onChange={e => setSelectedTopicId(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl p-2 bg-white"
+                      disabled={!currentUnit || !currentUnit.topics || currentUnit.topics.length === 0}
+                    >
+                      {currentUnit?.topics?.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Pedagogy & Difficulty Configuration */}

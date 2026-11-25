@@ -14,6 +14,7 @@ import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import type { Quiz, QuizQuestion, QuizAttempt, QuestionResponse } from '../types/quizTypes';
 import { quizEvaluationService } from '../services/quizEvaluationService';
+import { settingsService } from '../../../services/settingsService';
 
 interface PracticeInterfaceProps {
   quiz: Quiz;
@@ -64,7 +65,7 @@ const playAudioFeedback = (
   type: 'correct' | 'wrong' | 'pop' | 'streak' | 'hint' | 'submit' | 'victory',
   isMuted: boolean = false
 ) => {
-  if (isMuted) return;
+  if (isMuted || !settingsService.getLocalSettings().soundEffects) return;
   try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
     if (!AC) return;

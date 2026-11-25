@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { adminService } from '../../services/adminService';
+import { adminService, type FacultyRecord, type StudentRecord } from '../../services/adminService';
 import {
   Bell, Send, CheckCircle2,
   AlertCircle, RefreshCw, Sparkles, BookOpen
@@ -19,8 +19,13 @@ export const AdminNotifications: React.FC = () => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [targetRole, setTargetRole] = useState('ALL');
+  const [recipientId, setRecipientId] = useState('');
+  const [recipients, setRecipients] = useState<{ id: string; label: string }[]>([]);
+  const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const isSpecificRecipient = targetRole === 'FACULTY_USER' || targetRole === 'STUDENT_USER';
 
   const loadNotifications = async () => {
     setIsLoading(true);
@@ -39,10 +44,40 @@ export const AdminNotifications: React.FC = () => {
     loadNotifications();
   }, []);
 
+  useEffect(() => {
+    setRecipientId('');
+    setRecipients([]);
+    if (!isSpecificRecipient) return;
+
+    let active = true;
+    setIsLoadingRecipients(true);
+    const request = targetRole === 'FACULTY_USER'
+      ? adminService.getFaculty().then(list => (list as FacultyRecord[]).map(u => ({
+        id: u.userId,
+        label: `${u.name} (${u.email})`,
+      })))
+      : adminService.getStudents().then(list => (list as StudentRecord[]).map(u => ({
+        id: u.userId,
+        label: `${u.name} — ${u.rollNo}`,
+      })));
+
+    request
+      .then(options => { if (active) setRecipients(options); })
+      .catch(() => { if (active) setRecipients([]); })
+      .finally(() => { if (active) setIsLoadingRecipients(false); });
+
+    return () => { active = false; };
+  }, [targetRole, isSpecificRecipient]);
+
   const handleSendAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) {
       setActionMessage({ type: 'error', text: 'Title and message are required.' });
+      return;
+    }
+
+    if (isSpecificRecipient && !recipientId) {
+      setActionMessage({ type: 'error', text: 'Please choose a recipient.' });
       return;
     }
 
@@ -52,12 +87,15 @@ export const AdminNotifications: React.FC = () => {
         title: title.trim(),
         message: message.trim(),
         type: 'announcement',
-        role: targetRole,
+        role: isSpecificRecipient ? undefined : targetRole,
+        targetUserId: isSpecificRecipient ? recipientId : undefined,
       });
       setIsModalOpen(false);
       setTitle('');
       setMessage('');
-      setActionMessage({ type: 'success', text: 'Announcement broadcasted successfully!' });
+      setTargetRole('ALL');
+      setRecipientId('');
+      setActionMessage({ type: 'success', text: 'Announcement sent successfully!' });
       loadNotifications();
     } catch (err: any) {
       setActionMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to send announcement.' });
@@ -209,10 +247,33 @@ export const AdminNotifications: React.FC = () => {
               className="w-full text-sm font-medium bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2.5 text-[#302A2B] focus:border-[#542536] focus:outline-none focus:ring-2 focus:ring-[#542536]/10 transition-all shadow-xs"
             >
               <option value="ALL">Everyone (Faculty & Students)</option>
-              <option value="FACULTY">Faculty Members Only</option>
-              <option value="STUDENT">Students Only</option>
+              <option value="FACULTY">All Faculty Members</option>
+              <option value="STUDENT">All Students</option>
+              <option value="FACULTY_USER">Specific Faculty Member</option>
+              <option value="STUDENT_USER">Specific Student</option>
             </select>
           </div>
+
+          {isSpecificRecipient && (
+            <div>
+              <label className="block text-xs font-semibold text-[#302A2B] mb-1">
+                Recipient
+              </label>
+              <select
+                value={recipientId}
+                onChange={e => setRecipientId(e.target.value)}
+                disabled={isLoadingRecipients}
+                className="w-full text-sm font-medium bg-white border border-[#E1D4CA] rounded-[10px] px-3 py-2.5 text-[#302A2B] focus:border-[#542536] focus:outline-none focus:ring-2 focus:ring-[#542536]/10 transition-all shadow-xs"
+              >
+                <option value="">
+                  {isLoadingRecipients ? 'Loading recipients...' : 'Select a recipient'}
+                </option>
+                {recipients.map(option => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="pt-2 flex justify-end gap-2 border-t border-[#E1D4CA] mt-4">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>

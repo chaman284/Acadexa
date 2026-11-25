@@ -7,10 +7,13 @@ import { BookOpen, Users, Clock, Calendar, AlertCircle, Loader2 } from 'lucide-r
 import api from '../../../lib/apiClient';
 import type { QuizCategory, QuizMode, AssignedClass } from '../types/quizTypes';
 import { CURRICULUM_DATA } from '../constants/curriculumData';
+import { buildUnitsFromTopics } from '../services/curriculumService';
 
 interface AssignedTopic {
   id: string;
   name: string;
+  moduleNo?: number;
+  subtopics?: { id: string; name: string }[];
 }
 
 interface AssignedSubject {
@@ -208,6 +211,18 @@ export const QuizDetailsForm: React.FC<QuizDetailsFormProps> = ({
   }, [semesterSubjects, subjectId]);
 
   const currentSubject = useMemo(() => {
+    // 1. Prefer database curriculum with modules & subtopics
+    if (activeDbSubject && activeDbSubject.topics && activeDbSubject.topics.length > 0) {
+      return {
+        id: activeDbSubject.id,
+        code: activeDbSubject.code,
+        name: activeDbSubject.name,
+        semester,
+        department: activeDbSubject.department || 'Artificial Intelligence and Machine Learning',
+        units: buildUnitsFromTopics(activeDbSubject.id, activeDbSubject.name, activeDbSubject.topics),
+      };
+    }
+
     const fallbackCurriculum = CURRICULUM_DATA.find(
       s => s.id === subjectId || (activeDbSubject && s.code === activeDbSubject.code)
     );
@@ -216,18 +231,17 @@ export const QuizDetailsForm: React.FC<QuizDetailsFormProps> = ({
       return fallbackCurriculum;
     }
 
-    const dbTopics = activeDbSubject?.topics || [];
     return {
       id: activeDbSubject?.id || subjectId || 'default_sub',
-      code: activeDbSubject?.code || 'CS',
+      code: activeDbSubject?.code || 'AIML',
       name: activeDbSubject?.name || 'Curriculum Course',
       semester,
-      department: activeDbSubject?.department || 'Computer Science and Engineering',
+      department: activeDbSubject?.department || 'Artificial Intelligence and Machine Learning',
       units: [
         {
           id: `u_${activeDbSubject?.id || '1'}`,
-          name: 'Unit 1: Core Curriculum Topics',
-          topics: dbTopics.length > 0 ? dbTopics : [{ id: 't_core', name: activeDbSubject?.name || 'General Coursework' }],
+          name: 'Module 1: Core Curriculum Topics',
+          topics: [{ id: 't_core', name: activeDbSubject?.name || 'General Coursework' }],
         },
       ],
     };
@@ -429,10 +443,10 @@ export const QuizDetailsForm: React.FC<QuizDetailsFormProps> = ({
               </div>
             </div>
 
-            {/* Units multi-select */}
+            {/* Modules / Units multi-select */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                Covered Units
+                Covered Modules
               </label>
               <div className="flex flex-wrap gap-2">
                 {currentSubject.units.map(u => {

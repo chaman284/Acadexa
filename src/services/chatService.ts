@@ -3,6 +3,7 @@
 // ============================================
 import api from '../lib/apiClient';
 import type { ChatMessage } from '../types/department';
+import { departmentInfo, departmentFAQs, departmentEvents } from '../data/collegeInfo';
 
 export const chatService = {
   /**
@@ -97,23 +98,75 @@ export const chatService = {
         message,
         conversationHistory.map(h => ({ role: h.role, content: h.content }))
       );
-      return {
-        id: nexusRes.id,
-        role: 'assistant',
-        content: nexusRes.content,
-        timestamp: nexusRes.timestamp,
-        type: 'department',
-      };
+
+      // If backend was reached and gave a meaningful reply
+      if (nexusRes?.content && !nexusRes.content.includes('offline')) {
+        return {
+          id: nexusRes.id,
+          role: 'assistant',
+          content: nexusRes.content,
+          timestamp: nexusRes.timestamp,
+          type: 'department',
+        };
+      }
     } catch (e) {
-      console.warn('sendDepartmentMessage fallback:', e);
+      console.warn('sendDepartmentMessage backend call failed, falling back to local department knowledge:', e);
+    }
+
+    // High-accuracy client-side fallback from department info & calendar
+    const mLower = message.toLowerCase();
+
+    if (['hod', 'head of department', 'pushpalatha', 'contact hod'].some(k => mLower.includes(k))) {
       return {
         id: `msg_${Date.now()}`,
         role: 'assistant',
-        content: 'I can help you with academic and department information. You can ask me about coursework, concepts, announcements, or general academic policies.',
+        content: `🏛️ **Head of Department (HOD) — AIML**\n\n• **Name**: **${departmentInfo.hod.name}**\n• **Designation**: ${departmentInfo.hod.designation}\n• **Department**: ${departmentInfo.hod.department}\n• **Email**: [${departmentInfo.hod.email}](mailto:${departmentInfo.hod.email})\n• **Cabin**: ${departmentInfo.hod.office}\n• **Phone**: ${departmentInfo.hod.contact}`,
         timestamp: new Date().toISOString(),
         type: 'department',
       };
     }
+
+    if (['vision', 'mission', 'about department', 'overview'].some(k => mLower.includes(k))) {
+      return {
+        id: `msg_${Date.now()}`,
+        role: 'assistant',
+        content: `🌟 **Department of Artificial Intelligence & Machine Learning**\n\n**Vision:**\n> "${departmentInfo.vision}"\n\n**Overview:**\n${departmentInfo.overview}`,
+        timestamp: new Date().toISOString(),
+        type: 'department',
+      };
+    }
+
+    if (['synergia', 'fest', 'annual fest', 'hackathon'].some(k => mLower.includes(k))) {
+      return {
+        id: `msg_${Date.now()}`,
+        role: 'assistant',
+        content: `🎉 **SYNERGIA 2026 (Annual Mega Tech & Cultural Fest)**\n\n• **Dates**: November 12th – 14th, 2026\n• **Venue**: Sahyadri Campus & Auditoriums\n• **Events**: 36-hr GenAI Hackathon, Robotics Challenge, Paper Presentations & Cultural Gala.`,
+        timestamp: new Date().toISOString(),
+        type: 'department',
+      };
+    }
+
+    const matchedFaq = departmentFAQs.find(f =>
+      mLower.split(' ').some(w => w.length > 3 && f.question.toLowerCase().includes(w))
+    );
+    if (matchedFaq) {
+      return {
+        id: `msg_${Date.now()}`,
+        role: 'assistant',
+        content: `📋 **${matchedFaq.question}**\n\n${matchedFaq.answer}`,
+        timestamp: new Date().toISOString(),
+        type: 'department',
+      };
+    }
+
+    return {
+      id: `msg_${Date.now()}`,
+      role: 'assistant',
+      content:
+        'I am the AI Assistant for the Department of Artificial Intelligence & Machine Learning. You can ask me about Dr. Pushpalatha K (HOD), 3rd & 5th sem CIE exam dates, SEE finals, Course Drop/Withdrawal cutoffs, and SYNERGIA 2026!',
+      timestamp: new Date().toISOString(),
+      type: 'department',
+    };
   },
 };
 
@@ -137,7 +190,7 @@ export const departmentService = {
   },
 
   /** GET /api/dept/info */
-  getDeptInfo: async (dept = 'CS') => {
+  getDeptInfo: async (dept = 'AIML') => {
     try {
       const res = await api.get(`/dept/info?dept=${dept}`);
       if (res.data?.data) return res.data.data;

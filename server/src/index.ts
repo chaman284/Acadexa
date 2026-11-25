@@ -11,10 +11,12 @@ import analyticsRoutes from './routes/analytics';
 import chatbotRoutes from './routes/chatbot';
 import adminRoutes from './routes/admin';
 import notificationsRoutes from './routes/notifications';
+import settingsRoutes from './routes/settings';
 import coursesRoutes from './routes/courses';
 import sectionsRoutes from './routes/sections';
 import skillGapRoutes from './routes/skillGaps';
 import deptRoutes from './routes/dept';
+import syllabusRoutes from './routes/syllabus';
 
 const app = express();
 
@@ -51,9 +53,11 @@ app.use('/api/skill-gaps', skillGapRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/courses', coursesRoutes);
 app.use('/api/sections', sectionsRoutes);
 app.use('/api/dept', deptRoutes);
+app.use('/api/syllabus', syllabusRoutes);
 
 // Error Handler
 app.use(errorHandler);
