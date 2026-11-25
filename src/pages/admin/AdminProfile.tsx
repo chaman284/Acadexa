@@ -11,7 +11,7 @@ import { authService } from '../../services/authService';
 import {
   ShieldCheck, Mail, Phone, Building2, Calendar,
   Award, CheckCircle2, AlertCircle, Edit3, Save, X, Sparkles,
-  Users, BookOpen, Layers, Lock, Cpu, Globe
+  Users, BookOpen, Layers, Lock, Cpu, Globe, User, MapPin
 } from 'lucide-react';
 
 const ADMIN_PROFILE_STORAGE_KEY = 'acadexa_admin_profile';
@@ -55,7 +55,6 @@ export const AdminProfile: React.FC = () => {
   });
 
   const [stats, setStats] = useState<OverviewResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -118,127 +117,141 @@ export const AdminProfile: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto animate-fade-in-up">
+    <div className="space-y-6 max-w-5xl mx-auto animate-fade-in-up">
       <PageHeader
         title="Administrator Profile"
         subtitle="System governance credentials, institutional scope, and administrator identity"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Profile' }]}
+        breadcrumbs={[{ label: 'Dashboard', to: '/admin' }, { label: 'Profile' }]}
         action={
-          !isEditing && (
+          !isEditing ? (
             <Button
-              variant="primary"
-              size="sm"
               onClick={handleEditClick}
-              className="flex items-center gap-1.5 shadow-sm"
+              leftIcon={<Edit3 className="w-4 h-4" />}
             >
-              <Edit3 className="w-4 h-4" />
               Edit Profile
             </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                leftIcon={<X className="w-4 h-4" />}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                isLoading={isSaving}
+                leftIcon={<Save className="w-4 h-4" />}
+              >
+                Save Changes
+              </Button>
+            </div>
           )
         }
       />
 
-      {/* Feedback Toast */}
+      {/* Feedback banner */}
       {feedback && (
         <div
-          className={`p-4 rounded-[10px] border-2 border-[#171717] flex items-center gap-3 transition-all ${
+          className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium transition-all ${
             feedback.type === 'success'
-              ? 'bg-[#E0FAF8] text-[#171717]'
-              : 'bg-[#FFE8E8] text-[#171717]'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border border-rose-200 text-rose-800'
           }`}
-          style={{ boxShadow: '3px 3px 0px #171717' }}
         >
           {feedback.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-[#0e6b64]" />
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-[#FF666B]" />
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
           )}
-          <span className="text-sm font-bold">{feedback.message}</span>
+          <span>{feedback.message}</span>
         </div>
       )}
 
-      {/* Hero Banner Card */}
-      <div
-        className="p-6 md:p-8 bg-[#FFFBE0] border-2 border-[#171717] text-[#171717] rounded-[16px] relative overflow-hidden"
-        style={{ boxShadow: '6px 6px 0px #171717' }}
-      >
-        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
-          <div className="relative">
-            <div
-              className="w-24 h-24 md:w-28 md:h-28 rounded-[16px] bg-[#FF666B] flex items-center justify-center text-white text-3xl font-black border-2 border-[#171717]"
-              style={{ boxShadow: '4px 4px 0px #171717' }}
-            >
-              {profile.name
-                .split(' ')
-                .map(n => n[0])
-                .slice(0, 2)
-                .join('')
-                .toUpperCase() || 'SA'}
-            </div>
-            <div
-              className="absolute -bottom-2 -right-2 bg-[#42CFC1] text-[#171717] p-2 rounded-full border-2 border-[#171717]"
-              style={{ boxShadow: '2px 2px 0px #171717' }}
-            >
-              <ShieldCheck className="w-4 h-4 stroke-[2.5]" />
+      {/* Top Profile Summary Card */}
+      <Card padding="lg">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+          <div className="relative group">
+            <Avatar
+              name={profile.name}
+              size="lg"
+              className="w-24 h-24 ring-4 ring-brass/30 shadow-card text-2xl"
+            />
+            <div className="absolute -bottom-1 -right-1 bg-oxblood text-white p-1.5 rounded-full ring-2 ring-white">
+              <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="flex-1 space-y-2.5">
+          <div className="flex-1 text-center md:text-left space-y-2 min-w-0">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-[#171717]">{profile.name}</h1>
-              <Badge color="purple" className="text-xs px-2.5 py-0.5 uppercase tracking-wide">
+              <h2 className="text-2xl font-serif font-bold text-[var(--color-text-primary)]">
+                {profile.name}
+              </h2>
+              <Badge color="oxblood" className="text-xs font-semibold px-2.5 py-0.5">
                 System Administrator
               </Badge>
-              <Badge color="green" className="text-xs px-2.5 py-0.5">
+              <Badge color="forest" className="text-xs font-semibold px-2.5 py-0.5">
                 Root Access
+              </Badge>
+              <Badge color="gray" className="text-xs font-semibold px-2.5 py-0.5">
+                {profile.employeeId}
               </Badge>
             </div>
 
-            <p className="text-[#696969] font-medium text-sm max-w-2xl leading-relaxed">
+            <p className="text-sm text-[var(--color-text-secondary)] font-medium flex items-center justify-center md:justify-start gap-2">
+              <Building2 className="w-4 h-4 text-[var(--color-text-muted)]" />
+              {profile.department}
+            </p>
+
+            <p className="text-xs text-[var(--color-text-muted)] max-w-2xl leading-relaxed mt-2">
               {profile.bio}
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs font-bold text-[#171717]">
-              <div
-                className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-[8px] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
-                <Mail className="w-4 h-4 text-[#FF666B]" />
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2 text-xs text-[var(--color-text-secondary)]">
+              <div className="flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                 <span>{profile.email}</span>
               </div>
-              <div
-                className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-[8px] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
-                <Building2 className="w-4 h-4 text-[#42CFC1]" />
-                <span>{profile.department}</span>
+              <div className="flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                <span>{profile.phone}</span>
               </div>
-              <div
-                className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-[8px] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
-                <Lock className="w-4 h-4 text-[#A98BEF]" />
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                <span>{profile.officeLocation}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                 <span>ID: {profile.employeeId}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Main Grid: Details & Governance Scope */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Profile Info or Edit Form (2 Cols) */}
         <div className="lg:col-span-2 space-y-6">
-          {isEditing ? (
-            <Card className="p-6">
-              <CardHeader
-                title="Edit Administrator Credentials"
-                subtitle="Update your administrator contact details and profile narrative"
-              />
-              <form onSubmit={handleSave} className="space-y-4 mt-4">
+          <Card>
+            <CardHeader
+              title="Administrator Credentials"
+              subtitle={
+                isEditing
+                  ? 'Update administrator credentials and profile narrative'
+                  : 'Primary administrative contact and academic office details'
+              }
+            />
+
+            {isEditing ? (
+              <form onSubmit={handleSave} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1 uppercase tracking-wider">
-                    Full Name
+                  <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1">
+                    Full Name *
                   </label>
                   <Input
                     value={formData.name}
@@ -250,18 +263,20 @@ export const AdminProfile: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1">
                       Email (System Root)
                     </label>
                     <Input
                       value={formData.email}
                       disabled
-                      className="bg-slate-100 cursor-not-allowed opacity-75"
+                      className="opacity-75 cursor-not-allowed bg-[var(--color-background)]"
                     />
-                    <p className="text-[11px] text-[#696969] font-medium mt-1">Institutional root email cannot be altered.</p>
+                    <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                      Institutional root email cannot be altered.
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1">
                       Phone Number
                     </label>
                     <Input
@@ -274,7 +289,7 @@ export const AdminProfile: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1">
                       Department
                     </label>
                     <Input
@@ -284,7 +299,7 @@ export const AdminProfile: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1">
                       Office Location
                     </label>
                     <Input
@@ -296,134 +311,126 @@ export const AdminProfile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1 uppercase tracking-wider">
-                    Bio & Responsibilities
+                  <label className="block text-xs font-semibold text-[var(--color-text-primary)] mb-1">
+                    Bio &amp; Responsibilities
                   </label>
                   <textarea
                     rows={4}
                     value={formData.bio}
                     onChange={e => setFormData({ ...formData, bio: e.target.value })}
-                    className="w-full text-sm font-semibold border-2 border-[#171717] rounded-[8px] p-3 text-[#171717] placeholder:text-[#9a9a9a] bg-white resize-none"
-                    style={{ boxShadow: '2px 2px 0px #171717' }}
+                    className="w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] transition-colors resize-none"
                     placeholder="Describe administrative responsibilities and institutional governance scope..."
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-[#e5d8c7]">
+                <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
-                    <X className="w-4 h-4 mr-1.5" />
                     Cancel
                   </Button>
-                  <Button type="submit" variant="primary" size="sm" disabled={isSaving}>
-                    <Save className="w-4 h-4 mr-1.5" />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  <Button type="submit" size="sm" isLoading={isSaving} leftIcon={<Save className="w-4 h-4" />}>
+                    Save Changes
                   </Button>
                 </div>
               </form>
-            </Card>
-          ) : (
-            <Card className="p-6">
-              <CardHeader
-                title="Institutional Credentials"
-                subtitle="Primary administrative contact and academic office details"
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                <div className="p-3 bg-[#FFF5EA] rounded-[8px] border-2 border-[#171717]" style={{ boxShadow: '2px 2px 0px #171717' }}>
-                  <span className="text-[11px] font-bold text-[#696969] uppercase tracking-wider">Full Name</span>
-                  <p className="text-base font-black text-[#171717] mt-0.5">{profile.name}</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
+                    <User className="w-3.5 h-3.5" /> Full Name
+                  </div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">{profile.name}</div>
                 </div>
-                <div className="p-3 bg-[#FFF5EA] rounded-[8px] border-2 border-[#171717]" style={{ boxShadow: '2px 2px 0px #171717' }}>
-                  <span className="text-[11px] font-bold text-[#696969] uppercase tracking-wider">Email Address</span>
-                  <p className="text-base font-black text-[#171717] mt-0.5">{profile.email}</p>
+
+                <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
+                    <Mail className="w-3.5 h-3.5" /> Institutional Email
+                  </div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">{profile.email}</div>
                 </div>
-                <div className="p-3 bg-[#FFF5EA] rounded-[8px] border-2 border-[#171717]" style={{ boxShadow: '2px 2px 0px #171717' }}>
-                  <span className="text-[11px] font-bold text-[#696969] uppercase tracking-wider">Phone / Extension</span>
-                  <p className="text-base font-black text-[#171717] mt-0.5">{profile.phone}</p>
+
+                <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
+                    <Phone className="w-3.5 h-3.5" /> Phone / Extension
+                  </div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">{profile.phone}</div>
                 </div>
-                <div className="p-3 bg-[#FFF5EA] rounded-[8px] border-2 border-[#171717]" style={{ boxShadow: '2px 2px 0px #171717' }}>
-                  <span className="text-[11px] font-bold text-[#696969] uppercase tracking-wider">Department</span>
-                  <p className="text-base font-black text-[#171717] mt-0.5">{profile.department}</p>
+
+                <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
+                    <Building2 className="w-3.5 h-3.5" /> Department
+                  </div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">{profile.department}</div>
                 </div>
-                <div className="p-3 bg-[#FFF5EA] rounded-[8px] border-2 border-[#171717]" style={{ boxShadow: '2px 2px 0px #171717' }}>
-                  <span className="text-[11px] font-bold text-[#696969] uppercase tracking-wider">Office Location</span>
-                  <p className="text-base font-black text-[#171717] mt-0.5">{profile.officeLocation}</p>
+
+                <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
+                    <MapPin className="w-3.5 h-3.5" /> Office Location
+                  </div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">{profile.officeLocation}</div>
                 </div>
-                <div className="p-3 bg-[#FFF5EA] rounded-[8px] border-2 border-[#171717]" style={{ boxShadow: '2px 2px 0px #171717' }}>
-                  <span className="text-[11px] font-bold text-[#696969] uppercase tracking-wider">Employee / Access ID</span>
-                  <p className="text-base font-black text-[#171717] mt-0.5">{profile.employeeId}</p>
+
+                <div className="p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
+                    <Lock className="w-3.5 h-3.5" /> Employee / Access ID
+                  </div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">{profile.employeeId}</div>
                 </div>
               </div>
-            </Card>
-          )}
+            )}
+          </Card>
 
           {/* System Governance Privileges Card */}
-          <Card className="p-6">
+          <Card>
             <CardHeader
               title="System Privileges & Governance Matrix"
               subtitle="Scope of administrative controls active on this profile"
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div
-                className="p-4 rounded-[12px] border-2 border-[#171717] bg-[#FFF5EA] flex items-start gap-3"
-                style={{ boxShadow: '3px 3px 0px #171717' }}
-              >
-                <div
-                  className="p-2.5 rounded-[8px] bg-[#FFE66D] border-2 border-[#171717] text-[#171717]"
-                  style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                >
-                  <Users className="w-5 h-5" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] flex items-start gap-3 hover:border-[var(--color-accent)]/30 transition-all">
+                <div className="w-9 h-9 rounded-lg bg-oxblood/10 text-oxblood flex items-center justify-center font-bold flex-shrink-0">
+                  <Users className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-[#171717] uppercase tracking-wider">User Lifecycle Management</h4>
-                  <p className="text-xs text-[#696969] font-medium mt-1">Enroll students, provision faculty profiles, and assign academic cohorts.</p>
+                  <h4 className="text-xs font-bold text-[var(--color-text-primary)]">User Lifecycle Management</h4>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    Enroll students, provision faculty profiles, and assign academic cohorts.
+                  </p>
                 </div>
               </div>
 
-              <div
-                className="p-4 rounded-[12px] border-2 border-[#171717] bg-[#FFF5EA] flex items-start gap-3"
-                style={{ boxShadow: '3px 3px 0px #171717' }}
-              >
-                <div
-                  className="p-2.5 rounded-[8px] bg-[#F0EAFF] border-2 border-[#171717] text-[#171717]"
-                  style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                >
-                  <BookOpen className="w-5 h-5" />
+              <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] flex items-start gap-3 hover:border-[var(--color-accent)]/30 transition-all">
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 text-[var(--color-accent)] flex items-center justify-center font-bold flex-shrink-0">
+                  <BookOpen className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-[#171717] uppercase tracking-wider">Curriculum & Course Governance</h4>
-                  <p className="text-xs text-[#696969] font-medium mt-1">Manage subjects, syllabus topics, and assign teaching staff to sections.</p>
+                  <h4 className="text-xs font-bold text-[var(--color-text-primary)]">Curriculum & Course Governance</h4>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    Manage subjects, syllabus topics, and assign teaching staff to sections.
+                  </p>
                 </div>
               </div>
 
-              <div
-                className="p-4 rounded-[12px] border-2 border-[#171717] bg-[#FFF5EA] flex items-start gap-3"
-                style={{ boxShadow: '3px 3px 0px #171717' }}
-              >
-                <div
-                  className="p-2.5 rounded-[8px] bg-[#E0FAF8] border-2 border-[#171717] text-[#171717]"
-                  style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                >
-                  <Cpu className="w-5 h-5" />
+              <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] flex items-start gap-3 hover:border-[var(--color-accent)]/30 transition-all">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
+                  <Cpu className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-[#171717] uppercase tracking-wider">Academic Intelligence</h4>
-                  <p className="text-xs text-[#696969] font-medium mt-1">Inspect live student cohort performance, quiz attempts, and pass rates.</p>
+                  <h4 className="text-xs font-bold text-[var(--color-text-primary)]">Academic Intelligence</h4>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    Inspect live student cohort performance, quiz attempts, and pass rates.
+                  </p>
                 </div>
               </div>
 
-              <div
-                className="p-4 rounded-[12px] border-2 border-[#171717] bg-[#FFF5EA] flex items-start gap-3"
-                style={{ boxShadow: '3px 3px 0px #171717' }}
-              >
-                <div
-                  className="p-2.5 rounded-[8px] bg-[#FFE8E8] border-2 border-[#171717] text-[#171717]"
-                  style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                >
-                  <Globe className="w-5 h-5" />
+              <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] flex items-start gap-3 hover:border-[var(--color-accent)]/30 transition-all">
+                <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold flex-shrink-0">
+                  <Globe className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-[#171717] uppercase tracking-wider">Institutional Broadcasts</h4>
-                  <p className="text-xs text-[#696969] font-medium mt-1">Dispatch global announcements and critical academic alerts across departments.</p>
+                  <h4 className="text-xs font-bold text-[var(--color-text-primary)]">Institutional Broadcasts</h4>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    Dispatch global announcements and critical academic alerts across departments.
+                  </p>
                 </div>
               </div>
             </div>
@@ -432,111 +439,94 @@ export const AdminProfile: React.FC = () => {
 
         {/* Right Column: Live Institutional Scope (1 Col) */}
         <div className="space-y-6">
-          <Card className="p-6">
+          <Card>
             <CardHeader
-              title="Active Scope"
+              title="Active Institutional Scope"
               subtitle="Current entities under your administration"
             />
-            <div className="space-y-4 mt-4">
-              <div
-                className="flex items-center justify-between p-3.5 rounded-[12px] bg-[#FFF5EA] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="p-2 rounded-[8px] bg-[#FFE8E8] border border-[#171717] text-[#FF666B]"
-                    style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                  >
+                  <div className="w-8 h-8 rounded-lg bg-rose-50 text-oxblood flex items-center justify-center font-bold">
                     <Users className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-[#171717]">Enrolled Students</p>
-                    <p className="text-[11px] text-[#696969] font-medium">Active profiles</p>
+                    <p className="text-xs font-bold text-[var(--color-text-primary)]">Enrolled Students</p>
+                    <p className="text-[11px] text-[var(--color-text-muted)]">Active profiles</p>
                   </div>
                 </div>
-                <span className="text-xl font-black text-[#171717]">
+                <span className="text-lg font-bold font-serif text-[var(--color-text-primary)]">
                   {stats?.summary?.totalStudents ?? 1}
                 </span>
               </div>
 
-              <div
-                className="flex items-center justify-between p-3.5 rounded-[12px] bg-[#FFF5EA] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
+              <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="p-2 rounded-[8px] bg-[#E0FAF8] border border-[#171717] text-[#0e6b64]"
-                    style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                  >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-forest flex items-center justify-center font-bold">
                     <Award className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-[#171717]">Faculty Staff</p>
-                    <p className="text-[11px] text-[#696969] font-medium">Teaching members</p>
+                    <p className="text-xs font-bold text-[var(--color-text-primary)]">Faculty Staff</p>
+                    <p className="text-[11px] text-[var(--color-text-muted)]">Teaching members</p>
                   </div>
                 </div>
-                <span className="text-xl font-black text-[#171717]">
+                <span className="text-lg font-bold font-serif text-[var(--color-text-primary)]">
                   {stats?.summary?.totalFaculty ?? 1}
                 </span>
               </div>
 
-              <div
-                className="flex items-center justify-between p-3.5 rounded-[12px] bg-[#FFF5EA] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
+              <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="p-2 rounded-[8px] bg-[#F0EAFF] border border-[#171717] text-[#A98BEF]"
-                    style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                  >
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-[var(--color-accent)] flex items-center justify-center font-bold">
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-[#171717]">Curriculum Courses</p>
-                    <p className="text-[11px] text-[#696969] font-medium">Subjects created</p>
+                    <p className="text-xs font-bold text-[var(--color-text-primary)]">Curriculum Courses</p>
+                    <p className="text-[11px] text-[var(--color-text-muted)]">Subjects created</p>
                   </div>
                 </div>
-                <span className="text-xl font-black text-[#171717]">
+                <span className="text-lg font-bold font-serif text-[var(--color-text-primary)]">
                   {stats?.summary?.totalCourses ?? 1}
                 </span>
               </div>
 
-              <div
-                className="flex items-center justify-between p-3.5 rounded-[12px] bg-[#FFF5EA] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
+              <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="p-2 rounded-[8px] bg-[#FFFBE0] border border-[#171717] text-[#171717]"
-                    style={{ boxShadow: '1.5px 1.5px 0px #171717' }}
-                  >
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
                     <Layers className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-[#171717]">Active Sections</p>
-                    <p className="text-[11px] text-[#696969] font-medium">Cohort groups</p>
+                    <p className="text-xs font-bold text-[var(--color-text-primary)]">Active Sections</p>
+                    <p className="text-[11px] text-[var(--color-text-muted)]">Cohort groups</p>
                   </div>
                 </div>
-                <span className="text-xl font-black text-[#171717]">
+                <span className="text-lg font-bold font-serif text-[var(--color-text-primary)]">
                   {stats?.summary?.totalSections ?? 1}
                 </span>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-[#F0EAFF]">
-            <div className="flex items-start gap-3">
-              <div
-                className="p-2.5 bg-[#FFE66D] text-[#171717] rounded-[10px] border-2 border-[#171717]"
-                style={{ boxShadow: '2px 2px 0px #171717' }}
-              >
-                <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
+          <Card>
+            <CardHeader title="Security & Authentication" />
+            <div className="space-y-3.5 text-xs">
+              <div className="flex justify-between items-center pb-2.5 border-b border-[var(--color-border)]">
+                <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Access Role
+                </span>
+                <Badge color="oxblood" className="text-[11px]">Root Administrator</Badge>
               </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-black text-[#171717] uppercase tracking-wider">Security & Authentication</h4>
-                <p className="text-xs text-[#171717] font-semibold leading-relaxed">
-                  Session secured with JSON Web Token (JWT) and role-level guards. Institutional changes are synchronized immediately across all portals.
-                </p>
+              <div className="flex justify-between items-center pb-2.5 border-b border-[var(--color-border)]">
+                <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> Token Security
+                </span>
+                <span className="font-semibold text-emerald-600">JWT Verified</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--color-text-muted)] flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5" /> Engine Status
+                </span>
+                <span className="font-semibold text-[var(--color-text-primary)]">Live Active</span>
               </div>
             </div>
           </Card>

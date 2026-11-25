@@ -164,6 +164,17 @@ export const adminService = {
     return res.data;
   },
 
+  createFaculty: async (data: {
+    name: string;
+    email: string;
+    password?: string;
+    subjectId?: string;
+    sectionId?: string;
+  }) => {
+    const res = await api.post('/admin/faculty', data);
+    return res.data;
+  },
+
   assignFaculty: async (data: { facultyId: string; subjectId: string; sectionId: string }) => {
     const res = await api.post('/admin/faculty/assign', data);
     return res.data;

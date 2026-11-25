@@ -14,7 +14,7 @@ import {
 } from '../../services/adminService';
 import {
   Users, Search, Plus, Trash2, BookOpen,
-  CheckCircle2, AlertCircle, Eye, RefreshCw
+  CheckCircle2, AlertCircle, Eye, RefreshCw, UserPlus
 } from 'lucide-react';
 
 export const FacultyManagement: React.FC = () => {
@@ -33,6 +33,14 @@ export const FacultyManagement: React.FC = () => {
   const [selectedFacultyForProfile, setSelectedFacultyForProfile] = useState<FacultyRecord | null>(null);
   const [isRemoveFacultyModalOpen, setIsRemoveFacultyModalOpen] = useState(false);
   const [selectedRemoveFacultyId, setSelectedRemoveFacultyId] = useState('');
+
+  // Add Faculty Modal state
+  const [isAddFacultyModalOpen, setIsAddFacultyModalOpen] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addEmail, setAddEmail] = useState('');
+  const [addPassword, setAddPassword] = useState('');
+  const [addSubjectId, setAddSubjectId] = useState('');
+  const [addSectionId, setAddSectionId] = useState('');
 
   const [assignFacultyId, setAssignFacultyId] = useState('');
   const [assignSubjectId, setAssignSubjectId] = useState('');
@@ -73,6 +81,48 @@ export const FacultyManagement: React.FC = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadData();
+  };
+
+  const handleOpenAddFacultyModal = () => {
+    setAddName('');
+    setAddEmail('');
+    setAddPassword('Acadexa@123');
+    setAddSubjectId('');
+    setAddSectionId('');
+    setIsAddFacultyModalOpen(true);
+    setActionMessage(null);
+  };
+
+  const handleAddFacultySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addName.trim() || !addEmail.trim()) {
+      setActionMessage({ type: 'error', text: 'Faculty name and email are required.' });
+      return;
+    }
+
+    if ((addSubjectId && !addSectionId) || (!addSubjectId && addSectionId)) {
+      setActionMessage({ type: 'error', text: 'Please select both course and section, or leave both unselected.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await adminService.createFaculty({
+        name: addName.trim(),
+        email: addEmail.trim().toLowerCase(),
+        password: addPassword.trim() || 'Acadexa@123',
+        subjectId: addSubjectId || undefined,
+        sectionId: addSectionId || undefined,
+      });
+
+      setIsAddFacultyModalOpen(false);
+      setActionMessage({ type: 'success', text: `Faculty member "${addName.trim()}" added successfully!` });
+      loadData();
+    } catch (err: any) {
+      setActionMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to add faculty member.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenAssignModal = (facultyId?: string) => {
@@ -173,9 +223,19 @@ export const FacultyManagement: React.FC = () => {
               <Trash2 className="w-4 h-4" />
               Remove Faculty
             </Button>
-            <Button onClick={() => handleOpenAssignModal()} size="sm" className="gap-2 shadow-sm">
-              <Plus className="w-4 h-4" />
-              Assign Faculty
+            <Button
+              onClick={() => handleOpenAssignModal()}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-[#E1D4CA] hover:bg-[#F7F1E8]"
+              disabled={facultyList.length === 0}
+            >
+              <BookOpen className="w-4 h-4" />
+              Assign Course
+            </Button>
+            <Button onClick={handleOpenAddFacultyModal} size="sm" className="gap-2 shadow-sm">
+              <UserPlus className="w-4 h-4" />
+              Add Faculty
             </Button>
           </div>
         }
@@ -275,7 +335,13 @@ export const FacultyManagement: React.FC = () => {
               <Users className="w-7 h-7 text-[#79666A]" />
             </div>
             <p className="font-semibold text-sm text-[#302A2B]">No faculty members found</p>
-            <p className="text-xs text-[#79666A] font-normal mt-1">Try broadening your search or filter criteria.</p>
+            <p className="text-xs text-[#79666A] font-normal mt-1">Try broadening your search or add a new faculty member.</p>
+            <div className="mt-4">
+              <Button onClick={handleOpenAddFacultyModal} size="sm" className="gap-2 shadow-sm">
+                <UserPlus className="w-4 h-4" />
+                Add Faculty Member
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -369,6 +435,95 @@ export const FacultyManagement: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* ── Add Faculty Modal ── */}
+      <Modal isOpen={isAddFacultyModalOpen} onClose={() => setIsAddFacultyModalOpen(false)} title="Add New Faculty Member">
+        <form onSubmit={handleAddFacultySubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Full Name *</label>
+            <Input
+              id="faculty-name"
+              placeholder="e.g. Dr. Jane Smith"
+              value={addName}
+              onChange={e => setAddName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Email Address *</label>
+            <Input
+              id="faculty-email"
+              type="email"
+              placeholder="e.g. jane.smith@acadexa.edu"
+              value={addEmail}
+              onChange={e => setAddEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#79666A] mb-1.5">Initial Password</label>
+            <Input
+              id="faculty-password"
+              type="password"
+              placeholder="Default: Acadexa@123"
+              value={addPassword}
+              onChange={e => setAddPassword(e.target.value)}
+            />
+            <p className="text-[11px] text-[#79666A] mt-1 font-normal">
+              Defaults to <span className="font-mono bg-[#EEE3E0] px-1 py-0.5 rounded text-[#542536]">Acadexa@123</span> if left blank.
+            </p>
+          </div>
+
+          <div className="pt-2 border-t border-[#EEE3E0]">
+            <p className="text-xs font-semibold text-[#302A2B] mb-2 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-[#542536]" />
+              Initial Course Assignment (Optional)
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#79666A] mb-1.5">Course / Subject</label>
+                <select
+                  value={addSubjectId}
+                  onChange={e => setAddSubjectId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">None (Assign later)</option>
+                  {courses.map(c => (
+                    <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#79666A] mb-1.5">Section / Class</label>
+                <select
+                  value={addSectionId}
+                  onChange={e => setAddSectionId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">None (Assign later)</option>
+                  {sections.map(s => (
+                    <option key={s.id} value={s.id}>Sem {s.semester} — Sec {s.name} ({s.departmentCode || s.departmentName})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <p className="text-[11px] text-[#79666A] mt-1 font-normal">
+              You can also assign or reassign courses and sections anytime from the table.
+            </p>
+          </div>
+
+          <div className="pt-3 flex justify-end gap-2 border-t border-[#EEE3E0]">
+            <Button type="button" variant="outline" onClick={() => setIsAddFacultyModalOpen(false)}>Cancel</Button>
+            <Button type="submit" isLoading={isSubmitting} className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              Add Faculty
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* ── Assign Faculty Modal ── */}
       <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title="Assign Faculty to Course & Section">

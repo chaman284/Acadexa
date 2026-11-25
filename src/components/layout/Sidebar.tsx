@@ -5,9 +5,10 @@ import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
   MessageSquare, Building2, User, Settings, LogOut,
   GraduationCap, BarChart3, X, TrendingUp,
-  PanelLeftClose, PanelLeftOpen, Users, Bell,
+  PanelLeftClose, PanelLeftOpen, Users, Bell, ArrowLeft,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavItem {
   to: string;
@@ -51,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose,
 }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const classMatch = useMatch('/faculty/class/:classId/*');
   const classId = classMatch?.params?.classId ?? null;
@@ -61,16 +63,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="w-4.5 h-4.5 flex-shrink-0" /> },
       ]
     : [
-        { to: '/faculty/select-class', label: 'Overview', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
+        { to: '/faculty/select-class', label: 'Dashboard', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
+        { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-4.5 h-4.5 flex-shrink-0" /> },
+        { to: '/faculty/paper-bank', label: 'Question Bank', icon: <Database className="w-4.5 h-4.5 flex-shrink-0" /> },
+        { to: '/faculty/learning-gaps', label: 'Learning Analytics', icon: <TrendingUp className="w-4.5 h-4.5 flex-shrink-0" /> },
+        { to: '/student/tutor', label: 'Academic Assistant', icon: <MessageSquare className="w-4.5 h-4.5 flex-shrink-0" /> },
+        { to: '/faculty/department', label: 'Department Info', icon: <Building2 className="w-4.5 h-4.5 flex-shrink-0" /> },
       ];
 
   const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;
   const profileUrl = role === 'student' ? '/student/profile' : role === 'admin' ? '/admin/profile' : '/profile';
   const settingsUrl = role === 'student' ? '/student/settings' : role === 'admin' ? '/admin/settings' : '/settings';
 
-  const handleLogout = () => {
-    authService.clearCurrentUser();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   // Sidebar background: Deep Forest Olive / Black Cherry gradient
@@ -219,6 +226,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ))}
+
+          {/* Switch Class button when inside a specific class */}
+          {classId && (
+            <div className="pt-3 w-full">
+              <NavLink
+                to="/faculty/select-class"
+                className={clsx(
+                  'flex items-center text-[12px] font-semibold text-white/60 hover:text-white hover:bg-white/10 rounded-[10px] transition-all border border-dashed border-white/20',
+                  isCollapsed ? 'w-10 h-10 justify-center p-0 mx-auto' : 'w-full gap-2.5 px-3 py-2'
+                )}
+                title="Return to Class Selection"
+                onClick={onMobileClose}
+              >
+                <ArrowLeft className="w-4 h-4 flex-shrink-0 text-white/70" />
+                {!isCollapsed && <span className="truncate">All Classes</span>}
+              </NavLink>
+            </div>
+          )}
         </nav>
 
         {/* ── Divider ── */}

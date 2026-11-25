@@ -36,6 +36,27 @@ router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
 // Create quiz (Faculty / Admin only)
 router.post('/', authenticateJWT, requireRole(['FACULTY', 'ADMIN']), async (req: AuthRequest, res) => {
   try {
+    const { subjectId, sectionId } = req.body;
+
+    // Validate faculty teaching authorization if user is faculty
+    if (req.user?.role === 'FACULTY' && subjectId && sectionId) {
+      const faculty = await prisma.faculty.findUnique({
+        where: { userId: req.user.id },
+        include: { assignments: true },
+      });
+
+      if (faculty && faculty.assignments.length > 0) {
+        const isAuthorized = faculty.assignments.some(
+          a => a.subjectId === subjectId && a.sectionId === sectionId
+        );
+        if (!isAuthorized) {
+          return res.status(403).json({
+            message: 'You are not authorized to create or assign quizzes to a subject or section outside your assigned classes.',
+          });
+        }
+      }
+    }
+
     const quiz = await quizService.createQuiz(req.body);
     res.status(201).json(quiz);
   } catch (error: any) {
