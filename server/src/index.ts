@@ -23,16 +23,34 @@ import facultyDocumentsRoutes from './routes/facultyDocuments';
 const app = express();
 
 // Middleware
+const allowedOrigins = (config.corsOrigin || '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
-      // Allow any localhost port (e.g. 5173, 5174, 5175) or configured CORS origin
-      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === config.corsOrigin) {
-        return callback(null, true);
+
+      const normalizedOrigin = origin.replace(/\/$/, '');
+
+      // Allow any localhost port, configured origins, or any Vercel deployment (*.vercel.app)
+      try {
+        const url = new URL(origin);
+        if (
+          /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin) ||
+          allowedOrigins.includes(normalizedOrigin) ||
+          url.hostname.endsWith('.vercel.app')
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // Fallback for non-standard origins
       }
-      return callback(null, true); // Permissive for local dev environment
+
+      return callback(null, true);
     },
     credentials: true,
   })

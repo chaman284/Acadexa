@@ -9,4 +9,10 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+  // Optional: when set, the tutor may mention this model in its meta answer.
+  modelName: process.env.MODEL_NAME || '',
+  tutorDebug: process.env.TUTOR_DEBUG === 'true',
+  // Relative to the best rerank score; below this, chunks are treated as not found.
+  tutorRelevanceThreshold: Number(process.env.TUTOR_RELEVANCE_THRESHOLD || '0.35'),
+  tutorMaxChunks: Number(process.env.TUTOR_MAX_CHUNKS || '3'),
 };

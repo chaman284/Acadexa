@@ -273,3 +273,29 @@ model Notification {
   role      String?
   createdAt DateTime @default(now())
 }
+
+model CurriculumChunk {
+  id             String   @id
+  topicId        String
+  topicTitle     String
+  module         String
+  section        String
+  subsection     String?
+  chunkType      String   @default("explanation")
+  keywords       String[]
+  questionTypes  String[]
+  aliases        String[] @default([])
+  content        String   @db.Text @default("")
+  text           String   @db.Text @default("")
+  embeddedText   String   @db.Text @default("")
+  term           String?
+  definition     String?  @db.Text
+  linkedChunkIds String[] @default([])
+  exampleChunkId String?
+  wordCount      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([topicId, section])
+  @@index([module, topicId])
+  @@index([chunkType])
+}

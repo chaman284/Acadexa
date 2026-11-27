@@ -16,7 +16,7 @@ router.post('/', authenticateJWT, async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    const result = await chatbotService.askNexus(message, history || [], req.user?.name);
+    const result = await chatbotService.askNexus(message, history || [], req.user?.name, req.user?.id);
 
     res.json({
       reply: result.reply,
@@ -40,7 +40,7 @@ router.post('/nexus', authenticateJWT, async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    const result = await chatbotService.askNexus(message, history || [], req.user?.name);
+    const result = await chatbotService.askNexus(message, history || [], req.user?.name, req.user?.id);
 
     res.json({
       reply: result.reply,

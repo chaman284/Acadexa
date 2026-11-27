@@ -1,5 +1,14 @@
 import { prisma } from '../prisma';
 import { config } from '../config';
+import {
+  formatRetrievedContext,
+  retrieveForMessage,
+} from './curriculumRetrieval';
+import { loadChunksFromJson } from './chunkStore';
+import { buildCurriculumCatalogue } from './curriculumRetrieval';
+import { buildLocalAnswer } from './tutorAnswer';
+import { TUTOR_SYSTEM_PROMPT } from './tutorPrompt';
+import { appendMessages, getHistory, getState, updateState } from './tutorMemory';
 
 export interface ChatHistoryItem {
   sender: 'user' | 'model' | 'assistant';
@@ -234,8 +243,104 @@ export const chatbotService = {
   async askNexus(
     query: string,
     history: ChatHistoryItem[] = [],
-    studentName?: string
+    studentName?: string,
+    sessionId?: string
   ): Promise<{ reply: string; contextSources: { syllabus: string[]; dept: string[] } }> {
+    const key = sessionId || 'anonymous';
+    const recentHistory = history.length > 0 ? history : getHistory(key);
+    const previousState = getState(key);
+    const catalogueChunks = loadChunksFromJson();
+    const departmentQuestion = /hod|head of department|pushpalatha|calendar|cie\b|see exam date|course drop|course withdrawal|synergia|ieee cosmic|department info|vision|mission|office hours|faculty|syllabus/i.test(query);
+
+    if (!departmentQuestion) {
+      const result = await retrieveForMessage(query, recentHistory, previousState, { useDatabase: true });
+      const concept = result.focusConcept || result.concepts[0] || previousState.last_concept;
+      const closing = result.closing;
+      const declined = result.declined;
+      let reply = '';
+
+      if (config.geminiApiKey && result.chunks.length > 0 && !result.topicSwitch && !closing && !declined) {
+        try {
+          const contentsPayload = [
+            ...recentHistory.slice(-8).map(h => ({
+              role: h.sender === 'user' ? 'user' : 'model',
+              parts: [{ text: h.text }],
+            })),
+            {
+              role: 'user',
+              parts: [{
+                text: `${TUTOR_SYSTEM_PROMPT}\n\n${formatRetrievedContext(result.chunks)}\n\nRewritten question: ${result.rewrittenQuestion}\nOriginal student message: "${query}"\n\nAnswer only the rewritten question in 1-6 sentences. Do not add unasked examples, numericals, MCQs, formulas or exam points.`,
+              }],
+            },
+          ];
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.geminiApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: contentsPayload,
+                generationConfig: { temperature: 0.25, maxOutputTokens: 350 },
+              }),
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            reply = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+          }
+        } catch (geminiErr) {
+          console.warn('Gemini tutor call failed, using local answer engine:', geminiErr);
+        }
+      }
+
+      if (!reply) {
+        reply = buildLocalAnswer(result.rewrittenQuestion, result.chunks, result.intent, {
+          topicId: result.topicId,
+          concept,
+          closing,
+          declined,
+          followup: result.followup,
+          previousInScope: result.previousInScope,
+          pendingOffer: previousState.pending_offer,
+          allChunks: result.topicSwitch ? catalogueChunks : undefined,
+          topicSwitchTarget: result.topicSwitchTarget,
+          repeatContent: result.repeatContent,
+          lastOfferKind: previousState.last_offer_kind,
+          lastOfferText: previousState.last_offer_text,
+        });
+      }
+
+      appendMessages(key, [
+        { sender: 'user', text: query },
+        { sender: 'model', text: reply },
+      ]);
+      // State comes from the chunks that built the reply, not from the question.
+      updateState(key, {
+        chunks: result.chunks,
+        allChunks: catalogueChunks,
+        topicId: result.topicId,
+        concept,
+        intent: result.intent,
+        answer: reply,
+        closing,
+        declined,
+        // Meta answers are state-neutral; an acknowledgement after a quiz
+        // offer closes that unaccepted offer.
+        preserveState: result.intent === 'meta',
+        declineOffer: declined || (result.intent === 'acknowledgement' && previousState.pending_offer === 'quiz'),
+        topicSwitch: result.topicSwitch,
+        targetTopicId: result.topicSwitchTarget,
+      });
+
+      return {
+        reply,
+        contextSources: {
+          syllabus: result.chunks.map(chunk => `${chunk.topic_id}: ${chunk.chunk_id}`),
+          dept: [],
+        },
+      };
+    }
+
     const ragData = await this.retrieveContext(query);
 
     const contextSources = {
@@ -243,9 +348,10 @@ export const chatbotService = {
       dept: ragData.deptChunks.map(d => `${d.type}: ${d.title}`),
     };
 
-    // Realistic, intelligent system prompt for Gemini
-    const systemPrompt = `You are Acadexa AI, an empathetic, highly knowledgeable, and articulate University Academic Tutor and Department Assistant for the Department of Artificial Intelligence and Machine Learning (AIML) at Sahyadri College of Engineering & Management, Mangaluru.
-Your primary role is to help students truly understand complex concepts, excel in their coursework, prepare effectively for quizzes and exams, and navigate university academic life with confidence.
+    // Department assistant path; tutor scope rules still apply to wording.
+    const systemPrompt = `${TUTOR_SYSTEM_PROMPT}
+
+You also act as the AIML Department Assistant when a question is about department or campus information. The answer-scope rules above still apply to every answer.
 
 Official Department & Institutional Profile:
 - Institution: Sahyadri College of Engineering & Management, Mangaluru (Autonomous Institution)
@@ -329,7 +435,7 @@ Guiding Principles for Realistic & High-Impact Responses:
             role: 'user',
             parts: [
               {
-                text: `${systemPrompt}\n\n${ragData.formattedContext}\n\nStudent Query: "${query}"\n\nInstructions: Deliver a realistic, comprehensive, beautifully formatted response addressing the student's question.`,
+                text: `${systemPrompt}\n\n${ragData.formattedContext}\n\nStudent Query: "${query}"\n\nInstructions: Answer only the question in 1-6 sentences. Do not add sections, examples, formulas, MCQs or exam points that were not asked for.`,
               },
             ],
           },
@@ -343,8 +449,8 @@ Guiding Principles for Realistic & High-Impact Responses:
             body: JSON.stringify({
               contents: contentsPayload,
               generationConfig: {
-                temperature: 0.65,
-                maxOutputTokens: 1024,
+                temperature: 0.25,
+                maxOutputTokens: 350,
               },
             }),
           }
@@ -400,6 +506,35 @@ Guiding Principles for Realistic & High-Impact Responses:
         `What would you like to know today?`
       );
     }
+
+    // 1b. Training-data / knowledge-base enquiry
+    const isTrainingDataQuery = [
+      'what data are you trained on',
+      'what data is trained to it',
+      'what data is trained',
+      'what are you trained on',
+      'trained on what data',
+      'what knowledge do you have',
+      'what do you know',
+      'what topics do you know',
+      'what topics can you explain',
+      'what data do you have',
+      'what data do you use',
+    ].some(k => qLower.includes(k));
+    if (isTrainingDataQuery) {
+      return (
+        `🎓 **What I Have Been Trained On**\n\n` +
+        `I am Acadexa AI, your department and academic tutor. My knowledge comes from three sources:\n\n` +
+        `1. **Verified institutional information** — the AIML department profile, HOD details and the 2026–27 academic calendar (CIE/SEE schedules, deadlines, fests and conferences).\n` +
+        `2. **Live student-portal data** — your registered courses and topics, uploaded syllabus documents, department notices and active quizzes, read fresh from the portal database.\n` +
+        `3. **Trained subject curriculum** — I have been trained on the following verified study material:\n\n` +
+        `${buildCurriculumCatalogue(loadChunksFromJson())}\n\n` +
+        `For Computer Vision Module 1, this includes simple and detailed explanations, definitions, formulas and algorithms, worked numerical examples, common mistakes, exam-focused points and practice MCQs for all three topics.\n\n` +
+        `Ask me about any of these topics — for example, "explain digital image processing", "differentiate rods and cones", "calculate Michelson contrast", or "give me MCQs on image acquisition".`
+      );
+    }
+
+    // 1c. Subject questions are handled by the retrieval pipeline in askNexus.
 
     // 2. HOD (Head of Department) & Administration Queries
     const isHodQuery = ['hod', 'head of department', 'pushpalatha', 'dr pushpalatha', 'contact hod', 'department head', 'ai hod'].some(k => qLower.includes(k));
@@ -677,20 +812,10 @@ Guiding Principles for Realistic & High-Impact Responses:
       );
     }
 
-    // 11. Realistic, Dynamic Concept Explanation Engine
-    // Generates high-quality pedagogical breakdown based on the user's inquiry
+    // 11. Outside the notes: brief and clearly marked.
     return (
-      `🧠 **Academic Insight: Understanding "${query.length > 60 ? query.substring(0, 60) + '...' : query}"**\n\n` +
-      `Here is a structured breakdown to master this concept:\n\n` +
-      `### 1. Intuition & Core Principle\n` +
-      `At its core, this topic addresses how we organize data, structure computation, or model state transitions efficiently. Understanding *why* the concept was invented is the fastest way to master it.\n\n` +
-      `### 2. Key Mechanics & Trade-offs\n` +
-      `• **Efficiency & Bounds**: Compare the best, average, and worst-case performance.\n` +
-      `• **Space vs. Time**: Consider whether caching/auxiliary structures optimize runtime at the cost of memory.\n` +
-      `• **Common Pitfalls**: Watch out for boundary conditions, edge cases, and off-by-one errors.\n\n` +
-      `### 3. Study & Exam Strategy\n` +
-      `To solidify this for your upcoming evaluations, try sketching the structural diagram or tracing a small 3-step test case by hand.\n\n` +
-      `*Would you like a concrete walkthrough, an intuitive real-world analogy, or a sample practice question on this?*`
+      `That is not covered in your Computer Vision Module 1 notes, so this answer is **not from your notes**.\n\n` +
+      `I can help with digital image processing, visual perception, image sensing and acquisition, their formulas, examples, exam points and MCQs.`
     );
   },
 };
