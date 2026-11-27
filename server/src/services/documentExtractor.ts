@@ -7,6 +7,13 @@ import path from 'node:path';
 import JSZip from 'jszip';
 import mammoth from 'mammoth';
 
+// Polyfill dummy DOMMatrix and Path2D on globalThis to suppress pdfjs-dist's optional node-canvas warnings.
+// Text extraction from PDFs does not use canvas or visual rendering operations.
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).DOMMatrix = (globalThis as any).DOMMatrix || class DOMMatrix {};
+  (globalThis as any).Path2D = (globalThis as any).Path2D || class Path2D {};
+}
+
 // pdfjs-dist v3 exposes a CommonJS legacy build that works in Node without a canvas.
 const pdfjsLib: typeof import('pdfjs-dist') = require('pdfjs-dist/legacy/build/pdf');
 
