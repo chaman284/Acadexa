@@ -19,6 +19,8 @@ import skillGapRoutes from './routes/skillGaps';
 import deptRoutes from './routes/dept';
 import syllabusRoutes from './routes/syllabus';
 import facultyDocumentsRoutes from './routes/facultyDocuments';
+import facultySkillGapRoutes from './routes/facultySkillGaps';
+import { startSkillGapDigestScheduler } from './services/skillGapDigestScheduler';
 
 const app = express();
 
@@ -80,6 +82,7 @@ app.use('/api/sections', sectionsRoutes);
 app.use('/api/dept', deptRoutes);
 app.use('/api/syllabus', syllabusRoutes);
 app.use('/api/faculty/documents', facultyDocumentsRoutes);
+app.use('/api/faculty', facultySkillGapRoutes);
 
 // Error Handler
 app.use(errorHandler);
@@ -87,5 +90,6 @@ app.use(errorHandler);
 // Start server
 app.listen(config.port, () => {
   console.log(`🚀 Acadexa Backend running on http://localhost:${config.port}`);
+  startSkillGapDigestScheduler();
 });
 

@@ -15,4 +15,9 @@ export const config = {
   // Relative to the best rerank score; below this, chunks are treated as not found.
   tutorRelevanceThreshold: Number(process.env.TUTOR_RELEVANCE_THRESHOLD || '0.35'),
   tutorMaxChunks: Number(process.env.TUTOR_MAX_CHUNKS || '3'),
+  // Daily skill-gap digest. Defaults to 08:00 Asia/Kolkata.
+  skillGapDigestEnabled: process.env.SKILL_GAP_DIGEST_ENABLED !== 'false',
+  skillGapDigestHour: Math.min(23, Math.max(0, Number(process.env.SKILL_GAP_DIGEST_HOUR || '8'))),
+  skillGapDigestMinute: Math.min(59, Math.max(0, Number(process.env.SKILL_GAP_DIGEST_MINUTE || '0'))),
+  skillGapDigestTimeZone: process.env.SKILL_GAP_DIGEST_TIMEZONE || 'Asia/Kolkata',
 };

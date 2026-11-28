@@ -30,6 +30,7 @@ import { QuestionBankManagement } from '../pages/faculty/QuestionBankManagement'
 import { QuestionPaperBank } from '../pages/faculty/QuestionPaperBank';
 import { QuizManagement } from '../pages/faculty/QuizManagement';
 import { LearningGapAnalytics } from '../pages/faculty/LearningGapAnalytics';
+import { SkillGapAnalysis } from '../pages/faculty/SkillGapAnalysis';
 import { ClassDashboard } from '../pages/faculty/ClassDashboard';
 import { ClassSyllabus } from '../pages/faculty/ClassSyllabus';
 import { QuizBuilder } from '../pages/faculty/QuizBuilder';
@@ -140,6 +141,8 @@ export const AppRoutes = () => {
       <Route path="/faculty/question-bank" element={<Navigate to="/faculty/paper-bank" replace />} />
       <Route path="/faculty/quizzes" element={<StandaloneRoute role="faculty"><QuizListPage /></StandaloneRoute>} />
       <Route path="/faculty/learning-gaps" element={<PrivateRoute role="faculty"><LearningGapAnalytics /></PrivateRoute>} />
+      {/* Legacy URL: Skill Gaps now lives as an Analytics view. */}
+      <Route path="/faculty/skill-gaps" element={<PrivateRoute role="faculty"><Navigate to="/faculty/analytics?view=skill-gaps" replace /></PrivateRoute>} />
       <Route path="/faculty/remedial-quizzes" element={<StandaloneRoute role="faculty"><QuizListPage /></StandaloneRoute>} />
       <Route path="/faculty/department" element={<PrivateRoute role="faculty"><DepartmentInfo /></PrivateRoute>} />
       <Route path="/faculty/profile" element={<PrivateRoute role="faculty"><FacultyProfile /></PrivateRoute>} />
@@ -152,6 +155,7 @@ export const AppRoutes = () => {
       <Route path="/admin/students" element={<PrivateRoute role="admin"><StudentManagement /></PrivateRoute>} />
       <Route path="/admin/sections" element={<PrivateRoute role="admin"><SectionManagement /></PrivateRoute>} />
       <Route path="/admin/notifications" element={<PrivateRoute role="admin"><AdminNotifications /></PrivateRoute>} />
+      <Route path="/admin/skill-gaps" element={<PrivateRoute role="admin"><SkillGapAnalysis /></PrivateRoute>} />
       <Route path="/admin/assignments" element={<Navigate to="/admin/faculty" replace />} />
       <Route path="/admin/profile" element={<PrivateRoute role="admin"><AdminProfile /></PrivateRoute>} />
       <Route path="/admin/settings" element={<PrivateRoute role="admin"><AdminSettings /></PrivateRoute>} />

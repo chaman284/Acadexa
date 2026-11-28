@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { facultyClasses, type FacultyClass } from '../../data/facultyClasses';
 import api from '../../lib/apiClient';
+import { FacultySkillGapWorkspace } from '../../components/faculty/FacultySkillGapWorkspace';
 
 // ─── Oxblood, Ivory & Sage accents per class ──────────────────────────────────
 const ACCENTS = [
@@ -172,6 +173,22 @@ export const FacultyDashboard: React.FC = () => {
             })}
           </div>
         )}
+      </section>
+
+      {/* ── Faculty Skill Gap Analysis ── */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[11px] font-semibold text-[#79666A] uppercase tracking-widest">
+            Skill Gap Analysis
+          </h2>
+          <button
+            onClick={() => navigate('/faculty/skill-gaps')}
+            className="text-xs font-semibold text-[#542536] hover:underline"
+          >
+            Open full view
+          </button>
+        </div>
+        <FacultySkillGapWorkspace compact />
       </section>
 
       {/* ── Quick Tools ── */}

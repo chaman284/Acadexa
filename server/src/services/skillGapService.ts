@@ -65,6 +65,9 @@ export interface Scope {
   year?: number; // 1..4  → semesters (2y-1, 2y)
   subjectId?: string;
   facultyId?: string; // restrict evidence to quizzes created by this faculty
+  topicId?: string; // module filter (top-level Topic id)
+  from?: Date; // submittedAt lower bound
+  to?: Date; // submittedAt upper bound
 }
 
 interface Evidence {
@@ -219,14 +222,28 @@ function studentWhere(scope: Scope): Prisma.StudentWhereInput {
 }
 
 async function loadEvidence(scope: Scope): Promise<Evidence[]> {
+  const submittedAt: Prisma.DateTimeFilter = {};
+  if (scope.from) submittedAt.gte = scope.from;
+  if (scope.to) submittedAt.lte = scope.to;
+
   const attemptWhere: Prisma.QuizAttemptWhereInput = {
     student: studentWhere(scope),
     ...(scope.facultyId ? { quiz: { is: { facultyId: scope.facultyId } } } : {}),
+    ...(Object.keys(submittedAt).length ? { submittedAt } : {}),
   };
   const rows = await prisma.attemptAnswer.findMany({
     where: {
       attempt: attemptWhere,
-      ...(scope.subjectId ? { question: { topic: { subjectId: scope.subjectId } } } : {}),
+      ...(scope.subjectId || scope.topicId
+        ? {
+            question: {
+              topic: {
+                ...(scope.subjectId ? { subjectId: scope.subjectId } : {}),
+                ...(scope.topicId ? { id: scope.topicId } : {}),
+              },
+            },
+          }
+        : {}),
     },
     select: {
       questionId: true,
@@ -271,14 +288,22 @@ async function loadEvidence(scope: Scope): Promise<Evidence[]> {
 }
 
 /** Smoothed wrong-rate per (section, question), scoped to the faculty's quizzes when provided */
-async function loadCohortRates(evs: Evidence[], facultyId?: string) {
+async function loadCohortRates(
+  evs: Evidence[],
+  facultyId?: string,
+  dateFilter?: { from?: Date; to?: Date },
+) {
   const tally = new Map<string, { n: number; wrong: number }>();
   const qIds = [...new Set(evs.map((e) => e.questionId))];
   const sIds = [...new Set(evs.map((e) => e.sectionId))];
   if (qIds.length) {
+    const submittedAt: Prisma.DateTimeFilter = {};
+    if (dateFilter?.from) submittedAt.gte = dateFilter.from;
+    if (dateFilter?.to) submittedAt.lte = dateFilter.to;
     const attemptWhere: Prisma.QuizAttemptWhereInput = {
       student: { sectionId: { in: sIds } },
       ...(facultyId ? { quiz: { is: { facultyId } } } : {}),
+      ...(Object.keys(submittedAt).length ? { submittedAt } : {}),
     };
     const rows = await prisma.attemptAnswer.findMany({
       where: { questionId: { in: qIds }, attempt: attemptWhere },
@@ -400,10 +425,11 @@ function toTree<T>(payload: Map<string, T>, meta: Map<string, NodeMeta>, sortFn:
 // ───────────── Public API ─────────────
 export async function getStudentSkillReport(studentId: string, subjectId?: string, facultyId?: string) {
   const now = new Date();
-  const evs = await loadEvidence({ studentId, subjectId, facultyId });
+  const scope: Scope = { studentId, subjectId, facultyId };
+  const evs = await loadEvidence(scope);
   if (!evs.length) return { studentId, empty: true as const };
 
-  const rate = await loadCohortRates(evs, facultyId);
+  const rate = await loadCohortRates(evs, facultyId, scope);
   const { meta, perStudent, subtopicBandStats } = buildAccumulators(evs, rate, now);
   const accs = perStudent.get(studentId)!;
 
@@ -486,7 +512,7 @@ async function cohortReport(scope: Scope) {
   const evs = await loadEvidence(scope);
   if (!evs.length) return null;
 
-  const rate = await loadCohortRates(evs, scope.facultyId);
+  const rate = await loadCohortRates(evs, scope.facultyId, scope);
   const { meta, perStudent, studentSection } = buildAccumulators(evs, rate, now);
 
   // per node: collect each student's score
@@ -527,7 +553,7 @@ async function cohortReport(scope: Scope) {
     .sort((a, b) => a.mastery - b.mastery)
     .slice(0, 20);
 
-  return { tree, reteach, atRisk, perStudent, studentSection };
+  return { tree, reteach, atRisk, perStudent, studentSection, stats, meta };
 }
 
 export async function getSectionSkillReport(sectionId: string, subjectId?: string, facultyId?: string) {
@@ -535,6 +561,136 @@ export async function getSectionSkillReport(sectionId: string, subjectId?: strin
   if (!r) return { sectionId, empty: true as const };
   const { tree, reteach, atRisk } = r;
   return { sectionId, empty: false as const, tree, reteach, atRisk };
+}
+
+/** A score counts as weak using the same cut-offs the student report uses for remediation. */
+export const isWeakScore = (s: Score): boolean =>
+  s.status === 'NEEDS_ATTENTION' || (s.status === 'MODERATE' && s.mastery < 0.65);
+
+export interface FacultyTopicScore extends Score {
+  topicId: string;
+  topicName: string;
+  moduleNo: number | null;
+  weak: boolean;
+}
+
+export interface FacultyStudentSkillRow {
+  studentId: string;
+  sectionId: string;
+  sectionLabel: string;
+  overall: Score;
+  topics: FacultyTopicScore[];
+}
+
+export interface FacultySectionDetail {
+  sectionId: string;
+  subjectId?: string;
+  empty: boolean;
+  tree: Tree<CohortStat> | null;
+  reteach: Array<{ level: Level; id: string; name: string } & CohortStat>;
+  atRisk: Array<{ studentId: string } & Score>;
+  topics: Array<CohortStat & { id: string; name: string; level: Level; moduleNo: number | null; pctWeak: number }>;
+  students: FacultyStudentSkillRow[];
+}
+
+/**
+ * Thin read-only projection over the existing cohort calculation. It exposes the
+ * already-computed per-student/topic scores so faculty views never recalculate
+ * skill gaps with a second implementation.
+ */
+export async function getDetailedSectionSkillReport(scope: Scope): Promise<FacultySectionDetail> {
+  const empty: FacultySectionDetail = {
+    sectionId: scope.sectionId || '',
+    subjectId: scope.subjectId,
+    empty: true,
+    tree: null,
+    reteach: [],
+    atRisk: [],
+    topics: [],
+    students: [],
+  };
+  const r = await cohortReport(scope);
+  if (!r) return empty;
+
+  const { stats, meta, perStudent, studentSection } = r;
+  const topicMeta = new Map<string, { id: string; name: string; moduleNo: number | null }>();
+  const topicIds = [...meta.entries()]
+    .filter(([, m]) => m.level === 'TOPIC')
+    .map(([, m]) => m.id);
+
+  if (topicIds.length) {
+    const rows = await prisma.topic.findMany({
+      where: { id: { in: topicIds } },
+      select: { id: true, name: true, moduleNo: true },
+    });
+    for (const row of rows) topicMeta.set(row.id, row);
+  }
+
+  const topicScoreByKey = new Map<string, Score>();
+  const topicScoresByStudent = new Map<string, FacultyTopicScore[]>();
+  for (const [studentId, accs] of perStudent) {
+    const topicScores: FacultyTopicScore[] = [];
+    for (const [key, acc] of accs) {
+      const m = meta.get(key);
+      if (!m || m.level !== 'TOPIC') continue;
+      const score = scoreFromAcc(acc);
+      topicScoreByKey.set(`${studentId}|${key}`, score);
+      topicScores.push({
+        ...score,
+        topicId: m.id,
+        topicName: topicMeta.get(m.id)?.name || m.name,
+        moduleNo: topicMeta.get(m.id)?.moduleNo ?? null,
+        weak: isWeakScore(score),
+      });
+    }
+    topicScoresByStudent.set(studentId, topicScores);
+  }
+
+  const topics = [...stats.entries()]
+    .filter(([key]) => meta.get(key)?.level === 'TOPIC')
+    .map(([key, stat]) => {
+      const m = meta.get(key)!;
+      const perTopic = [...perStudent.keys()]
+        .map((studentId) => topicScoreByKey.get(`${studentId}|${key}`))
+        .filter((s): s is Score => !!s);
+      const pctWeak = perTopic.length
+        ? Math.round((perTopic.filter(isWeakScore).length / perTopic.length) * 100)
+        : 0;
+      return {
+        ...stat,
+        id: m.id,
+        name: topicMeta.get(m.id)?.name || m.name,
+        level: m.level,
+        moduleNo: topicMeta.get(m.id)?.moduleNo ?? null,
+        pctWeak,
+      };
+    })
+    .sort((a, b) => a.mastery - b.mastery);
+
+  const students: FacultyStudentSkillRow[] = [...perStudent.entries()]
+    .map(([studentId, accs]) => {
+      const overallAcc = accs.get('OVERALL');
+      const sec = studentSection.get(studentId);
+      return {
+        studentId,
+        sectionId: sec?.sectionId || scope.sectionId || '',
+        sectionLabel: sec?.label || '',
+        overall: scoreFromAcc(overallAcc ?? { num: 0, den: 0, count: 0, correct: 0 }),
+        topics: (topicScoresByStudent.get(studentId) ?? []).sort((a, b) => a.mastery - b.mastery),
+      };
+    })
+    .sort((a, b) => a.overall.mastery - b.overall.mastery);
+
+  return {
+    sectionId: scope.sectionId || '',
+    subjectId: scope.subjectId,
+    empty: false,
+    tree: r.tree,
+    reteach: r.reteach,
+    atRisk: r.atRisk,
+    topics,
+    students,
+  };
 }
 
 export async function getYearSkillReport(year: number, subjectId?: string, facultyId?: string) {

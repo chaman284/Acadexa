@@ -44,6 +44,7 @@ model Section {
   students     Student[]
   quizzes      Quiz[]
   assignments  FacultySubject[]
+  skillGapAlerts SkillGapAlertState[]
 }
 
 model Subject {
@@ -57,6 +58,7 @@ model Subject {
   quizzes      Quiz[]
   topics       Topic[]
   syllabusDocs SyllabusDocument[]
+  skillGapAlerts SkillGapAlertState[]
 }
 
 model Student {
@@ -67,6 +69,7 @@ model Student {
   sectionId    String
   section      Section       @relation(fields: [sectionId], references: [id])
   quizAttempts QuizAttempt[]
+  skillGapAlerts SkillGapAlertState[]
 }
 
 model Faculty {
@@ -75,6 +78,7 @@ model Faculty {
   user        User            @relation(fields: [userId], references: [id])
   assignments FacultySubject[]
   quizzes     Quiz[]
+  skillGapAlerts SkillGapAlertState[]
 }
 
 model FacultySubject {
@@ -272,6 +276,30 @@ model Notification {
   actionUrl String?
   role      String?
   createdAt DateTime @default(now())
+}
+
+/// Tracks the last skill-gap band a faculty was notified about for a student
+/// in one subject+section pair. Written through raw SQL until prisma generate
+/// can run on this machine.
+model SkillGapAlertState {
+  id             String    @id @default(cuid())
+  facultyId      String
+  faculty        Faculty   @relation(fields: [facultyId], references: [id])
+  studentId      String
+  student        Student   @relation(fields: [studentId], references: [id])
+  subjectId      String
+  subject        Subject   @relation(fields: [subjectId], references: [id])
+  sectionId      String
+  section        Section   @relation(fields: [sectionId], references: [id])
+  status         String
+  lastMastery    Float
+  lastNotifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([facultyId, studentId, subjectId, sectionId])
+  @@index([facultyId, sectionId, subjectId])
+  @@index([studentId, subjectId, sectionId])
 }
 
 model CurriculumChunk {

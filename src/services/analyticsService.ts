@@ -61,6 +61,68 @@ export interface SectionSkillGapReport {
   isFallback?: boolean;
 }
 
+/**
+ * Shared raw skill-gap payload -> UI model. Both the student API and the
+ * faculty read-only preview call this so the numbers can never diverge.
+ */
+export const transformStudentSkillGapReport = (data: any): StudentSkillGapReport => {
+  const topics: StudentTopicSkill[] = [];
+  const subjectMap = new Map<string, string>();
+
+  if (Array.isArray(data?.tree?.children)) {
+    for (const subNode of data.tree.children) {
+      subjectMap.set(subNode.id, subNode.name);
+      if (!Array.isArray(subNode.children)) continue;
+
+      for (const topNode of subNode.children) {
+        const category: 'strong' | 'needs-practice' | 'improving' =
+          topNode.status === 'MASTERED'
+            ? 'strong'
+            : topNode.status === 'NEEDS_ATTENTION'
+            ? 'needs-practice'
+            : 'improving';
+
+        topics.push({
+          topicId: topNode.id,
+          topicName: topNode.name,
+          subjectName: subNode.name,
+          score: Math.round((topNode.mastery ?? 0) * 100),
+          category,
+          status: topNode.status,
+          confidence: Math.round((topNode.confidence ?? 0) * 100),
+          rawAccuracy: Math.round((topNode.rawAccuracy ?? 0) * 100),
+          answered: topNode.answered ?? 0,
+          lowData: !!topNode.lowData,
+        });
+      }
+    }
+  }
+
+  const weakest = Array.isArray(data?.weakestTopics) ? data.weakestTopics : [];
+  const recommendations: StudentSkillGapRecommendation[] = weakest.map((w: any) => {
+    const matchedTopic = topics.find(t => t.topicId === w.topicId);
+    return {
+      topicId: w.topicId,
+      topicName: w.topic,
+      courseName: matchedTopic?.subjectName || subjectMap.values().next().value || 'Core Coursework',
+      gapSeverity: w.status === 'NEEDS_ATTENTION' ? 'high' : 'medium',
+      currentScore: Math.round((w.mastery ?? 0) * 100),
+      targetScore: w.targetMastery || 75,
+      recommendedQuestions: w.availableQuestions || matchedTopic?.answered || 4,
+    };
+  });
+
+  return {
+    studentId: data?.studentId,
+    topics,
+    recommendations,
+    strongCount: topics.filter(t => t.category === 'strong').length,
+    needsPracticeCount: topics.filter(t => t.category === 'needs-practice').length,
+    improvingCount: topics.filter(t => t.category === 'improving').length,
+    isFallback: false,
+  };
+};
+
 export const analyticsService = {
   /**
    * GET /api/skill-gaps/student/me
@@ -72,70 +134,7 @@ export const analyticsService = {
       });
 
       if (res.data && !res.data.empty && res.data.tree) {
-        const topics: StudentTopicSkill[] = [];
-        const subjectMap = new Map<string, string>();
-
-        if (Array.isArray(res.data.tree.children)) {
-          for (const subNode of res.data.tree.children) {
-            subjectMap.set(subNode.id, subNode.name);
-
-            if (Array.isArray(subNode.children)) {
-              for (const topNode of subNode.children) {
-                const score = Math.round((topNode.mastery ?? 0) * 100);
-                const category: 'strong' | 'needs-practice' | 'improving' =
-                  topNode.status === 'MASTERED'
-                    ? 'strong'
-                    : topNode.status === 'NEEDS_ATTENTION'
-                    ? 'needs-practice'
-                    : 'improving';
-
-                topics.push({
-                  topicId: topNode.id,
-                  topicName: topNode.name,
-                  subjectName: subNode.name,
-                  score,
-                  category,
-                  status: topNode.status,
-                  confidence: Math.round((topNode.confidence ?? 0) * 100),
-                  rawAccuracy: Math.round((topNode.rawAccuracy ?? 0) * 100),
-                  answered: topNode.answered ?? 0,
-                  lowData: !!topNode.lowData,
-                });
-              }
-            }
-          }
-        }
-
-        const weakest = Array.isArray(res.data.weakestTopics) ? res.data.weakestTopics : [];
-        const recommendations: StudentSkillGapRecommendation[] = weakest.map((w: any) => {
-          const matchedTopic = topics.find(t => t.topicId === w.topicId);
-          const score = Math.round((w.mastery ?? 0) * 100);
-          const targetScore = w.targetMastery || 75;
-          const availableQ = w.availableQuestions || matchedTopic?.answered || 4;
-          return {
-            topicId: w.topicId,
-            topicName: w.topic,
-            courseName: matchedTopic?.subjectName || subjectMap.values().next().value || 'Core Coursework',
-            gapSeverity: w.status === 'NEEDS_ATTENTION' ? 'high' : 'medium',
-            currentScore: score,
-            targetScore,
-            recommendedQuestions: availableQ,
-          };
-        });
-
-        const strongCount = topics.filter(t => t.category === 'strong').length;
-        const needsPracticeCount = topics.filter(t => t.category === 'needs-practice').length;
-        const improvingCount = topics.filter(t => t.category === 'improving').length;
-
-        return {
-          studentId: res.data.studentId,
-          topics,
-          recommendations,
-          strongCount,
-          needsPracticeCount,
-          improvingCount,
-          isFallback: false,
-        };
+        return transformStudentSkillGapReport(res.data);
       }
     } catch (e) {
       console.warn('Skill gaps API offline or unreachable:', e);

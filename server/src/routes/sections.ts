@@ -4,6 +4,48 @@ import { authenticateJWT, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+/** Monday of the ISO week containing `value`, normalised to local midnight. */
+const weekStart = (value: Date): Date => {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  const day = date.getDay();
+  date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+  return date;
+};
+
+/** Weekly average score from submitted attempts, oldest first (last 6 weeks). */
+const buildWeeklyPerformance = (
+  attempts: Array<{ score: number | null; submittedAt: Date | null }>,
+): Array<{ label: string; score: number }> => {
+  const buckets = new Map<string, { total: number; count: number; date: Date }>();
+  for (const attempt of attempts) {
+    if (attempt.score == null || !attempt.submittedAt) continue;
+    const start = weekStart(new Date(attempt.submittedAt));
+    const key = start.toISOString().slice(0, 10);
+    const bucket = buckets.get(key) ?? { total: 0, count: 0, date: start };
+    bucket.total += Number(attempt.score);
+    bucket.count += 1;
+    buckets.set(key, bucket);
+  }
+
+  return [...buckets.values()]
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .map((bucket) => ({
+      label: bucket.date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+      score: Math.round(bucket.total / bucket.count),
+    }));
+};
+
+const trendFromWeekly = (
+  weekly: Array<{ score: number }>,
+): 'improving' | 'declining' | 'stable' => {
+  if (weekly.length < 2) return 'stable';
+  const delta = weekly[weekly.length - 1].score - weekly[0].score;
+  if (delta > 2) return 'improving';
+  if (delta < -2) return 'declining';
+  return 'stable';
+};
+
 // GET /api/sections - List sections with student count and assignments
 router.get('/', authenticateJWT, async (req: AuthRequest, res) => {
   try {
@@ -113,16 +155,31 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
           });
 
           // Get attempts count and avg score if available
-          const attempts = await prisma.quizAttempt.aggregate({
-            where: {
-              quiz: {
-                subjectId: a.subjectId,
-                sectionId: a.sectionId,
-              },
+          const attemptWhere = {
+            quiz: {
+              subjectId: a.subjectId,
+              sectionId: a.sectionId,
             },
+          };
+          const attempts = await prisma.quizAttempt.aggregate({
+            where: attemptWhere,
             _avg: { score: true },
             _count: { id: true },
           });
+
+          const since = new Date();
+          since.setDate(since.getDate() - 42);
+          since.setHours(0, 0, 0, 0);
+          const weeklyAttempts = await prisma.quizAttempt.findMany({
+            where: {
+              ...attemptWhere,
+              isSubmitted: true,
+              submittedAt: { gte: since },
+            },
+            select: { score: true, submittedAt: true },
+            orderBy: { submittedAt: 'asc' },
+          });
+          const weeklyPerformance = buildWeeklyPerformance(weeklyAttempts);
 
           const avgScore = attempts._avg.score ? Math.round(attempts._avg.score) : 0;
 
@@ -139,9 +196,11 @@ router.get('/faculty-classes', authenticateJWT, async (req: AuthRequest, res) =>
             avgScore,
             activeQuizCount,
             pendingReviewCount: 0,
-            lastQuizDate: new Date().toISOString().split('T')[0],
-            trend: 'stable' as const,
-            weeklyPerformance: [],
+            lastQuizDate: weeklyAttempts.length
+              ? new Date(weeklyAttempts[weeklyAttempts.length - 1].submittedAt!).toISOString().split('T')[0]
+              : new Date().toISOString().split('T')[0],
+            trend: trendFromWeekly(weeklyPerformance),
+            weeklyPerformance,
             weakTopics: [],
           };
         })

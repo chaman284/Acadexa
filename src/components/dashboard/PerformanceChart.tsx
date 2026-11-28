@@ -14,6 +14,8 @@ interface PerformanceChartProps {
   semesterData: PerformancePoint[];
   showClassAverage?: boolean;
   title?: string;
+  /** Class dashboards only have one real series; hide the empty period tabs there. */
+  showPeriodTabs?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, label }: {
@@ -43,6 +45,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
   semesterData,
   showClassAverage = true,
   title = 'Performance Overview',
+  showPeriodTabs = true,
 }) => {
   const [period, setPeriod] = useState('week');
 
@@ -72,9 +75,15 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
             </span>
           </div>
         </div>
-        <ControlledTabs tabs={tabs} activeTab={period} onChange={setPeriod} />
+        {showPeriodTabs && <ControlledTabs tabs={tabs} activeTab={period} onChange={setPeriod} />}
       </div>
 
+      {data.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-[220px] rounded-[10px] border-2 border-dashed border-[#E1D4CA] bg-[#FBF7F2] text-center">
+          <p className="text-sm font-bold text-[#302A2B]">No performance data yet</p>
+          <p className="text-xs text-[#79666A] mt-1">Scores appear here as students submit assessments.</p>
+        </div>
+      ) : (
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
@@ -123,6 +132,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
           />
         </AreaChart>
       </ResponsiveContainer>
+      )}
 
       {showClassAverage && data[0]?.average !== undefined && (
         <div className="flex items-center gap-4 mt-3 pt-3 border-t-2 border-[#e5d8c7]">

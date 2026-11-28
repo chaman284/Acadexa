@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { quizService } from '../services/quizService';
+import { notifySkillGapAlertsForResult } from '../services/skillGapNotificationService';
+import { invalidateFacultySkillGapCache } from '../services/facultySkillGapService';
 import { authenticateJWT, requireRole, AuthRequest } from '../middleware/auth';
 import { prisma } from '../prisma';
 
@@ -157,6 +159,14 @@ router.post('/:id/attempt', authenticateJWT, requireRole(['STUDENT']), async (re
       autoSubmitted: Boolean(req.body.autoSubmitted),
       autoSubmitReason: req.body.autoSubmitReason || undefined,
     });
+
+    // Alerts and cached aggregates never block or fail a student's submission.
+    invalidateFacultySkillGapCache();
+    try {
+      await notifySkillGapAlertsForResult(studentId, quiz.subjectId, quiz.sectionId);
+    } catch (alertError) {
+      console.warn('Skill-gap alert trigger failed:', alertError);
+    }
 
     res.status(201).json(attempt);
   } catch (error: any) {

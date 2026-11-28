@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "ts-node --transpile-only src/services/skillGapService.test.ts",
+    "test": "ts-node --transpile-only src/services/skillGapService.test.ts && ts-node --transpile-only src/services/facultySkillGaps.test.ts && ts-node --transpile-only ../src/services/facultyAnalyticsNormalizer.test.ts",
     "test:tutor": "ts-node --transpile-only src/services/tutorRetrieval.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

@@ -249,6 +249,7 @@ export const ClassDashboard: React.FC = () => {
             monthData={[]}
             semesterData={[]}
             showClassAverage={false}
+            showPeriodTabs={false}
           />
 
           <Card>

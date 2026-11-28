@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate, useMatch } from 'react-router-dom';
+import { NavLink, useNavigate, useMatch, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard, BookOpen, ClipboardList, Database,
@@ -15,6 +15,7 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   end?: boolean;
+  children?: NavItem[];
 }
 
 const studentNav: NavItem[] = [
@@ -34,6 +35,7 @@ const adminNav: NavItem[] = [
   { to: '/admin/students', label: 'Students', icon: <GraduationCap className="w-4.5 h-4.5 flex-shrink-0" /> },
   { to: '/admin/sections', label: 'Sections', icon: <Building2 className="w-4.5 h-4.5 flex-shrink-0" /> },
   { to: '/admin/notifications', label: 'Notifications', icon: <Bell className="w-4.5 h-4.5 flex-shrink-0" /> },
+  { to: '/admin/skill-gaps', label: 'Skill Gaps', icon: <TrendingUp className="w-4.5 h-4.5 flex-shrink-0" /> },
 ];
 
 interface SidebarProps {
@@ -52,21 +54,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
+
+  // NavLink ignores the query string, so nested view links need their own active check.
+  const isChildActive = (to: string) => {
+    const [pathname, search] = to.split('?');
+    if (location.pathname !== pathname) return false;
+    if (!search) return true;
+    const expected = new URLSearchParams(search);
+    const actual = new URLSearchParams(location.search);
+    return Array.from(expected.entries()).every(([key, value]) => actual.get(key) === value);
+  };
 
   const classMatch = useMatch('/faculty/class/:classId/*');
   const classId = classMatch?.params?.classId ?? null;
+
+  // Skill Gaps is a view inside Analytics, never a separate top-level faculty page.
+  const skillGapChild = (to: string): NavItem => ({
+    to,
+    label: 'Skill Gaps',
+    icon: <TrendingUp className="w-4.5 h-4.5 flex-shrink-0" />,
+  });
 
   const facultyNav: NavItem[] = classId
     ? [
         { to: `/faculty/class/${classId}`, label: 'Overview', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
         { to: `/faculty/class/${classId}/syllabus`, label: 'Syllabus', icon: <FileText className="w-4.5 h-4.5 flex-shrink-0" /> },
-        { to: `/faculty/class/${classId}/analytics`, label: 'Analytics', icon: <BarChart3 className="w-4.5 h-4.5 flex-shrink-0" /> },
+        {
+          to: `/faculty/class/${classId}/analytics`,
+          label: 'Analytics',
+          icon: <BarChart3 className="w-4.5 h-4.5 flex-shrink-0" />,
+          children: [skillGapChild(`/faculty/class/${classId}/analytics?view=skill-gaps`)],
+        },
       ]
     : [
         { to: '/faculty/select-class', label: 'Dashboard', icon: <LayoutDashboard className="w-4.5 h-4.5 flex-shrink-0" />, end: true },
         { to: '/faculty/quizzes', label: 'Quizzes', icon: <ClipboardList className="w-4.5 h-4.5 flex-shrink-0" /> },
         { to: '/faculty/paper-bank', label: 'Question Bank', icon: <Database className="w-4.5 h-4.5 flex-shrink-0" /> },
+        {
+          to: '/faculty/analytics',
+          label: 'Analytics',
+          icon: <BarChart3 className="w-4.5 h-4.5 flex-shrink-0" />,
+          children: [skillGapChild('/faculty/analytics?view=skill-gaps')],
+        },
       ];
 
   const navItems = role === 'admin' ? adminNav : role === 'student' ? studentNav : facultyNav;
@@ -186,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         >
           {navItems.map(item => (
-            <div key={item.to} className="relative group w-full flex justify-center">
+            <div key={item.to} className={clsx('relative group w-full', isCollapsed && 'flex justify-center')}>
               <NavLink
                 to={item.to}
                 end={item.end}
@@ -210,6 +241,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="truncate">{item.label}</span>
                 )}
               </NavLink>
+
+              {/* Nested views, e.g. Analytics > Skill Gaps */}
+              {!isCollapsed && item.children && (
+                <div className="w-full mt-0.5 mb-1 flex flex-col gap-0.5 pl-5 ml-4 border-l border-white/10">
+                  {item.children.map(child => (
+                    <NavLink
+                      key={child.to}
+                      to={child.to}
+                      className={clsx(
+                        'flex items-center gap-2 text-[12px] font-medium rounded-[8px] px-2.5 py-1.5 transition-all duration-150',
+                        isChildActive(child.to)
+                          ? 'bg-white/10 text-[#F7F1E8]'
+                          : 'text-white/45 hover:text-white/85 hover:bg-white/08',
+                      )}
+                      onClick={onMobileClose}
+                    >
+                      <span className="flex-shrink-0 flex items-center justify-center opacity-70">{child.icon}</span>
+                      <span className="truncate">{child.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
 
               {/* Tooltip in collapsed mode */}
               {isCollapsed && (
